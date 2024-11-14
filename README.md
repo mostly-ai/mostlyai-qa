@@ -139,7 +139,7 @@ An overall accuracy score is then calculated as the average of these aggregate-l
 
 We embed all records into an embedding space, to calculate two metrics:
 
-1. **Cosing Similarity**: We calculate the cosine similarity between the centroids of the synthetic and the original training data. This is then compared to the cosine similarity between the centroids of the original training and holdout data. The higher the score, the better the synthetic data.
+1. **Cosine Similarity**: We calculate the cosine similarity between the centroids of the synthetic and the original training data. This is then compared to the cosine similarity between the centroids of the original training and holdout data. The higher the score, the better the synthetic data.
 2. **Discriminator AUC**: We train a binary classifier to check whether one can distinguish between synthetic and original training data based on their embeddings. This is again compared to the same metric for the original training and holdout data. A score close to 50% indicates, that synthetic samples are indistinguishable from original samples.
 
 ### Distances
