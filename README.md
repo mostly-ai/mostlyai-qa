@@ -67,8 +67,8 @@ def report(
     report_subtitle: str = "",
     report_credits: str = REPORT_CREDITS,
     report_extra_info: str = "",
-    max_sample_size_accuracy: int = MAX_SAMPLE_SIZE_ACCURACY,
-    max_sample_size_embeddings: int = MAX_SAMPLE_SIZE_EMBEDDINGS,
+    max_sample_size_accuracy: int | None = None,
+    max_sample_size_embeddings: int | None = None,
     statistics_path: str | Path | None = None,
     on_progress: ProgressCallback | None = None,
 ) -> tuple[Path, dict | None]:
