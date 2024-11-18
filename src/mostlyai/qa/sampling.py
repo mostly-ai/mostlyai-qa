@@ -110,9 +110,10 @@ def pull_data_for_accuracy(
     df = pd.merge(df, df_nxt, on=key, how="left")
     df = df.drop(columns=[key])
 
-    # fill count columns
+    # remove records with sequence length equal to 0
     count_column = f"{TGT_COLUMN_PREFIX}{COUNT_COLUMN}"
     df[count_column] = df[count_column].fillna(0).astype("Int64")
+    df = df.loc[df[count_column] > 0].reset_index(drop=True)
 
     if setup is None:
         setup = "1:1" if (df[count_column] == 1).all() else "1:N"
