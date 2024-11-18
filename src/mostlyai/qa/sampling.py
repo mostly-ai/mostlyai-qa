@@ -67,7 +67,6 @@ def pull_data_for_accuracy(
     assert setup is None or setup in ["1:1", "1:N"]
 
     key = "__KEY"
-    max_sample_size = 10_000_000 if max_sample_size is None else max_sample_size
 
     if df_ctx is not None:
         # explicit context
@@ -187,7 +186,6 @@ def pull_data_for_embeddings(
         df_ctx = df_ctx[sorted(df_ctx.columns)]
 
     key = "__KEY"
-    max_sample_size = 10_000_000 if max_sample_size is None else max_sample_size
 
     if df_ctx is not None:
         # explicit context
