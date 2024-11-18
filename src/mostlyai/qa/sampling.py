@@ -80,7 +80,7 @@ def pull_data_for_accuracy(
     else:
         # no context; flat table
         df_tgt = df_tgt.sample(frac=1).head(max_sample_size).reset_index(drop=True)
-        df_tgt = df_tgt.assign(**{key: lambda df: range(len(df))})
+        df_tgt[key] = range(len(df_tgt))
         df_ctx = df_tgt[[key]]
         tgt_context_key = key
 
