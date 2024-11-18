@@ -27,8 +27,6 @@ from mostlyai.qa.common import (
     PrerequisiteNotMetError,
     check_min_sample_size,
     add_tqdm,
-    MAX_SAMPLE_SIZE_ACCURACY,
-    MAX_SAMPLE_SIZE_EMBEDDINGS,
     check_statistics_prerequisite,
     determine_data_size,
     REPORT_CREDITS,
@@ -50,8 +48,8 @@ def report_from_statistics(
     report_subtitle: str = "",
     report_credits: str = REPORT_CREDITS,
     report_extra_info: str = "",
-    max_sample_size_accuracy: int = MAX_SAMPLE_SIZE_ACCURACY,
-    max_sample_size_embeddings: int = MAX_SAMPLE_SIZE_EMBEDDINGS,
+    max_sample_size_accuracy: int | None = None,
+    max_sample_size_embeddings: int | None = None,
     on_progress: ProgressCallback | None = None,
 ) -> Path:
     with TemporaryWorkspace() as workspace:

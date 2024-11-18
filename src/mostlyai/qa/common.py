@@ -23,8 +23,6 @@ from mostlyai.qa.filesystem import Statistics
 _LOG = logging.getLogger(__name__)
 
 
-MAX_SAMPLE_SIZE_ACCURACY = 100_000
-MAX_SAMPLE_SIZE_EMBEDDINGS = 10_000
 ACCURACY_MAX_COLUMNS = 300  # should be an even number and greater than 100
 
 MAX_UNIVARIATE_PLOTS = 300

@@ -70,19 +70,20 @@ def pull_data_for_accuracy(
 
     if df_ctx is not None:
         # explicit context
-        df_ctx = df_ctx.sample(frac=1).head(max_sample_size).reset_index(drop=True)
-        df_ctx = df_ctx.rename(columns={ctx_primary_key: tgt_context_key})
-        df_tgt = df_tgt.merge(df_ctx[tgt_context_key], on=tgt_context_key).reset_index(drop=True)
+        df_ctx = df_ctx.sample(frac=1).head(max_sample_size)
+        df_ctx = df_ctx.rename(columns={ctx_primary_key: tgt_context_key}).reset_index(drop=True)
+        df_tgt = df_tgt.merge(df_ctx[tgt_context_key], on=tgt_context_key, how="inner").reset_index(drop=True)
     elif tgt_context_key is not None:
         # implicit context
-        df_ctx = df_tgt[[tgt_context_key]].drop_duplicates().sample(frac=1).head(max_sample_size).reset_index(drop=True)
-        df_tgt = df_tgt.merge(df_ctx[tgt_context_key], on=tgt_context_key).reset_index(drop=True)
+        df_ctx = df_tgt[[tgt_context_key]].drop_duplicates()
+        df_ctx = df_ctx.sample(frac=1).head(max_sample_size).reset_index(drop=True)
+        df_tgt = df_tgt.merge(df_ctx[tgt_context_key], on=tgt_context_key, how="inner").reset_index(drop=True)
     else:
         # no context; flat table
-        df_ctx = pd.DataFrame({key: range(len(df_tgt))})
-        df_tgt = df_tgt.sample(frac=1).head(max_sample_size).reset_index(drop=True)
-        df_tgt[key] = df_ctx[key]
         tgt_context_key = key
+        df_tgt = df_tgt.sample(frac=1).head(max_sample_size).reset_index(drop=True)
+        df_tgt[key] = range(len(df_tgt))
+        df_ctx = df_tgt[[key]]
 
     # consistently use "__KEY" as key column
     df_ctx = df_ctx.rename(columns={tgt_context_key: key})
@@ -189,12 +190,13 @@ def pull_data_for_embeddings(
 
     if df_ctx is not None:
         # explicit context
-        df_ctx = df_ctx.sample(frac=1).head(max_sample_size).reset_index(drop=True)
-        df_ctx = df_ctx.rename(columns={ctx_primary_key: tgt_context_key})
+        df_ctx = df_ctx.sample(frac=1).head(max_sample_size)
+        df_ctx = df_ctx.rename(columns={ctx_primary_key: tgt_context_key}).reset_index(drop=True)
         df_tgt = df_tgt.merge(df_ctx[tgt_context_key], on=tgt_context_key, how="right").reset_index(drop=True)
     elif tgt_context_key is not None:
         # implicit context
-        df_ctx = df_tgt[[tgt_context_key]].drop_duplicates().sample(frac=1).head(max_sample_size).reset_index(drop=True)
+        df_ctx = df_tgt[[tgt_context_key]].drop_duplicates()
+        df_ctx = df_ctx.sample(frac=1).head(max_sample_size).reset_index(drop=True)
         df_tgt = df_tgt.merge(df_ctx[tgt_context_key], on=tgt_context_key, how="right").reset_index(drop=True)
     else:
         # no context; flat table
@@ -215,18 +217,18 @@ def pull_data_for_embeddings(
         # JSON to keep the string length for faster speed short
         return " ".join(row.values.astype(str))
 
-    def sequence_to_json(sequence: pd.DataFrame) -> str:
+    def sequence_to_string(sequence: pd.DataFrame) -> str:
         return ", ".join(sequence.apply(row_to_string, axis=1))
 
-    jsons = (
+    strings = (
         df_tgt.groupby(tgt_context_key)
-        .apply(sequence_to_json, include_groups=False)
+        .apply(sequence_to_string, include_groups=False)
         .sample(frac=1)
         .reset_index(drop=True)
     )
     time_elapsed = time.time() - t0
-    _LOG.info(f"finished pulling data for embeddings ({time_elapsed=:.2f}s, {jsons.shape=})")
-    return jsons
+    _LOG.info(f"finished pulling data for embeddings ({time_elapsed=:.2f}s, {strings.shape=})")
+    return strings
 
 
 def calculate_embeddings(texts: pd.Series | pd.DataFrame) -> np.ndarray:

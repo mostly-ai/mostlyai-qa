@@ -41,8 +41,6 @@ from mostlyai.qa.common import (
     ProgressCallback,
     PrerequisiteNotMetError,
     check_min_sample_size,
-    MAX_SAMPLE_SIZE_ACCURACY,
-    MAX_SAMPLE_SIZE_EMBEDDINGS,
     add_tqdm,
     NXT_COLUMN,
     CTX_COLUMN_PREFIX,
@@ -69,8 +67,8 @@ def report(
     report_subtitle: str = "",
     report_credits: str = REPORT_CREDITS,
     report_extra_info: str = "",
-    max_sample_size_accuracy: int = MAX_SAMPLE_SIZE_ACCURACY,
-    max_sample_size_embeddings: int = MAX_SAMPLE_SIZE_EMBEDDINGS,
+    max_sample_size_accuracy: int | None = None,
+    max_sample_size_embeddings: int | None = None,
     statistics_path: str | Path | None = None,
     on_progress: ProgressCallback | None = None,
 ) -> tuple[Path, dict | None]:
@@ -225,6 +223,11 @@ def report(
         )
         on_progress(current=30, total=100)
 
+        # ensure that embeddings are all of equal size for a fair 3-way comparison
+        max_sample_size_embeddings = min(syn_sample_size, trn_sample_size)
+        if hol_sample_size != 0:
+            max_sample_size_embeddings = min(max_sample_size_embeddings, hol_sample_size)
+
         # calculate embeddings
         syn_embeds = calculate_embeddings(
             pull_data_for_embeddings(
@@ -237,21 +240,16 @@ def report(
         )
         _LOG.info(f"calculated embeddings for synthetic {syn_embeds.shape}")
         on_progress(current=50, total=100)
-        # ensure that `trn` and `hol` are of equal size
-        max_sample_size = min(max_sample_size_embeddings, trn_sample_size)
-        if hol_tgt_data is not None:
-            max_sample_size = min(max_sample_size_embeddings, hol_sample_size)
         trn_embeds = calculate_embeddings(
             pull_data_for_embeddings(
                 df_tgt=trn_tgt_data,
                 df_ctx=trn_ctx_data,
                 ctx_primary_key=ctx_primary_key,
                 tgt_context_key=tgt_context_key,
-                max_sample_size=max_sample_size,
+                max_sample_size=max_sample_size_embeddings,
             )
         )
         _LOG.info(f"calculated embeddings for training {trn_embeds.shape}")
-
         on_progress(current=60, total=100)
         if hol_tgt_data is not None:
             hol_embeds = calculate_embeddings(
@@ -260,7 +258,7 @@ def report(
                     df_ctx=hol_ctx_data,
                     ctx_primary_key=ctx_primary_key,
                     tgt_context_key=tgt_context_key,
-                    max_sample_size=max_sample_size,
+                    max_sample_size=max_sample_size_embeddings,
                 )
             )
             _LOG.info(f"calculated embeddings for holdout {hol_embeds.shape}")
