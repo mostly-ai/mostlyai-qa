@@ -224,7 +224,7 @@ def report(
         on_progress(current=30, total=100)
 
         # ensure that embeddings are all of equal size for a fair 3-way comparison
-        max_sample_size_embeddings = min(10_000_000, syn_sample_size, trn_sample_size)
+        max_sample_size_embeddings = min(syn_sample_size, trn_sample_size)
         if hol_sample_size != 0:
             max_sample_size_embeddings = min(max_sample_size_embeddings, hol_sample_size)
 
