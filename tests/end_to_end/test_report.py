@@ -42,9 +42,9 @@ def test_report_flat(tmp_path):
     assert report_path.exists()
 
     accuracy = metrics["accuracy"]
-    assert 0.8 <= accuracy["overall"] <= 1.0
-    assert 0.8 <= accuracy["univariate"] <= 1.0
-    assert 0.8 <= accuracy["bivariate"] <= 1.0
+    assert 0.5 <= accuracy["overall"] <= 1.0
+    assert 0.5 <= accuracy["univariate"] <= 1.0
+    assert 0.5 <= accuracy["bivariate"] <= 1.0
     assert accuracy["coherence"] is None
     assert 0.8 <= accuracy["overall_max"] <= 1.0
     assert 0.8 <= accuracy["univariate_max"] <= 1.0

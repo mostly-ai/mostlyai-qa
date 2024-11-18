@@ -79,9 +79,9 @@ def pull_data_for_accuracy(
         df_tgt = df_tgt.merge(df_ctx[tgt_context_key], on=tgt_context_key).reset_index(drop=True)
     else:
         # no context; flat table
-        df_ctx = pd.DataFrame({key: range(len(df_tgt))})
         df_tgt = df_tgt.sample(frac=1).head(max_sample_size).reset_index(drop=True)
-        df_tgt[key] = df_ctx[key]
+        df_tgt = df_tgt.assign(**{key: lambda df: range(len(df))})
+        df_ctx = df_tgt[[key]]
         tgt_context_key = key
 
     # consistently use "__KEY" as key column
