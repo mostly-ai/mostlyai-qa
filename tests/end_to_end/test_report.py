@@ -224,3 +224,25 @@ def test_report_sequential_few_records(tmp_path):
         ctx_primary_key="id",
     )
     assert metrics is not None
+
+
+def test_odd_column_names(tmp_path):
+    values = ["a", "b"] * 50
+    df = pd.DataFrame(
+        {
+            "some.test": values,
+            "foo%bar|this-long{c[u]rly} *": values,
+            "3": values,
+        }
+    )
+    path, metrics = report(
+        syn_tgt_data=df,
+        trn_tgt_data=df,
+        statistics_path=tmp_path / "stats",
+    )
+    assert metrics is not None
+    path = report_from_statistics(
+        syn_tgt_data=df,
+        statistics_path=tmp_path / "stats",
+    )
+    assert path is not None

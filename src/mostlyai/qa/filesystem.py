@@ -25,7 +25,7 @@ from plotly import graph_objs as go
 from sklearn.decomposition import PCA
 
 
-_OLD_COL_PREFIX = r"(\w+)\."
+_OLD_COL_PREFIX = r"^(tgt|ctx|nxt)\."
 _NEW_COL_PREFIX = r"\1⁝"
 
 
