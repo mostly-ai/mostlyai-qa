@@ -26,17 +26,18 @@ import webbrowser
 import json
 from mostlyai import qa
 
-# fetch original + synthetic data (in this case a 30% perturbation of the training)
-repo_url = 'https://github.com/mostly-ai/paper-fidelity-accuracy/raw/refs/heads/main/data/'
-synthetic_df = pd.read_csv(repo_url + 'online-shoppers_flip30.csv.gz')
-training_df = pd.read_csv(repo_url + 'online-shoppers_trn.csv.gz')
-holdout_df = pd.read_csv(repo_url + 'online-shoppers_val.csv.gz')
+# fetch original + synthetic data
+base_url = 'https://github.com/mostly-ai/mostlyai-qa/raw/refs/heads/main/examples/quick-start'
+syn = pd.read_csv(f'{base_url}/census2k-syn_mostly.csv.gz')
+# syn = pd.read_csv(f'{base_url}/census2k-syn_flip30.csv.gz') # a 30% perturbation of trn
+trn = pd.read_csv(f'{base_url}/census2k-trn.csv.gz')
+hol = pd.read_csv(f'{base_url}/census2k-hol.csv.gz')
 
-# runs for ~60secs
+# runs for ~30secs
 report_path, metrics = qa.report(
-    syn_tgt_data = synthetic_df,
-    trn_tgt_data = training_df,
-    hol_tgt_data = holdout_df,
+    syn_tgt_data = syn,
+    trn_tgt_data = trn,
+    hol_tgt_data = hol,
 )
 
 # pretty print metrics
