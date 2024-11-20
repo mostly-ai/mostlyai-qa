@@ -1,7 +1,6 @@
 # Synthetic Data - Quality Assurance
 
-[![](https://pepy.tech/badge/mostlyai-qa)](https://pypi.org/project/mostlyai-qa/) ![](https://img.shields.io/github/license/mostly-ai/mostlyai-qa) 
-![GitHub Release](https://img.shields.io/github/v/release/mostly-ai/mostlyai-qa) ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/mostlyai-qa)
+[![](https://pepy.tech/badge/mostlyai-qa)](https://pypi.org/project/mostlyai-qa/) ![](https://img.shields.io/github/license/mostly-ai/mostlyai-qa) ![GitHub Release](https://img.shields.io/github/v/release/mostly-ai/mostlyai-qa) ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/mostlyai-qa)
 
 Assess the fidelity and novelty of synthetic samples with respect to original samples:
 
