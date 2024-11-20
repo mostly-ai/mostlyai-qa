@@ -49,6 +49,9 @@ report_path, metrics = qa.report(
 )
 ```
 
+Note, that due to the calculation of embeddings the function call might take a while. Embedding 10k samples on a Mac M2 take for example about 40secs. Limit the size of the passed DataFrames, or use the `max_sample_size_embeddings` parameter to speed up the report.
+
+
 ## Function signature
 
 ```python
