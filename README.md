@@ -51,7 +51,6 @@ report_path, metrics = qa.report(
 
 Note, that due to the calculation of embeddings the function call might take a while. Embedding 10k samples on a Mac M2 take for example about 40secs. Limit the size of the passed DataFrames, or use the `max_sample_size_embeddings` parameter to speed up the report.
 
-
 ## Function signature
 
 ```python
@@ -129,12 +128,12 @@ Three sets of metrics are calculated to compare synthetic data with the original
 ### Accuracy
 
 The L1 distances between the discretized marginal distributions of the synthetic and the original training data are being calculated for all columns.
-The reported accuracy is expressed as 100% minus the total variational distance (TVD), which is half the L1 distance between the two distributions.  
+The reported accuracy is expressed as 100% minus the total variational distance (TVD), which is half the L1 distance between the two distributions.
 These accuracies are then averaged to produce a single accuracy score, where higher scores indicate better synthetic data.
 
-1. **Univariate Accuracy**: The accuracy of the univariate distributions for all target columns is measured.  
-2. **Bivariate Accuracy**: The accuracy of all pair-wise distributions for target columns, as well as for target columns with respect to the context columns, is measured.  
-3. **Coherence Accuracy**: The accuracy of the auto-correlation for all target columns is measured. This is applicable only for sequential data.  
+1. **Univariate Accuracy**: The accuracy of the univariate distributions for all target columns is measured.
+2. **Bivariate Accuracy**: The accuracy of all pair-wise distributions for target columns, as well as for target columns with respect to the context columns, is measured.
+3. **Coherence Accuracy**: The accuracy of the auto-correlation for all target columns is measured. This is applicable only for sequential data.
 
 An overall accuracy score is calculated as the average of these aggregate-level scores.
 
@@ -142,8 +141,8 @@ An overall accuracy score is calculated as the average of these aggregate-level 
 
 All records are embedded into an embedding space to calculate two metrics:
 
-1. **Cosine Similarity**: The cosine similarity between the centroids of the synthetic and the original training data is calculated and compared to the cosine similarity between the centroids of the original training and holdout data. Higher scores indicate better synthetic data.  
-2. **Discriminator AUC**: A binary classifier is trained to determine whether synthetic and original training data can be distinguished based on their embeddings. This score is compared to the same metric for the original training and holdout data. A score close to 50% indicates that synthetic samples are indistinguishable from original samples.  
+1. **Cosine Similarity**: The cosine similarity between the centroids of the synthetic and the original training data is calculated and compared to the cosine similarity between the centroids of the original training and holdout data. Higher scores indicate better synthetic data.
+2. **Discriminator AUC**: A binary classifier is trained to determine whether synthetic and original training data can be distinguished based on their embeddings. This score is compared to the same metric for the original training and holdout data. A score close to 50% indicates that synthetic samples are indistinguishable from original samples.
 
 ### Distances
 
