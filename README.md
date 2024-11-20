@@ -18,6 +18,34 @@ The latest release of `mostlyai-qa` can be installed via pip:
 pip install -U mostlyai-qa
 ```
 
+## Quick start
+
+```python
+import pandas as pd
+import webbrowser
+import json
+from mostlyai import qa
+
+# fetch original + synthetic data (in this case a 30% perturbation of the training)
+repo_url = 'https://github.com/mostly-ai/paper-fidelity-accuracy/raw/refs/heads/main/data/'
+synthetic_df = pd.read_csv(repo_url + 'online-shoppers_flip30.csv.gz')
+training_df = pd.read_csv(repo_url + 'online-shoppers_trn.csv.gz')
+holdout_df = pd.read_csv(repo_url + 'online-shoppers_val.csv.gz')
+
+# runs for ~60secs
+report_path, metrics = qa.report(
+    syn_tgt_data = synthetic_df,
+    trn_tgt_data = training_df,
+    hol_tgt_data = holdout_df,
+)
+
+# pretty print metrics
+print(json.dumps(metrics, indent=4))
+
+# open up HTML report in new browser window
+webbrowser.open(f"file://{report_path.absolute()}")
+```
+
 ## Basic usage
 
 ```python
