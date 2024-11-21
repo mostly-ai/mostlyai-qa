@@ -193,7 +193,7 @@ def report(
             max_sample_size=max_sample_size_accuracy,
             setup=setup,
         )
-        on_progress(current=10, total=100)
+        on_progress(current=5, total=100)
 
         _LOG.info("prepare training data for accuracy started")
         trn = pull_data_for_accuracy(
@@ -204,7 +204,7 @@ def report(
             max_sample_size=max_sample_size_accuracy,
             setup=setup,
         )
-        on_progress(current=20, total=100)
+        on_progress(current=10, total=100)
 
         # coerce dtypes to match the original training data dtypes
         for col in trn:
@@ -221,52 +221,41 @@ def report(
             statistics=statistics,
             workspace=workspace,
         )
-        on_progress(current=30, total=100)
+        on_progress(current=20, total=100)
 
-        # ensure that embeddings are all of equal size for a fair 3-way comparison
+        # ensure that embeddings are all equal size for a fair 3-way comparison
         max_sample_size_embeddings = min(
             max_sample_size_embeddings or float("inf"),
             syn_sample_size,
             trn_sample_size,
             hol_sample_size or float("inf"),
         )
-        # calculate embeddings
-        syn_embeds = calculate_embeddings(
-            pull_data_for_embeddings(
-                df_tgt=syn_tgt_data,
-                df_ctx=syn_ctx_data,
+
+        def _calc_pull_embeds(df_tgt: pd.DataFrame, df_ctx: pd.DataFrame, start: int, stop: int) -> np.ndarray:
+            strings = pull_data_for_embeddings(
+                df_tgt=df_tgt,
+                df_ctx=df_ctx,
                 ctx_primary_key=ctx_primary_key,
                 tgt_context_key=tgt_context_key,
                 max_sample_size=max_sample_size_embeddings,
             )
-        )
-        _LOG.info(f"calculated embeddings for synthetic {syn_embeds.shape}")
-        on_progress(current=50, total=100)
-        trn_embeds = calculate_embeddings(
-            pull_data_for_embeddings(
-                df_tgt=trn_tgt_data,
-                df_ctx=trn_ctx_data,
-                ctx_primary_key=ctx_primary_key,
-                tgt_context_key=tgt_context_key,
-                max_sample_size=max_sample_size_embeddings,
-            )
-        )
-        _LOG.info(f"calculated embeddings for training {trn_embeds.shape}")
-        on_progress(current=60, total=100)
+            # split into buckets for calculating embeddings to avoid memory issues and report continuous progress
+            buckets = np.array_split(strings, stop - start)
+            embeds = []
+            for i, bucket in enumerate(buckets, 1):
+                embeds += [calculate_embeddings(bucket.tolist())]
+                on_progress(current=start + i, total=100)
+            embeds = np.concatenate(embeds, axis=0)
+            _LOG.info(f"calculated embeddings {embeds.shape}")
+            return embeds
+
+        syn_embeds = _calc_pull_embeds(df_tgt=syn_tgt_data, df_ctx=syn_ctx_data, start=20, stop=40)
+        trn_embeds = _calc_pull_embeds(df_tgt=trn_tgt_data, df_ctx=trn_ctx_data, start=40, stop=60)
         if hol_tgt_data is not None:
-            hol_embeds = calculate_embeddings(
-                pull_data_for_embeddings(
-                    df_tgt=hol_tgt_data,
-                    df_ctx=hol_ctx_data,
-                    ctx_primary_key=ctx_primary_key,
-                    tgt_context_key=tgt_context_key,
-                    max_sample_size=max_sample_size_embeddings,
-                )
-            )
-            _LOG.info(f"calculated embeddings for holdout {hol_embeds.shape}")
+            hol_embeds = _calc_pull_embeds(df_tgt=hol_tgt_data, df_ctx=hol_ctx_data, start=60, stop=80)
         else:
             hol_embeds = None
-        on_progress(current=70, total=100)
+        on_progress(current=80, total=100)
 
         _LOG.info("report similarity")
         sim_cosine_trn_hol, sim_cosine_trn_syn, sim_auc_trn_hol, sim_auc_trn_syn = report_similarity(
@@ -276,7 +265,7 @@ def report(
             workspace=workspace,
             statistics=statistics,
         )
-        on_progress(current=80, total=100)
+        on_progress(current=90, total=100)
 
         _LOG.info("report distances")
         dcr_trn, dcr_hol = report_distances(
@@ -285,7 +274,7 @@ def report(
             hol_embeds=hol_embeds,
             workspace=workspace,
         )
-        on_progress(current=90, total=100)
+        on_progress(current=99, total=100)
 
         metrics = calculate_metrics(
             acc_uni=acc_uni,
@@ -297,8 +286,6 @@ def report(
             sim_auc_trn_hol=sim_auc_trn_hol,
             sim_auc_trn_syn=sim_auc_trn_syn,
         )
-        on_progress(current=95, total=100)
-
         meta = {
             "rows_original": trn_sample_size + hol_sample_size,
             "rows_training": trn_sample_size,
@@ -314,7 +301,6 @@ def report(
             "report_extra_info": report_extra_info,
         }
         statistics.store_meta(meta=meta)
-
         html_report.store_report(
             report_path=report_path,
             report_type="model_report",
