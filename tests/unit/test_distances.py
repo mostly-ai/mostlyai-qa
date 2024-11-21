@@ -22,15 +22,6 @@ from mostlyai.qa.distances import (
 )
 from mostlyai.qa.sampling import calculate_embeddings
 
-N_COMMON = 20
-N_RARE = 100
-
-
-@pytest.fixture()
-def distances_dcr(cols_5):
-    trn, hol, syn = cols_5
-    return trn.add_prefix(TGT_COLUMN_PREFIX), hol.add_prefix(TGT_COLUMN_PREFIX), syn.add_prefix(TGT_COLUMN_PREFIX)
-
 
 @pytest.fixture()
 def too_many_cols():
@@ -42,37 +33,35 @@ def too_many_cols():
 
 @pytest.fixture()
 def cat_with_rare_and_none():
-    common = [f"common_{i}" for i in range(N_COMMON)] + [None]
-    rare = [f"rare_{i}" for i in range(N_RARE)]
+    common = [f"common_{i}" for i in range(20)] + [None]
+    rare = [f"rare_{i}" for i in range(100)]
     col = common * 10 + rare
     ser = pd.Series(col)
     return ser, ser, ser
 
 
 def test_calculate_distances():
-    syn = pd.DataFrame([{"cat": "a", "n_int": 0, "n_float": 1.0}] * 10).add_prefix(TGT_COLUMN_PREFIX)
-    trn = pd.DataFrame([{"cat": "a", "n_int": 0, "n_float": 0.0}] * 10).add_prefix(TGT_COLUMN_PREFIX)
-    hol = pd.DataFrame([{"cat": "a", "n_int": 0, "n_float": 1.0}] * 10).add_prefix(TGT_COLUMN_PREFIX)
-    syn_embeds, trn_embeds, hol_embeds = calculate_embeddings(syn), calculate_embeddings(trn), calculate_embeddings(hol)
+    n = 10
+    syn_embeds = calculate_embeddings(["a 0 1.0"] * n)
+    trn_embeds = calculate_embeddings(["a 0 0.0"] * n)
+    hol_embeds = calculate_embeddings(["a 0 1.0"] * n)
     dcr_trn, dcr_hol = calculate_distances(syn_embeds=syn_embeds, trn_embeds=trn_embeds, hol_embeds=hol_embeds)
-    assert len(dcr_trn) == trn.shape[0]
-    assert len(dcr_hol) == hol.shape[0]
+    assert len(dcr_trn) == n
+    assert len(dcr_hol) == n
     assert dcr_trn.min() > 0
     assert dcr_hol.max() == 0
 
     # test specifically that near matches do not report a distance of 0 due to rounding
-    trn = pd.DataFrame([{"cat": "a", "n_float": 0.0001}] * 10).add_prefix(TGT_COLUMN_PREFIX)
-    hol = pd.DataFrame([{"cat": "a", "n_float": 0.0001}] * 10).add_prefix(TGT_COLUMN_PREFIX)
-    syn = pd.DataFrame([{"cat": "a", "n_float": 0.0002}] * 10).add_prefix(TGT_COLUMN_PREFIX)
-    syn_embeds, trn_embeds, hol_embeds = calculate_embeddings(syn), calculate_embeddings(trn), calculate_embeddings(hol)
+    syn_embeds = calculate_embeddings(["a 0.0002"] * n)
+    trn_embeds = calculate_embeddings(["a 0.0001"] * n)
+    hol_embeds = calculate_embeddings(["a 0.0001"] * n)
     dcr_trn, dcr_hol = calculate_distances(syn_embeds=syn_embeds, trn_embeds=trn_embeds, hol_embeds=hol_embeds)
     assert dcr_hol.min() > 0
 
 
-def test_plot_store_dcr(distances_dcr, workspace):
-    trn, hol, syn = distances_dcr
-    trn_embeds, hol_embeds, syn_embeds = calculate_embeddings(trn), calculate_embeddings(hol), calculate_embeddings(syn)
-    dcr_trn, dcr_hol = calculate_distances(syn_embeds=syn_embeds, trn_embeds=trn_embeds, hol_embeds=hol_embeds)
+def test_plot_store_dcr(workspace):
+    embeds = calculate_embeddings(["a 0.0002"] * 100)
+    dcr_trn, dcr_hol = calculate_distances(syn_embeds=embeds, trn_embeds=embeds, hol_embeds=embeds)
     plot_store_distances(dcr_trn, dcr_hol, workspace)
     output_dir = workspace.workspace_dir / "figures"
     assert len(list(output_dir.glob("*.html"))) == 1

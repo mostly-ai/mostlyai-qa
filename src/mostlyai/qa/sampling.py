@@ -175,7 +175,7 @@ def pull_data_for_embeddings(
     ctx_primary_key: str | None = None,
     tgt_context_key: str | None = None,
     max_sample_size: int | None = None,
-) -> pd.Series:
+) -> list[str]:
     t0 = time.time()
 
     # keys must be provided if df_ctx provided
@@ -226,23 +226,19 @@ def pull_data_for_embeddings(
         .sample(frac=1)
         .reset_index(drop=True)
     )
+    # cap at 1k chars, as encoder truncates anyway; still it speeds things up by truncating beforehand
+    strings = strings.astype("string[pyarrow]").str[:1_000]
     time_elapsed = time.time() - t0
     _LOG.info(f"finished pulling data for embeddings ({time_elapsed=:.2f}s, {strings.shape=})")
-    return strings
+    return strings.to_list()
 
 
-def calculate_embeddings(texts: pd.Series | pd.DataFrame) -> np.ndarray:
+def calculate_embeddings(strings: list[str]) -> np.ndarray:
     t0 = time.time()
-    if isinstance(texts, pd.DataFrame):
-        # convert to JSON strings
-        texts = pd.Series(texts.to_dict(orient="records"))
-    # cap at 1k chars, as encoder truncates anyway; still it speeds things up by truncating beforehand
-    texts = texts.astype("string[pyarrow]").str[:1_000]
-    # calculate embeddings for text column
-    encoder = load_embedder(device="cuda" if torch.cuda.is_available() else "cpu")
-    embeddings = encoder.encode(texts.tolist())
+    embedder = load_embedder(device="cuda" if torch.cuda.is_available() else "cpu")
+    embeddings = embedder.encode(strings)
     time_elapsed = time.time() - t0
-    _LOG.info(f"created embeddings for {len(texts):,} records ({time_elapsed=:.2f}s)")
+    _LOG.info(f"created embeddings for {len(strings):,} records ({time_elapsed=:.2f}s)")
     return embeddings
 
 

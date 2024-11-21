@@ -20,7 +20,7 @@ from mostlyai.qa.similarity import (
     calculate_cosine_similarities,
     calculate_discriminator_auc,
 )
-from mostlyai.qa.sampling import calculate_embeddings
+from mostlyai.qa.sampling import calculate_embeddings, pull_data_for_embeddings
 
 
 def test_generate_store_report(tmp_path, cols, workspace):
@@ -35,9 +35,13 @@ def test_generate_store_report(tmp_path, cols, workspace):
     acc_uni = accuracy.calculate_univariates(acc_trn, acc_syn)
     acc_biv = accuracy.calculate_bivariates(acc_trn, acc_syn)
     corr_trn = mostlyai.qa.accuracy.calculate_correlations(acc_trn)
-    syn_embeds, trn_embeds, hol_embeds = calculate_embeddings(syn), calculate_embeddings(trn), calculate_embeddings(hol)
+    syn_embeds = calculate_embeddings(pull_data_for_embeddings(df_tgt=syn))
+    trn_embeds = calculate_embeddings(pull_data_for_embeddings(df_tgt=trn))
+    hol_embeds = calculate_embeddings(pull_data_for_embeddings(df_tgt=hol))
     sim_cosine_trn_hol, sim_cosine_trn_syn = calculate_cosine_similarities(
-        syn_embeds=syn_embeds, trn_embeds=trn_embeds, hol_embeds=hol_embeds
+        syn_embeds=syn_embeds,
+        trn_embeds=trn_embeds,
+        hol_embeds=hol_embeds,
     )
     sim_auc_trn_hol, sim_auc_trn_syn = calculate_discriminator_auc(
         syn_embeds=syn_embeds,
