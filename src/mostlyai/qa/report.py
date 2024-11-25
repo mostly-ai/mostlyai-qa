@@ -409,7 +409,9 @@ def calculate_metrics(
         if dcr_hol is not None:
             metrics["distances"]["ims_holdout"] = round((dcr_hol <= 1e-6).mean(), precision_distances)
             metrics["distances"]["dcr_holdout"] = round(dcr_hol.mean(), precision_distances)
-            metrics["distances"]["dcr_share"] = np.mean(dcr_trn < dcr_hol) + np.mean(dcr_trn == dcr_hol) / 2
+            metrics["distances"]["dcr_share"] = round(
+                np.mean(dcr_trn < dcr_hol) + np.mean(dcr_trn == dcr_hol) / 2, precision_distances
+            )
         else:
             metrics["distances"]["ims_holdout"] = None
             metrics["distances"]["dcr_holdout"] = None
