@@ -189,3 +189,16 @@ All records are embedded into an embedding space, and individual-level L2 distan
 ![Distances](./docs/screenshots/distances.png)
 
 See [here](./examples/) for further examples.
+
+## Citation
+
+Please consider citing our project if you find it useful:
+
+```bibtex
+@software{mostlyai-qa,
+    author = {{MOSTLY AI}},
+    title = {{MOSTLY AI - Quality Assurance}},
+    url = {https://github.com/mostly-ai/mostlyai-qa},
+    year = {2024}
+}
+```
