@@ -94,7 +94,7 @@ def store_report(
         is_model_report=(report_type == "model_report"),
         html_assets=read_html_assets(),
         report_creation_datetime=datetime.datetime.now(),
-        metrics=metrics.model_dump(),
+        metrics=metrics.model_dump() if metrics else None,
         meta=meta,
         accuracy_table_by_column=accuracy_table_by_column,
         accuracy_matrix_html_chart=accuracy_matrix_html_chart,
