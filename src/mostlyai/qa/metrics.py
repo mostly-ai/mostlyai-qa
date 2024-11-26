@@ -16,7 +16,7 @@ from pydantic import BaseModel, Field, field_validator, ConfigDict
 
 
 class CustomBaseModel(BaseModel):
-    model_config = ConfigDict(protected_namespaces=(), populate_by_name=True)
+    model_config = ConfigDict(protected_namespaces=(), populate_by_name=True, validate_assignment=True)
 
 
 class Accuracy(CustomBaseModel):
