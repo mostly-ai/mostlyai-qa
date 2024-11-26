@@ -97,7 +97,7 @@ class Similarity(CustomBaseModel):
     )
     discriminator_auc_training_synthetic: float | None = Field(
         default=None,
-        alias="discriminatorAucTrainingSynthetic",
+        alias="discriminatorAUCTrainingSynthetic",
         description="Cross-validated AUC of a discriminative model to distinguish between training and synthetic "
         "samples.",
         ge=0.0,
@@ -105,7 +105,7 @@ class Similarity(CustomBaseModel):
     )
     discriminator_auc_training_holdout: float | None = Field(
         default=None,
-        alias="discriminatorAucTrainingHoldout",
+        alias="discriminatorAUCTrainingHoldout",
         description="Cross-validated AUC of a discriminative model to distinguish between training and holdout "
         "samples. Serves as a reference for `discriminator_auc_training_synthetic`.",
         ge=0.0,
