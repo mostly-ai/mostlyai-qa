@@ -35,7 +35,7 @@ from mostlyai.qa.accuracy import (
     plot_store_univariates,
     plot_store_bivariates,
 )
-from mostlyai.qa.metrics import Metrics, AccuracyMetrics, SimilarityMetrics, DistanceMetrics
+from mostlyai.qa.metrics import Metrics, Accuracy, Similarity, Distances
 from mostlyai.qa.sampling import calculate_embeddings, pull_data_for_accuracy, pull_data_for_embeddings
 from mostlyai.qa.common import (
     determine_data_size,
@@ -354,7 +354,7 @@ def calculate_metrics(
         acc_overall_max = np.mean(
             [m for m in (acc_univariate_max, acc_bivariate_max, acc_coherence_max) if m is not None]
         )
-        accuracy = AccuracyMetrics(
+        accuracy = Accuracy(
             overall=acc_overall,
             univariate=acc_univariate,
             bivariate=acc_bivariate,
@@ -365,18 +365,18 @@ def calculate_metrics(
             coherence_max=acc_coherence_max,
         )
     else:
-        accuracy = AccuracyMetrics()
+        accuracy = Accuracy()
     if do_similarity:
-        similarity = SimilarityMetrics(
+        similarity = Similarity(
             cosine_similarity_training_synthetic=sim_cosine_trn_syn,
             cosine_similarity_training_holdout=sim_cosine_trn_hol if sim_cosine_trn_hol is not None else None,
             discriminator_auc_training_synthetic=sim_auc_trn_syn,
             discriminator_auc_training_holdout=sim_auc_trn_hol if sim_auc_trn_hol is not None else None,
         )
     else:
-        similarity = SimilarityMetrics()
+        similarity = Similarity()
     if do_distances:
-        distances = DistanceMetrics(
+        distances = Distances(
             ims_training=(dcr_trn <= 1e-6).mean(),
             ims_holdout=(dcr_hol <= 1e-6).mean() if dcr_hol is not None else None,
             dcr_training=dcr_trn.mean(),
@@ -384,7 +384,7 @@ def calculate_metrics(
             dcr_share=np.mean(dcr_trn < dcr_hol) + np.mean(dcr_trn == dcr_hol) / 2 if dcr_hol is not None else None,
         )
     else:
-        distances = DistanceMetrics()
+        distances = Distances()
     return Metrics(
         accuracy=accuracy,
         similarity=similarity,
