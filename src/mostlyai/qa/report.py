@@ -35,6 +35,7 @@ from mostlyai.qa.accuracy import (
     plot_store_univariates,
     plot_store_bivariates,
 )
+from mostlyai.qa.metrics import Metrics, AccuracyMetrics, SimilarityMetrics, DistanceMetrics
 from mostlyai.qa.sampling import calculate_embeddings, pull_data_for_accuracy, pull_data_for_embeddings
 from mostlyai.qa.common import (
     determine_data_size,
@@ -71,7 +72,7 @@ def report(
     max_sample_size_embeddings: int | None = None,
     statistics_path: str | Path | None = None,
     on_progress: ProgressCallback | None = None,
-) -> tuple[Path, dict | None]:
+) -> tuple[Path, Metrics | None]:
     """
     Generate HTML report and metrics for comparing synthetic and original data samples.
 
@@ -95,7 +96,7 @@ def report(
         on_progress: A custom progress callback
     Returns:
         1. Path to the HTML report
-        2. Dictionary of calculated metrics:
+        2. Pydantic Metrics:
         - `accuracy`:  # Accuracy is defined as (100% - Total Variation Distance), for each distribution, and then averaged across.
           - `overall`: Overall accuracy of synthetic data, i.e. average across univariate, bivariate and coherence.
           - `univariate`: Average accuracy of discretized univariate distributions.
@@ -325,84 +326,70 @@ def calculate_metrics(
     sim_cosine_trn_syn: np.float64 | None = None,
     sim_auc_trn_hol: np.float64 | None = None,
     sim_auc_trn_syn: np.float64 | None = None,
-) -> dict:
-    # round all metrics
-    precision_accuracy = 3
-    precision_distances = 3
-    precision_similarity_cosine = 7
-    precision_similarity_auc = 3
-
+) -> Metrics:
     do_accuracy = acc_uni is not None and acc_biv is not None
     do_distances = dcr_trn is not None
     do_similarity = sim_cosine_trn_syn is not None
 
-    metrics = {}
     if do_accuracy:
         # univariates
-        acc_univariate = acc_uni.accuracy.mean().round(precision_accuracy)
-        acc_univariate_max = acc_uni.accuracy_max.mean().round(precision_accuracy)
+        acc_univariate = acc_uni.accuracy.mean()
+        acc_univariate_max = acc_uni.accuracy_max.mean()
         # bivariates
         acc_tgt_ctx = acc_biv.loc[acc_biv.type != NXT_COLUMN]
         if not acc_tgt_ctx.empty:
-            acc_bivariate = acc_tgt_ctx.accuracy.mean().round(precision_accuracy)
-            acc_bivariate_max = acc_tgt_ctx.accuracy_max.mean().round(precision_accuracy)
+            acc_bivariate = acc_tgt_ctx.accuracy.mean()
+            acc_bivariate_max = acc_tgt_ctx.accuracy_max.mean()
         else:
             acc_bivariate = acc_bivariate_max = None
         # coherence
         acc_nxt = acc_biv.loc[acc_biv.type == NXT_COLUMN]
         if not acc_nxt.empty:
-            acc_coherence = acc_nxt.accuracy.mean().round(precision_accuracy)
-            acc_coherence_max = acc_nxt.accuracy_max.mean().round(precision_accuracy)
+            acc_coherence = acc_nxt.accuracy.mean()
+            acc_coherence_max = acc_nxt.accuracy_max.mean()
         else:
             acc_coherence = acc_coherence_max = None
         # calculate overall
-        acc_overall_elems = (acc_univariate, acc_bivariate, acc_coherence)
-        acc_overall_max_elems = (acc_univariate_max, acc_bivariate_max, acc_coherence_max)
-        acc_overall = np.mean([m for m in acc_overall_elems if m is not None]).round(precision_accuracy)
-        acc_overall_max = np.mean([m for m in acc_overall_max_elems if m is not None]).round(precision_accuracy)
-        metrics["accuracy"] = {
-            "overall": acc_overall,
-            "univariate": acc_univariate,
-            "bivariate": acc_bivariate,
-            "coherence": acc_coherence,
-            "overall_max": acc_overall_max,
-            "univariate_max": acc_univariate_max,
-            "bivariate_max": acc_bivariate_max,
-            "coherence_max": acc_coherence_max,
-        }
+        acc_overall = np.mean([m for m in (acc_univariate, acc_bivariate, acc_coherence) if m is not None])
+        acc_overall_max = np.mean(
+            [m for m in (acc_univariate_max, acc_bivariate_max, acc_coherence_max) if m is not None]
+        )
+        accuracy = AccuracyMetrics(
+            overall=acc_overall,
+            univariate=acc_univariate,
+            bivariate=acc_bivariate,
+            coherence=acc_coherence,
+            overall_max=acc_overall_max,
+            univariate_max=acc_univariate_max,
+            bivariate_max=acc_bivariate_max,
+            coherence_max=acc_coherence_max,
+        )
+    else:
+        accuracy = AccuracyMetrics()
     if do_similarity:
-        metrics["similarity"] = {
-            "cosine_similarity_training_synthetic": round(sim_cosine_trn_syn, precision_similarity_cosine),
-            "discriminator_auc_training_synthetic": round(sim_auc_trn_syn, precision_similarity_auc),
-        }
-        if sim_cosine_trn_hol is not None:
-            metrics["similarity"]["cosine_similarity_training_holdout"] = round(
-                sim_cosine_trn_hol, precision_similarity_cosine
-            )
-        else:
-            metrics["similarity"]["cosine_similarity_training_holdout"] = None
-        if sim_auc_trn_hol is not None:
-            metrics["similarity"]["discriminator_auc_training_holdout"] = round(
-                sim_auc_trn_hol, precision_similarity_auc
-            )
-        else:
-            metrics["similarity"]["discriminator_auc_training_holdout"] = None
+        similarity = SimilarityMetrics(
+            cosine_similarity_training_synthetic=sim_cosine_trn_syn,
+            cosine_similarity_training_holdout=sim_cosine_trn_hol if sim_cosine_trn_hol is not None else None,
+            discriminator_auc_training_synthetic=sim_auc_trn_syn,
+            discriminator_auc_training_holdout=sim_auc_trn_hol if sim_auc_trn_hol is not None else None,
+        )
+    else:
+        similarity = SimilarityMetrics()
     if do_distances:
-        metrics["distances"] = {
-            "ims_training": round((dcr_trn <= 1e-6).mean(), precision_distances),
-            "dcr_training": round(dcr_trn.mean(), precision_distances),
-        }
-        if dcr_hol is not None:
-            metrics["distances"]["ims_holdout"] = round((dcr_hol <= 1e-6).mean(), precision_distances)
-            metrics["distances"]["dcr_holdout"] = round(dcr_hol.mean(), precision_distances)
-            metrics["distances"]["dcr_share"] = round(
-                np.mean(dcr_trn < dcr_hol) + np.mean(dcr_trn == dcr_hol) / 2, precision_distances
-            )
-        else:
-            metrics["distances"]["ims_holdout"] = None
-            metrics["distances"]["dcr_holdout"] = None
-            metrics["distances"]["dcr_share"] = None
-    return metrics
+        distances = DistanceMetrics(
+            ims_training=(dcr_trn <= 1e-6).mean(),
+            ims_holdout=(dcr_hol <= 1e-6).mean() if dcr_hol is not None else None,
+            dcr_training=dcr_trn.mean(),
+            dcr_holdout=dcr_hol.mean() if dcr_hol is not None else None,
+            dcr_share=np.mean(dcr_trn < dcr_hol) + np.mean(dcr_trn == dcr_hol) / 2 if dcr_hol is not None else None,
+        )
+    else:
+        distances = DistanceMetrics()
+    return Metrics(
+        accuracy=accuracy,
+        similarity=similarity,
+        distances=distances,
+    )
 
 
 def report_accuracy_and_correlations(

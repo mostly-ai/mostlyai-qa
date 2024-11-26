@@ -27,21 +27,21 @@ import json
 from mostlyai import qa
 
 # fetch original + synthetic data
-base_url = 'https://github.com/mostly-ai/mostlyai-qa/raw/refs/heads/main/examples/quick-start'
-syn = pd.read_csv(f'{base_url}/census2k-syn_mostly.csv.gz')
+base_url = "https://github.com/mostly-ai/mostlyai-qa/raw/refs/heads/main/examples/quick-start"
+syn = pd.read_csv(f"{base_url}/census2k-syn_mostly.csv.gz")
 # syn = pd.read_csv(f'{base_url}/census2k-syn_flip30.csv.gz') # a 30% perturbation of trn
-trn = pd.read_csv(f'{base_url}/census2k-trn.csv.gz')
-hol = pd.read_csv(f'{base_url}/census2k-hol.csv.gz')
+trn = pd.read_csv(f"{base_url}/census2k-trn.csv.gz")
+hol = pd.read_csv(f"{base_url}/census2k-hol.csv.gz")
 
 # runs for ~30secs
 report_path, metrics = qa.report(
-    syn_tgt_data = syn,
-    trn_tgt_data = trn,
-    hol_tgt_data = hol,
+    syn_tgt_data=syn,
+    trn_tgt_data=trn,
+    hol_tgt_data=hol,
 )
 
 # pretty print metrics
-print(json.dumps(metrics, indent=4))
+print(json.dumps(metrics.model_dump(), indent=4))
 
 # open up HTML report in new browser window
 webbrowser.open(f"file://{report_path.absolute()}")
@@ -104,7 +104,7 @@ def report(
     max_sample_size_embeddings: int | None = None,
     statistics_path: str | Path | None = None,
     on_progress: ProgressCallback | None = None,
-) -> tuple[Path, dict | None]:
+) -> tuple[Path, Metrics | None]:
     """
     Generate HTML report and metrics for comparing synthetic and original data samples.
 
@@ -128,7 +128,7 @@ def report(
         on_progress: A custom progress callback
     Returns:
         1. Path to the HTML report
-        2. Dictionary of calculated metrics:
+        2. Pydantic Metrics:
         - `accuracy`:  # Accuracy is defined as (100% - Total Variation Distance), for each distribution, and then averaged across.
           - `overall`: Overall accuracy of synthetic data, i.e. average across univariate, bivariate and coherence.
           - `univariate`: Average accuracy of discretized univariate distributions.

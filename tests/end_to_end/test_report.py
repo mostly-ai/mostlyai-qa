@@ -41,27 +41,27 @@ def test_report_flat(tmp_path):
 
     assert report_path.exists()
 
-    accuracy = metrics["accuracy"]
-    assert 0.5 <= accuracy["overall"] <= 1.0
-    assert 0.5 <= accuracy["univariate"] <= 1.0
-    assert 0.5 <= accuracy["bivariate"] <= 1.0
-    assert accuracy["coherence"] is None
-    assert 0.8 <= accuracy["overall_max"] <= 1.0
-    assert 0.8 <= accuracy["univariate_max"] <= 1.0
-    assert 0.8 <= accuracy["bivariate_max"] <= 1.0
+    accuracy = metrics.accuracy
+    assert 0.5 <= accuracy.overall <= 1.0
+    assert 0.5 <= accuracy.univariate <= 1.0
+    assert 0.5 <= accuracy.bivariate <= 1.0
+    assert accuracy.coherence is None
+    assert 0.8 <= accuracy.overall_max <= 1.0
+    assert 0.8 <= accuracy.univariate_max <= 1.0
+    assert 0.8 <= accuracy.bivariate_max <= 1.0
 
-    similarity = metrics["similarity"]
-    assert 0.8 <= similarity["cosine_similarity_training_synthetic"] <= 1.0
-    assert 0.0 <= similarity["discriminator_auc_training_synthetic"] <= 1.0
-    assert 0.8 <= similarity["cosine_similarity_training_holdout"] <= 1.0
-    assert 0.0 <= similarity["discriminator_auc_training_holdout"] <= 1.0
+    similarity = metrics.similarity
+    assert 0.8 <= similarity.cosine_similarity_training_synthetic <= 1.0
+    assert 0.0 <= similarity.discriminator_auc_training_synthetic <= 1.0
+    assert 0.8 <= similarity.cosine_similarity_training_holdout <= 1.0
+    assert 0.0 <= similarity.discriminator_auc_training_holdout <= 1.0
 
-    distances = metrics["distances"]
-    assert 0 <= distances["ims_training"] <= 1.0
-    assert 0 <= distances["dcr_training"] <= 1.0
-    assert 0 <= distances["ims_holdout"] <= 1.0
-    assert 0 <= distances["dcr_holdout"] <= 1.0
-    assert 0 <= distances["dcr_share"] <= 1.0
+    distances = metrics.distances
+    assert 0 <= distances.ims_training <= 1.0
+    assert 0 <= distances.dcr_training <= 1.0
+    assert 0 <= distances.ims_holdout <= 1.0
+    assert 0 <= distances.dcr_holdout <= 1.0
+    assert 0 <= distances.dcr_share <= 1.0
 
     report_path = report_from_statistics(
         syn_tgt_data=syn_tgt_data,
@@ -101,28 +101,28 @@ def test_report_sequential(tmp_path):
 
     assert report_path.exists()
 
-    accuracy = metrics["accuracy"]
-    assert 0.8 <= accuracy["overall"] <= 1.0
-    assert 0.8 <= accuracy["univariate"] <= 1.0
-    assert 0.8 <= accuracy["bivariate"] <= 1.0
-    assert 0.8 <= accuracy["coherence"] <= 1.0
-    assert 0.8 <= accuracy["overall_max"] <= 1.0
-    assert 0.8 <= accuracy["univariate_max"] <= 1.0
-    assert 0.8 <= accuracy["bivariate_max"] <= 1.0
-    assert 0.8 <= accuracy["coherence_max"] <= 1.0
+    accuracy = metrics.accuracy
+    assert 0.8 <= accuracy.overall <= 1.0
+    assert 0.8 <= accuracy.univariate <= 1.0
+    assert 0.8 <= accuracy.bivariate <= 1.0
+    assert 0.8 <= accuracy.coherence <= 1.0
+    assert 0.8 <= accuracy.overall_max <= 1.0
+    assert 0.8 <= accuracy.univariate_max <= 1.0
+    assert 0.8 <= accuracy.bivariate_max <= 1.0
+    assert 0.8 <= accuracy.coherence_max <= 1.0
 
-    similarity = metrics["similarity"]
-    assert 0.8 <= similarity["cosine_similarity_training_synthetic"] <= 1.0
-    assert 0.0 <= similarity["discriminator_auc_training_synthetic"] <= 1.0
-    assert 0.8 <= similarity["cosine_similarity_training_holdout"] <= 1.0
-    assert 0.0 <= similarity["discriminator_auc_training_holdout"] <= 1.0
+    similarity = metrics.similarity
+    assert 0.8 <= similarity.cosine_similarity_training_synthetic <= 1.0
+    assert 0.0 <= similarity.discriminator_auc_training_synthetic <= 1.0
+    assert 0.8 <= similarity.cosine_similarity_training_holdout <= 1.0
+    assert 0.0 <= similarity.discriminator_auc_training_holdout <= 1.0
 
-    distances = metrics["distances"]
-    assert 0 <= distances["ims_training"] <= 1.0
-    assert 0 <= distances["dcr_training"] <= 1.0
-    assert 0 <= distances["ims_holdout"] <= 1.0
-    assert 0 <= distances["dcr_holdout"] <= 1.0
-    assert 0 <= distances["dcr_share"] <= 1.0
+    distances = metrics.distances
+    assert 0 <= distances.ims_training <= 1.0
+    assert 0 <= distances.dcr_training <= 1.0
+    assert 0 <= distances.ims_holdout <= 1.0
+    assert 0 <= distances.dcr_holdout <= 1.0
+    assert 0 <= distances.dcr_share <= 1.0
 
     report_path = report_from_statistics(
         syn_tgt_data=syn_tgt_data,
@@ -150,8 +150,8 @@ def test_report_flat_rare(tmp_path):
         hol_tgt_data=hol_tgt_data,
         statistics_path=statistics_path,
     )
-    assert metrics["accuracy"]["univariate"] == 0.0
-    assert metrics["distances"]["ims_training"] == metrics["distances"]["ims_holdout"] == 0.0
+    assert metrics.accuracy.univariate == 0.0
+    assert metrics.distances.ims_training == metrics.distances.ims_holdout == 0.0
 
     # test case where rare values are not protected, and we leak trn into synthetic
     syn_tgt_data = pd.DataFrame({"x": trn_tgt_data["x"].sample(100, replace=True)})
@@ -161,8 +161,8 @@ def test_report_flat_rare(tmp_path):
         hol_tgt_data=hol_tgt_data,
         statistics_path=statistics_path,
     )
-    assert metrics["distances"]["ims_training"] > metrics["distances"]["ims_holdout"]
-    assert metrics["distances"]["dcr_training"] < metrics["distances"]["dcr_holdout"]
+    assert metrics.distances.ims_training > metrics.distances.ims_holdout
+    assert metrics.distances.dcr_training < metrics.distances.dcr_holdout
 
 
 def test_report_flat_early_exit(tmp_path):
