@@ -138,7 +138,7 @@ def report_from_statistics(
             report_path=report_path,
             report_type="data_report",
             workspace=workspace,
-            metrics={},
+            metrics=None,
             meta=meta,
             acc_uni=acc_uni,
             acc_biv=acc_biv,

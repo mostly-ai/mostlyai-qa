@@ -27,6 +27,7 @@ from mostlyai.qa.assets import (
     HTML_REPORT_TEMPLATE,
     HTML_REPORT_EARLY_EXIT,
 )
+from mostlyai.qa.metrics import Metrics
 
 _LOG = logging.getLogger(__name__)
 
@@ -53,7 +54,7 @@ def store_report(
     report_path: Path,
     report_type: Literal["model_report", "data_report"],
     workspace: TemporaryWorkspace,
-    metrics: dict,
+    metrics: Metrics | None,
     meta: dict,
     acc_uni: pd.DataFrame,
     acc_biv: pd.DataFrame,
@@ -93,7 +94,7 @@ def store_report(
         is_model_report=(report_type == "model_report"),
         html_assets=read_html_assets(),
         report_creation_datetime=datetime.datetime.now(),
-        metrics=metrics,
+        metrics=metrics.model_dump(),
         meta=meta,
         accuracy_table_by_column=accuracy_table_by_column,
         accuracy_matrix_html_chart=accuracy_matrix_html_chart,

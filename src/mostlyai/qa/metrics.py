@@ -12,10 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, ConfigDict
 
 
-class Accuracy(BaseModel):
+class CustomBaseModel(BaseModel):
+    model_config = ConfigDict(protected_namespaces=(), populate_by_name=True)
+
+
+class Accuracy(CustomBaseModel):
     overall: float | None = Field(
         default=None,
         description="Overall accuracy of synthetic data, averaged across univariate, bivariate, and coherence.",
@@ -75,7 +79,7 @@ class Accuracy(BaseModel):
         return round(value, precision) if value is not None else None
 
 
-class Similarity(BaseModel):
+class Similarity(CustomBaseModel):
     cosine_similarity_training_synthetic: float | None = Field(
         default=None,
         alias="cosineSimilarityTrainingSynthetic",
@@ -114,7 +118,7 @@ class Similarity(BaseModel):
         return round(value, precision) if value is not None else None
 
 
-class Distances(BaseModel):
+class Distances(CustomBaseModel):
     ims_training: float | None = Field(
         default=None,
         alias="imsTraining",
@@ -156,7 +160,7 @@ class Distances(BaseModel):
         return round(value, precision) if value is not None else None
 
 
-class Metrics(BaseModel):
+class Metrics(CustomBaseModel):
     accuracy: Accuracy | None = Field(default=None, description="Metrics related to accuracy of synthetic data.")
     similarity: Similarity | None = Field(
         default=None, description="Metrics related to similarity between distributions in an embedding space."

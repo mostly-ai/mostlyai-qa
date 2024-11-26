@@ -30,11 +30,11 @@ def test_generate_store_report(tmp_path, cols, workspace):
     columns = [f"{p}{c}" for p, c in zip(prefixes, trn.columns)]
     trn.columns, hol.columns, syn.columns = columns, columns, columns
     trn["nxt::dt"], hol["nxt::dt"], syn["nxt::dt"] = trn["tgt::dt"], hol["tgt::dt"], syn["tgt::dt"]
-    acc_trn, bins = mostlyai.qa.accuracy.bin_data(trn, 3)
-    acc_syn, _ = mostlyai.qa.accuracy.bin_data(syn, bins)
+    acc_trn, bins = accuracy.bin_data(trn, 3)
+    acc_syn, _ = accuracy.bin_data(syn, bins)
     acc_uni = accuracy.calculate_univariates(acc_trn, acc_syn)
     acc_biv = accuracy.calculate_bivariates(acc_trn, acc_syn)
-    corr_trn = mostlyai.qa.accuracy.calculate_correlations(acc_trn)
+    corr_trn = accuracy.calculate_correlations(acc_trn)
     syn_embeds = calculate_embeddings(pull_data_for_embeddings(df_tgt=syn))
     trn_embeds = calculate_embeddings(pull_data_for_embeddings(df_tgt=trn))
     hol_embeds = calculate_embeddings(pull_data_for_embeddings(df_tgt=hol))
