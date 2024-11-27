@@ -13,15 +13,11 @@
 # limitations under the License.
 
 import logging
-from functools import partial
-from idlelib.debugger_r import wrap_info
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from docutils.nodes import description
 from pandas.core.dtypes.common import is_numeric_dtype, is_datetime64_dtype
-from rich.progress import Progress
 
 from mostlyai.qa import distances, similarity, html_report
 from mostlyai.qa.accuracy import (
@@ -49,7 +45,8 @@ from mostlyai.qa.common import (
     NXT_COLUMN,
     CTX_COLUMN_PREFIX,
     TGT_COLUMN_PREFIX,
-    REPORT_CREDITS, wrap_progress_callback,
+    REPORT_CREDITS,
+    wrap_progress_callback,
 )
 from mostlyai.qa.filesystem import Statistics, TemporaryWorkspace
 
@@ -169,6 +166,7 @@ def report(
             statistics.mark_early_exit()
             html_report.store_early_exit_report(report_path)
             update_progress(completed=100, total=100)
+            teardown_progress()
             return report_path, None
 
         # prepare datasets for accuracy

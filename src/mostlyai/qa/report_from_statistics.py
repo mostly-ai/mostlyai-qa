@@ -28,7 +28,8 @@ from mostlyai.qa.common import (
     check_min_sample_size,
     check_statistics_prerequisite,
     determine_data_size,
-    REPORT_CREDITS, wrap_progress_callback,
+    REPORT_CREDITS,
+    wrap_progress_callback,
 )
 from mostlyai.qa.filesystem import Statistics, TemporaryWorkspace
 
@@ -52,7 +53,9 @@ def report_from_statistics(
     update_progress: ProgressCallback | None = None,
 ) -> Path:
     with TemporaryWorkspace() as workspace:
-        update_progress, teardown_progress = wrap_progress_callback(update_progress, description="Creating report from statistics")
+        update_progress, teardown_progress = wrap_progress_callback(
+            update_progress, description="Creating report from statistics"
+        )
         update_progress(completed=0, total=100)
 
         # prepare report_path
@@ -73,6 +76,7 @@ def report_from_statistics(
         except PrerequisiteNotMetError:
             html_report.store_early_exit_report(report_path)
             update_progress(completed=100, total=100)
+            teardown_progress()
             return report_path
 
         meta = statistics.load_meta()
@@ -144,6 +148,7 @@ def report_from_statistics(
             corr_trn=corr_trn,
         )
         update_progress(completed=100, total=100)
+        teardown_progress()
         return report_path
 
 
