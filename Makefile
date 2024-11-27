@@ -29,7 +29,7 @@ examples: ## run all examples
 # Targets for Release Workflow/Automation
 .PHONY: release-github release-pypi bump-version update-vars-version create-branch-and-pr pull-latest-main build confirm-upload upload clean-dist delete-branch docs
 
-release-github: bump-version update-vars-version create-branch-and-pr main-tag-and-push docs
+release-github: bump-version update-vars-version commit-version create-branch-and-pr main-tag-and-push docs
 
 release-pypi: clean-dist pull-latest-main build upload
 
@@ -73,7 +73,13 @@ bump-version:
         sed -i 's/version = "$(CURRENT_VERSION)"/version = "$(NEW_VERSION)"/g' $(PYPROJECT_TOML); \
         sed -i 's/__version__ = "$(CURRENT_VERSION)"/__version__ = "$(NEW_VERSION)"/g' $(INIT_FILE); \
     fi
-	@echo "Version bumped to $(NEW_VERSION) in $(PYPROJECT_TOML) and $(INIT_FILE)."
+    $(eval VERSION := $(shell poetry version -s))
+	@echo "Now we have version $(VERSION) in $(PYPROJECT_TOML) and $(INIT_FILE)."
+
+commit-version:
+	@git add $(PYPROJECT_TOML)
+	@git add $(INIT_FILE)
+	@git commit -m "bump to: $(VERSION)"
 
 update-vars-version: ## Update the required variables after bump
 	$(eval VERSION := $(shell poetry version -s))
@@ -85,7 +91,7 @@ create-branch-and-pr: ## Create verbump_{new_ver} branch
 	@git checkout -b $(BRANCH)
 	@echo "Created branch $(BRANCH)"
 	@git push --set-upstream origin $(BRANCH)
-	@gh pr create --base main --head $(BRANCH) --title "Version Bump to $(NEW_VERSION)" --body "Automated version bump to $(NEW_VERSION)" --output pr_output.txt
+	@gh pr create --base main --head $(BRANCH) --title "Version Bump to $(VERSION)" --body "Automated version bump to $(VERSION)" --output pr_output.txt
 	echo "Pull request created for branch $(BRANCH) to main with number $$pr_number"; \
 	gh pr review --approve $$pr_number \
 	echo "Pull request #$$pr_number has been approved"; \
