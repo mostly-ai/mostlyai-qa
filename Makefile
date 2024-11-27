@@ -73,7 +73,7 @@ bump-version:
         sed -i 's/version = "$(CURRENT_VERSION)"/version = "$(NEW_VERSION)"/g' $(PYPROJECT_TOML); \
         sed -i 's/__version__ = "$(CURRENT_VERSION)"/__version__ = "$(NEW_VERSION)"/g' $(INIT_FILE); \
     fi
-    $(eval VERSION := $(shell poetry version -s))
+    @VERSION=$$(poetry version -s)
 	@echo "Now we have version $(VERSION) in $(PYPROJECT_TOML) and $(INIT_FILE)."
 
 commit-version:
@@ -151,6 +151,7 @@ pull-latest-main:
     fi
 
 build: ## build package
+	@echo "Step: building package"
 	poetry build
 	twine check --strict dist/*
 
@@ -163,10 +164,9 @@ upload: confirm-upload ## Upload to PyPI (ensure the token is present in .pypirc
 	@echo "Uploaded version $(VERSION) to PyPI"
 
 clean-dist: ## Remove "volatile" directory dist
+	@echo "Step: cleaning dist directory"
 	@rm -rf dist
 	@echo "Cleaned up dist directory"
-
-
 
 docs: ## Update docs site
 	@mkdocs gh-deploy
