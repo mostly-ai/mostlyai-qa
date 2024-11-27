@@ -46,7 +46,6 @@ from mostlyai.qa.common import (
     ProgressCallback,
     PrerequisiteNotMetError,
     check_min_sample_size,
-    add_tqdm,
     NXT_COLUMN,
     CTX_COLUMN_PREFIX,
     TGT_COLUMN_PREFIX,

@@ -26,10 +26,9 @@ from mostlyai.qa.common import (
     ProgressCallback,
     PrerequisiteNotMetError,
     check_min_sample_size,
-    add_tqdm,
     check_statistics_prerequisite,
     determine_data_size,
-    REPORT_CREDITS,
+    REPORT_CREDITS, wrap_progress_callback,
 )
 from mostlyai.qa.filesystem import Statistics, TemporaryWorkspace
 
@@ -50,11 +49,11 @@ def report_from_statistics(
     report_extra_info: str = "",
     max_sample_size_accuracy: int | None = None,
     max_sample_size_embeddings: int | None = None,
-    on_progress: ProgressCallback | None = None,
+    update_progress: ProgressCallback | None = None,
 ) -> Path:
     with TemporaryWorkspace() as workspace:
-        on_progress = add_tqdm(on_progress, description="Creating report from statistics")
-        on_progress(current=0, total=100)
+        update_progress, teardown_progress = wrap_progress_callback(update_progress, description="Creating report from statistics")
+        update_progress(completed=0, total=100)
 
         # prepare report_path
         if report_path is None:
@@ -73,7 +72,7 @@ def report_from_statistics(
             check_min_sample_size(syn_sample_size, 100, "synthetic")
         except PrerequisiteNotMetError:
             html_report.store_early_exit_report(report_path)
-            on_progress(current=100, total=100)
+            update_progress(completed=100, total=100)
             return report_path
 
         meta = statistics.load_meta()
@@ -96,7 +95,7 @@ def report_from_statistics(
             max_sample_size=max_sample_size_accuracy,
         )
         _LOG.info(f"sample synthetic data finished ({syn.shape=})")
-        on_progress(current=20, total=100)
+        update_progress(completed=20, total=100)
 
         # calculate and plot accuracy and correlations
         acc_uni, acc_biv, corr_trn = report_accuracy_and_correlations_from_statistics(
@@ -104,7 +103,7 @@ def report_from_statistics(
             statistics=statistics,
             workspace=workspace,
         )
-        on_progress(current=30, total=100)
+        update_progress(completed=30, total=100)
 
         _LOG.info("calculate embeddings for synthetic")
         syn_embeds = calculate_embeddings(
@@ -123,7 +122,7 @@ def report_from_statistics(
             workspace=workspace,
             statistics=statistics,
         )
-        on_progress(current=50, total=100)
+        update_progress(completed=50, total=100)
 
         meta |= {
             "rows_synthetic": syn.shape[0],
@@ -144,7 +143,7 @@ def report_from_statistics(
             acc_biv=acc_biv,
             corr_trn=corr_trn,
         )
-        on_progress(current=100, total=100)
+        update_progress(completed=100, total=100)
         return report_path
 
 
