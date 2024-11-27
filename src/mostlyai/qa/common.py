@@ -13,9 +13,11 @@
 # limitations under the License.
 
 import logging
-from typing import Protocol
+from functools import partial
+from typing import Protocol, Callable
 
 import pandas as pd
+from rich.progress import Progress
 from tqdm.auto import tqdm
 
 from mostlyai.qa.filesystem import Statistics
@@ -73,18 +75,25 @@ class PrerequisiteNotMetError(Exception):
 
 
 class ProgressCallback(Protocol):
-    def __call__(self, current: int, total: int) -> None: ...
+    def __call__(
+        self, total: float | None = None, completed: float | None = None, advance: float | None = None, **kwargs
+    ) -> None: ...
 
+def wrap_progress_callback(update_progress: ProgressCallback | None = None, **kwargs) -> tuple[ProgressCallback, Callable]:
+    if not update_progress:
+        rich_progress = Progress()
+        rich_progress.start()
+        task_id = rich_progress.add_task(**kwargs)
+        update_progress = partial(rich_progress.update, task_id=task_id)
+    else:
+        rich_progress = None
 
-def add_tqdm(on_progress: ProgressCallback | None = None, description: str = "Processing") -> ProgressCallback:
-    pbar = tqdm(desc=description, total=100)
+    def teardown_wrapped_progress_callback(*args, **kwargs):
+        if rich_progress:
+            rich_progress.stop()
 
-    def _on_progress(current: int, total: int):
-        if on_progress is not None:
-            on_progress(current, total)
-        pbar.update(current - pbar.n)
+    return update_progress, teardown_wrapped_progress_callback
 
-    return _on_progress
 
 
 def check_min_sample_size(size: int, min: int, type: str) -> None:

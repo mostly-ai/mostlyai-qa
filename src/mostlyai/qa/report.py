@@ -13,11 +13,15 @@
 # limitations under the License.
 
 import logging
+from functools import partial
+from idlelib.debugger_r import wrap_info
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
+from docutils.nodes import description
 from pandas.core.dtypes.common import is_numeric_dtype, is_datetime64_dtype
+from rich.progress import Progress
 
 from mostlyai.qa import distances, similarity, html_report
 from mostlyai.qa.accuracy import (
@@ -46,7 +50,7 @@ from mostlyai.qa.common import (
     NXT_COLUMN,
     CTX_COLUMN_PREFIX,
     TGT_COLUMN_PREFIX,
-    REPORT_CREDITS,
+    REPORT_CREDITS, wrap_progress_callback,
 )
 from mostlyai.qa.filesystem import Statistics, TemporaryWorkspace
 
@@ -71,7 +75,7 @@ def report(
     max_sample_size_accuracy: int | None = None,
     max_sample_size_embeddings: int | None = None,
     statistics_path: str | Path | None = None,
-    on_progress: ProgressCallback | None = None,
+    update_progress: ProgressCallback | None = None,
 ) -> tuple[Path, Metrics | None]:
     """
     Generate HTML report and metrics for comparing synthetic and original data samples.
@@ -93,7 +97,7 @@ def report(
         max_sample_size_accuracy: Max sample size for accuracy
         max_sample_size_embeddings: Max sample size for embeddings (similarity & distances)
         statistics_path: Path of where to store the statistics to be used by `report_from_statistics`
-        on_progress: A custom progress callback
+        update_progress: A custom progress callback
     Returns:
         1. Path to the HTML report
         2. Pydantic Metrics:
@@ -120,8 +124,8 @@ def report(
     """
 
     with TemporaryWorkspace() as workspace:
-        on_progress = add_tqdm(on_progress, description="Creating report")
-        on_progress(current=0, total=100)
+        update_progress, teardown_progress = wrap_progress_callback(update_progress, description="Creating report")
+        update_progress(completed=0, total=100)
 
         # ensure all columns are present and in the same order as training data
         syn_tgt_data = syn_tgt_data[trn_tgt_data.columns]
@@ -165,7 +169,7 @@ def report(
             _LOG.info(err)
             statistics.mark_early_exit()
             html_report.store_early_exit_report(report_path)
-            on_progress(current=100, total=100)
+            update_progress(completed=100, total=100)
             return report_path, None
 
         # prepare datasets for accuracy
@@ -194,7 +198,7 @@ def report(
             max_sample_size=max_sample_size_accuracy,
             setup=setup,
         )
-        on_progress(current=5, total=100)
+        update_progress(completed=5, total=100)
 
         _LOG.info("prepare training data for accuracy started")
         trn = pull_data_for_accuracy(
@@ -205,7 +209,7 @@ def report(
             max_sample_size=max_sample_size_accuracy,
             setup=setup,
         )
-        on_progress(current=10, total=100)
+        update_progress(completed=10, total=100)
 
         # coerce dtypes to match the original training data dtypes
         for col in trn:
@@ -222,7 +226,7 @@ def report(
             statistics=statistics,
             workspace=workspace,
         )
-        on_progress(current=20, total=100)
+        update_progress(completed=20, total=100)
 
         # ensure that embeddings are all equal size for a fair 3-way comparison
         max_sample_size_embeddings = min(
@@ -245,7 +249,7 @@ def report(
             embeds = []
             for i, bucket in enumerate(buckets, 1):
                 embeds += [calculate_embeddings(bucket.tolist())]
-                on_progress(current=start + i, total=100)
+                update_progress(completed=start + i, total=100)
             embeds = np.concatenate(embeds, axis=0)
             _LOG.info(f"calculated embeddings {embeds.shape}")
             return embeds
@@ -256,7 +260,7 @@ def report(
             hol_embeds = _calc_pull_embeds(df_tgt=hol_tgt_data, df_ctx=hol_ctx_data, start=60, stop=80)
         else:
             hol_embeds = None
-        on_progress(current=80, total=100)
+        update_progress(completed=80, total=100)
 
         _LOG.info("report similarity")
         sim_cosine_trn_hol, sim_cosine_trn_syn, sim_auc_trn_hol, sim_auc_trn_syn = report_similarity(
@@ -266,7 +270,7 @@ def report(
             workspace=workspace,
             statistics=statistics,
         )
-        on_progress(current=90, total=100)
+        update_progress(completed=90, total=100)
 
         _LOG.info("report distances")
         dcr_trn, dcr_hol = report_distances(
@@ -275,7 +279,7 @@ def report(
             hol_embeds=hol_embeds,
             workspace=workspace,
         )
-        on_progress(current=99, total=100)
+        update_progress(completed=99, total=100)
 
         metrics = calculate_metrics(
             acc_uni=acc_uni,
@@ -312,7 +316,8 @@ def report(
             acc_biv=acc_biv,
             corr_trn=corr_trn,
         )
-        on_progress(current=100, total=100)
+        update_progress(completed=100, total=100)
+        teardown_progress()
         return report_path, metrics
 
 
