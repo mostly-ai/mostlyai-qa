@@ -23,6 +23,7 @@ joblib = ">=1.2.0"
 Jinja2 = ">=3.1.2"
 scikit-learn = ">=1.4.0"
 sentence-transformers = ">=3.1.0"
+rich = "^13.9.4"
 
 [tool.poetry.group.dev.dependencies]
 ruff = "0.7.0"
