@@ -90,11 +90,11 @@ def wrap_progress_callback(
     else:
         rich_progress = None
 
-    def teardown_wrapped_progress_callback():
+    def teardown_progress():
         if rich_progress:
             rich_progress.stop()
 
-    return update_progress, teardown_wrapped_progress_callback
+    return update_progress, teardown_progress
 
 
 def check_min_sample_size(size: int, min: int, type: str) -> None:
