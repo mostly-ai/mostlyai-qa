@@ -18,7 +18,6 @@ from typing import Protocol, Callable
 
 import pandas as pd
 from rich.progress import Progress
-from tqdm.auto import tqdm
 
 from mostlyai.qa.filesystem import Statistics
 
@@ -79,7 +78,10 @@ class ProgressCallback(Protocol):
         self, total: float | None = None, completed: float | None = None, advance: float | None = None, **kwargs
     ) -> None: ...
 
-def wrap_progress_callback(update_progress: ProgressCallback | None = None, **kwargs) -> tuple[ProgressCallback, Callable]:
+
+def wrap_progress_callback(
+    update_progress: ProgressCallback | None = None, **kwargs
+) -> tuple[ProgressCallback, Callable]:
     if not update_progress:
         rich_progress = Progress()
         rich_progress.start()
@@ -88,12 +90,11 @@ def wrap_progress_callback(update_progress: ProgressCallback | None = None, **kw
     else:
         rich_progress = None
 
-    def teardown_wrapped_progress_callback(*args, **kwargs):
+    def teardown_wrapped_progress_callback():
         if rich_progress:
             rich_progress.stop()
 
     return update_progress, teardown_wrapped_progress_callback
-
 
 
 def check_min_sample_size(size: int, min: int, type: str) -> None:
