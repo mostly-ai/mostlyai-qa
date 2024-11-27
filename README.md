@@ -41,7 +41,7 @@ report_path, metrics = qa.report(
 )
 
 # pretty print metrics
-print(json.dumps(metrics.model_dump(), indent=4))
+print(metrics.model_dump_json(indent=4))
 
 # open up HTML report in new browser window
 webbrowser.open(f"file://{report_path.absolute()}")
