@@ -74,9 +74,7 @@ class PrerequisiteNotMetError(Exception):
 
 
 class ProgressCallback(Protocol):
-    def __call__(
-        self, total: float | None = None, completed: float | None = None, advance: float | None = None, **kwargs
-    ) -> None: ...
+    def __call__(self, total: float | None = None, completed: float | None = None, **kwargs) -> None: ...
 
 
 class ProgressCallbackWrapper:
@@ -99,10 +97,8 @@ class ProgressCallbackWrapper:
 
         return update_progress, teardown_progress
 
-    def update(
-        self, total: float | None = None, completed: float | None = None, advance: float | None = None, **kwargs
-    ) -> None:
-        self.update_progress(total=total, completed=completed, advance=advance, **kwargs)
+    def update(self, total: float | None = None, completed: float | None = None, **kwargs) -> None:
+        self.update_progress(total=total, completed=completed, **kwargs)
 
     def __init__(self, update_progress: ProgressCallback | None = None, **kwargs):
         self.update_progress, self.teardown_progress = self._wrap_progress_callback(update_progress, **kwargs)
