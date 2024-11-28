@@ -97,10 +97,3 @@ clean-dist: ## Remove "volatile" directory dist
 	@echo "Step: cleaning dist directory"
 	@rm -rf dist
 	@echo "Cleaned up dist directory"
-
-docs: ## Update docs site
-	@mkdocs gh-deploy
-	@echo "Deployed docs"
-
-
-
