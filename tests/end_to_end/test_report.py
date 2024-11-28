@@ -211,11 +211,10 @@ def test_report_sequential_early_exit(tmp_path):
 
 def test_report_few_holdout_records(tmp_path):
     tgt = pd.DataFrame({"id": list(range(100)), "col": ["a"] * 100})
-    hol_tgt = pd.DataFrame({"id": list(range(10)), "col": ["a"] * 10})
     _, metrics = report(
         syn_tgt_data=tgt,
         trn_tgt_data=tgt,
-        hol_tgt_data=hol_tgt,
+        hol_tgt_data=tgt[:10],
     )
     assert metrics is not None
 
