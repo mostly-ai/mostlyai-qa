@@ -193,20 +193,30 @@ def test_report_sequential_early_exit(tmp_path):
 
     for test_idx, df_dict in enumerate(test_dfs):
         ctx_df, tgt_df = df_dict.pop("dfs")
-        syn_ctx_data = trn_ctx_data = val_ctx_data = ctx_df
-        syn_tgt_data = trn_tgt_data = val_tgt_data = tgt_df
+        syn_ctx_data = trn_ctx_data = hol_ctx_data = ctx_df
+        syn_tgt_data = trn_tgt_data = hol_tgt_data = tgt_df
         early_term = df_dict.pop("early_term")
         _, metrics = report(
             syn_tgt_data=syn_tgt_data,
             trn_tgt_data=trn_tgt_data,
-            hol_tgt_data=val_tgt_data,
+            hol_tgt_data=hol_tgt_data,
             syn_ctx_data=syn_ctx_data,
             trn_ctx_data=trn_ctx_data,
-            hol_ctx_data=val_ctx_data,
+            hol_ctx_data=hol_ctx_data,
             tgt_context_key="ck",
             ctx_primary_key="pk",
         )
         assert metrics is None if early_term else metrics is not None, f"Test {test_idx} failed"
+
+
+def test_report_few_holdout_records(tmp_path):
+    tgt = pd.DataFrame({"id": list(range(100)), "col": ["a"] * 100})
+    _, metrics = report(
+        syn_tgt_data=tgt,
+        trn_tgt_data=tgt,
+        hol_tgt_data=tgt[:10],
+    )
+    assert metrics is not None
 
 
 def test_report_sequential_few_records(tmp_path):

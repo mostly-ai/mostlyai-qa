@@ -73,7 +73,7 @@ class Accuracy(CustomBaseModel):
         le=1.0,
     )
 
-    @field_validator("*", mode="before")
+    @field_validator("*", mode="after")
     def trim_metric_precision(cls, value):
         precision = 3
         return round(value, precision) if value is not None else None
@@ -112,7 +112,7 @@ class Similarity(CustomBaseModel):
         le=1.0,
     )
 
-    @field_validator("*", mode="before")
+    @field_validator("*", mode="after")
     def trim_metric_precision(cls, value, info):
         precision = 7 if "cosine" in info.field_name else 3
         return round(value, precision) if value is not None else None
@@ -154,7 +154,7 @@ class Distances(CustomBaseModel):
         le=1.0,
     )
 
-    @field_validator("*", mode="before")
+    @field_validator("*", mode="after")
     def trim_metric_precision(cls, value):
         precision = 3
         return round(value, precision) if value is not None else None

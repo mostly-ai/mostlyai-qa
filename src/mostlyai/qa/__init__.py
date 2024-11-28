@@ -20,7 +20,7 @@ from mostlyai.qa.report import report
 from mostlyai.qa.report_from_statistics import report_from_statistics
 
 __all__ = ["report", "report_from_statistics"]
-__version__ = "1.2.0"
+__version__ = "1.2.1"
 
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 pd.set_option("future.no_silent_downcasting", True)
