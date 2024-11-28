@@ -112,7 +112,7 @@ class ProgressCallbackWrapper:
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
-        if exc_type is not None:
+        if exc_type is None:
             self.update_progress(completed=1, total=1)
         self.teardown_progress()
 
