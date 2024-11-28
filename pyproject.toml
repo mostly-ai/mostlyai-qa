@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "mostlyai-qa"
-version = "1.2.0"
+version = "1.2.1"
 description = "Quality assurance for synthetic data"
 readme = "README.md"
 license = "Apache License v2"
