@@ -29,7 +29,7 @@ examples: ## run all examples
 # Targets for Release Workflow/Automation
 .PHONY: release-pypi bump-version update-vars-version build confirm-upload upload clean-dist docs
 
-release-pypi: clean-dist build upload
+release-pypi: clean-dist build upload ## release pypi: build, check and upload to pypi
 
 # Default files to update
 PYPROJECT_TOML = pyproject.toml
@@ -85,7 +85,7 @@ build: ## build package
 	poetry build
 	twine check --strict dist/*
 
-confirm-upload: ## Confirm before the irreversible zone
+confirm-upload: ## confirm before the irreversible zone
 	@echo "Are you sure you want to upload to PyPI? (yes/no)"
 	@read ans && [ $${ans:-no} = yes ]
 
