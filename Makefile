@@ -71,10 +71,10 @@ bump-version:
         sed -i 's/version = "$(CURRENT_VERSION)"/version = "$(NEW_VERSION)"/g' $(PYPROJECT_TOML); \
         sed -i 's/__version__ = "$(CURRENT_VERSION)"/__version__ = "$(NEW_VERSION)"/g' $(INIT_FILE); \
     fi
-    @VERSION=$$(poetry version -s)
+	@VERSION=$$(poetry version -s)
 	@echo "Now we have version $(VERSION) in $(PYPROJECT_TOML) and $(INIT_FILE)."
 
-update-vars-version: ## Update the required variables after bump
+update-vars-version: ## update the required variables after bump
 	$(eval VERSION := $(shell poetry version -s))
 	$(eval BRANCH := verbump_$(shell echo $(VERSION) | tr '.' '_'))
 	$(eval TAG := $(VERSION))
@@ -89,11 +89,11 @@ confirm-upload: ## Confirm before the irreversible zone
 	@echo "Are you sure you want to upload to PyPI? (yes/no)"
 	@read ans && [ $${ans:-no} = yes ]
 
-upload: confirm-upload ## Upload to PyPI (ensure the token is present in .pypirc file before running upload)
+upload: confirm-upload ## upload to PyPI (ensure the token is present in .pypirc file before running upload)
 	@twine upload dist/*$(VERSION)* --verbose
 	@echo "Uploaded version $(VERSION) to PyPI"
 
-clean-dist: ## Remove "volatile" directory dist
+clean-dist: ## remove "volatile" directory dist
 	@echo "Step: cleaning dist directory"
 	@rm -rf dist
 	@echo "Cleaned up dist directory"
