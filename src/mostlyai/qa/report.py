@@ -160,7 +160,7 @@ def report(
             check_min_sample_size(syn_sample_size, 100, "synthetic")
             check_min_sample_size(trn_sample_size, 90, "training")
             if hol_tgt_data is not None:
-                check_min_sample_size(trn_sample_size, 10, "holdout")
+                check_min_sample_size(hol_sample_size, 10, "holdout")
         except PrerequisiteNotMetError as err:
             _LOG.info(err)
             statistics.mark_early_exit()
@@ -242,10 +242,12 @@ def report(
             )
             # split into buckets for calculating embeddings to avoid memory issues and report continuous progress
             buckets = np.array_split(strings, stop - start)
+            buckets = [b for b in buckets if len(b) > 0]
             embeds = []
             for i, bucket in enumerate(buckets, 1):
                 embeds += [calculate_embeddings(bucket.tolist())]
                 on_progress(current=start + i, total=100)
+            on_progress(current=stop, total=100)
             embeds = np.concatenate(embeds, axis=0)
             _LOG.info(f"calculated embeddings {embeds.shape}")
             return embeds
