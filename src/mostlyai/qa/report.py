@@ -46,7 +46,7 @@ from mostlyai.qa.common import (
     CTX_COLUMN_PREFIX,
     TGT_COLUMN_PREFIX,
     REPORT_CREDITS,
-    wrap_progress_callback,
+    ProgressCallbackWrapper,
 )
 from mostlyai.qa.filesystem import Statistics, TemporaryWorkspace
 
@@ -119,10 +119,10 @@ def report(
             - `dcr_share`: Share of synthetic samples that are closer to a training sample than to a holdout sample. This shall not be significantly larger than 50\%.
     """
 
-    with TemporaryWorkspace() as workspace:
-        update_progress, teardown_progress = wrap_progress_callback(update_progress, description="Creating report")
-        update_progress(completed=0, total=100)
-
+    with (
+        TemporaryWorkspace() as workspace,
+        ProgressCallbackWrapper(update_progress, description="Creating report") as progress,
+    ):
         # ensure all columns are present and in the same order as training data
         syn_tgt_data = syn_tgt_data[trn_tgt_data.columns]
         if hol_tgt_data is not None:
@@ -165,8 +165,6 @@ def report(
             _LOG.info(err)
             statistics.mark_early_exit()
             html_report.store_early_exit_report(report_path)
-            update_progress(completed=100, total=100)
-            teardown_progress()
             return report_path, None
 
         # prepare datasets for accuracy
@@ -195,7 +193,7 @@ def report(
             max_sample_size=max_sample_size_accuracy,
             setup=setup,
         )
-        update_progress(completed=5, total=100)
+        progress.update(completed=5, total=100)
 
         _LOG.info("prepare training data for accuracy started")
         trn = pull_data_for_accuracy(
@@ -206,7 +204,7 @@ def report(
             max_sample_size=max_sample_size_accuracy,
             setup=setup,
         )
-        update_progress(completed=10, total=100)
+        progress.update(completed=10, total=100)
 
         # coerce dtypes to match the original training data dtypes
         for col in trn:
@@ -223,7 +221,7 @@ def report(
             statistics=statistics,
             workspace=workspace,
         )
-        update_progress(completed=20, total=100)
+        progress.update(completed=20, total=100)
 
         # ensure that embeddings are all equal size for a fair 3-way comparison
         max_sample_size_embeddings = min(
@@ -247,8 +245,8 @@ def report(
             embeds = []
             for i, bucket in enumerate(buckets, 1):
                 embeds += [calculate_embeddings(bucket.tolist())]
-                update_progress(completed=start + i, total=100)
-            update_progress(completed=stop, total=100)
+                progress.update(completed=start + i, total=100)
+            progress.update(completed=stop, total=100)
             embeds = np.concatenate(embeds, axis=0)
             _LOG.info(f"calculated embeddings {embeds.shape}")
             return embeds
@@ -259,7 +257,7 @@ def report(
             hol_embeds = _calc_pull_embeds(df_tgt=hol_tgt_data, df_ctx=hol_ctx_data, start=60, stop=80)
         else:
             hol_embeds = None
-        update_progress(completed=80, total=100)
+        progress.update(completed=80, total=100)
 
         _LOG.info("report similarity")
         sim_cosine_trn_hol, sim_cosine_trn_syn, sim_auc_trn_hol, sim_auc_trn_syn = report_similarity(
@@ -269,7 +267,7 @@ def report(
             workspace=workspace,
             statistics=statistics,
         )
-        update_progress(completed=90, total=100)
+        progress.update(completed=90, total=100)
 
         _LOG.info("report distances")
         dcr_trn, dcr_hol = report_distances(
@@ -278,7 +276,7 @@ def report(
             hol_embeds=hol_embeds,
             workspace=workspace,
         )
-        update_progress(completed=99, total=100)
+        progress.update(completed=99, total=100)
 
         metrics = calculate_metrics(
             acc_uni=acc_uni,
@@ -315,8 +313,6 @@ def report(
             acc_biv=acc_biv,
             corr_trn=corr_trn,
         )
-        update_progress(completed=100, total=100)
-        teardown_progress()
         return report_path, metrics
 
 

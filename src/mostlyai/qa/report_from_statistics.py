@@ -29,7 +29,7 @@ from mostlyai.qa.common import (
     check_statistics_prerequisite,
     determine_data_size,
     REPORT_CREDITS,
-    wrap_progress_callback,
+    ProgressCallbackWrapper,
 )
 from mostlyai.qa.filesystem import Statistics, TemporaryWorkspace
 
@@ -52,12 +52,10 @@ def report_from_statistics(
     max_sample_size_embeddings: int | None = None,
     update_progress: ProgressCallback | None = None,
 ) -> Path:
-    with TemporaryWorkspace() as workspace:
-        update_progress, teardown_progress = wrap_progress_callback(
-            update_progress, description="Creating report from statistics"
-        )
-        update_progress(completed=0, total=100)
-
+    with (
+        TemporaryWorkspace() as workspace,
+        ProgressCallbackWrapper(update_progress, description="Creating report from statistics") as progress,
+    ):
         # prepare report_path
         if report_path is None:
             report_path = Path.cwd() / "data-report.html"
@@ -75,8 +73,6 @@ def report_from_statistics(
             check_min_sample_size(syn_sample_size, 100, "synthetic")
         except PrerequisiteNotMetError:
             html_report.store_early_exit_report(report_path)
-            update_progress(completed=100, total=100)
-            teardown_progress()
             return report_path
 
         meta = statistics.load_meta()
@@ -99,7 +95,7 @@ def report_from_statistics(
             max_sample_size=max_sample_size_accuracy,
         )
         _LOG.info(f"sample synthetic data finished ({syn.shape=})")
-        update_progress(completed=20, total=100)
+        progress.update(completed=20, total=100)
 
         # calculate and plot accuracy and correlations
         acc_uni, acc_biv, corr_trn = report_accuracy_and_correlations_from_statistics(
@@ -107,7 +103,7 @@ def report_from_statistics(
             statistics=statistics,
             workspace=workspace,
         )
-        update_progress(completed=30, total=100)
+        progress.update(completed=30, total=100)
 
         _LOG.info("calculate embeddings for synthetic")
         syn_embeds = calculate_embeddings(
@@ -126,7 +122,7 @@ def report_from_statistics(
             workspace=workspace,
             statistics=statistics,
         )
-        update_progress(completed=50, total=100)
+        progress.update(completed=50, total=100)
 
         meta |= {
             "rows_synthetic": syn.shape[0],
@@ -147,8 +143,6 @@ def report_from_statistics(
             acc_biv=acc_biv,
             corr_trn=corr_trn,
         )
-        update_progress(completed=100, total=100)
-        teardown_progress()
         return report_path
 
 

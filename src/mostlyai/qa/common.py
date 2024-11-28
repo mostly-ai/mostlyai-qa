@@ -79,22 +79,41 @@ class ProgressCallback(Protocol):
     ) -> None: ...
 
 
-def wrap_progress_callback(
-    update_progress: ProgressCallback | None = None, **kwargs
-) -> tuple[ProgressCallback, Callable]:
-    if not update_progress:
-        rich_progress = Progress()
-        rich_progress.start()
-        task_id = rich_progress.add_task(**kwargs)
-        update_progress = partial(rich_progress.update, task_id=task_id)
-    else:
-        rich_progress = None
+class ProgressCallbackWrapper:
+    @staticmethod
+    def _wrap_progress_callback(
+        update_progress: ProgressCallback | None = None, **kwargs
+    ) -> tuple[ProgressCallback, Callable]:
+        if not update_progress:
+            rich_progress = Progress()
+            rich_progress.start()
+            task_id = rich_progress.add_task(**kwargs)
+            update_progress = partial(rich_progress.update, task_id=task_id)
+        else:
+            rich_progress = None
 
-    def teardown_progress():
-        if rich_progress:
-            rich_progress.stop()
+        def teardown_progress():
+            if rich_progress:
+                rich_progress.stop()
 
-    return update_progress, teardown_progress
+        return update_progress, teardown_progress
+
+    def update(
+        self, total: float | None = None, completed: float | None = None, advance: float | None = None, **kwargs
+    ) -> None:
+        self.update_progress(total=total, completed=completed, advance=advance, **kwargs)
+
+    def __init__(self, update_progress: ProgressCallback | None = None, **kwargs):
+        self.update_progress, self.teardown_progress = self._wrap_progress_callback(update_progress, **kwargs)
+
+    def __enter__(self):
+        self.update_progress(completed=0, total=1)
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        if exc_type is not None:
+            self.update_progress(completed=1, total=1)
+        self.teardown_progress()
 
 
 def check_min_sample_size(size: int, min: int, type: str) -> None:
