@@ -98,19 +98,19 @@ class ProgressCallbackWrapper:
         return update_progress, teardown_progress
 
     def update(self, total: float | None = None, completed: float | None = None, **kwargs) -> None:
-        self.update_progress(total=total, completed=completed, **kwargs)
+        self._update_progress(total=total, completed=completed, **kwargs)
 
     def __init__(self, update_progress: ProgressCallback | None = None, **kwargs):
-        self.update_progress, self.teardown_progress = self._wrap_progress_callback(update_progress, **kwargs)
+        self._update_progress, self._teardown_progress = self._wrap_progress_callback(update_progress, **kwargs)
 
     def __enter__(self):
-        self.update_progress(completed=0, total=1)
+        self._update_progress(completed=0, total=1)
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
         if exc_type is None:
-            self.update_progress(completed=1, total=1)
-        self.teardown_progress()
+            self._update_progress(completed=1, total=1)
+        self._teardown_progress()
 
 
 def check_min_sample_size(size: int, min: int, type: str) -> None:
