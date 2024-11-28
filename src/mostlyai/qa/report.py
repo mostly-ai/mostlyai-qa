@@ -121,7 +121,7 @@ def report(
 
     with (
         TemporaryWorkspace() as workspace,
-        ProgressCallbackWrapper(update_progress, description="Create report") as progress,
+        ProgressCallbackWrapper(update_progress, description="Create report 🚀") as progress,
     ):
         # ensure all columns are present and in the same order as training data
         syn_tgt_data = syn_tgt_data[trn_tgt_data.columns]

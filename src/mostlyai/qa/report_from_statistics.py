@@ -54,7 +54,7 @@ def report_from_statistics(
 ) -> Path:
     with (
         TemporaryWorkspace() as workspace,
-        ProgressCallbackWrapper(update_progress, description="Create report") as progress,
+        ProgressCallbackWrapper(update_progress, description="Create report 🚀") as progress,
     ):
         # prepare report_path
         if report_path is None:
