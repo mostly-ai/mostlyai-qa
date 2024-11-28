@@ -21,11 +21,6 @@ test: ## run tests
 .PHONY: all
 all: clean install lint test ## run all commands
 
-.PHONY: build
-build: ## build package
-	poetry build
-	twine check --strict dist/*
-
 .PHONY: examples
 examples: ## run all examples
 	find ./examples -maxdepth 1 -type f -name "*.ipynb" -print -execdir jupyter nbconvert --to script {} \;
