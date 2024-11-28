@@ -94,6 +94,7 @@ class ProgressCallbackWrapper:
 
         def teardown_progress():
             if rich_progress:
+                rich_progress.refresh()
                 rich_progress.stop()
 
         return update_progress, teardown_progress

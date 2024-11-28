@@ -54,7 +54,7 @@ def report_from_statistics(
 ) -> Path:
     with (
         TemporaryWorkspace() as workspace,
-        ProgressCallbackWrapper(update_progress, description="Creating report from statistics") as progress,
+        ProgressCallbackWrapper(update_progress, description="Create report") as progress,
     ):
         # prepare report_path
         if report_path is None:
@@ -143,6 +143,7 @@ def report_from_statistics(
             acc_biv=acc_biv,
             corr_trn=corr_trn,
         )
+        progress.update(completed=100, total=100)
         return report_path
 
 

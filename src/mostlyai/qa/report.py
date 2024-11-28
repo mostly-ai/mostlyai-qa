@@ -121,7 +121,7 @@ def report(
 
     with (
         TemporaryWorkspace() as workspace,
-        ProgressCallbackWrapper(update_progress, description="Creating report") as progress,
+        ProgressCallbackWrapper(update_progress, description="Create report") as progress,
     ):
         # ensure all columns are present and in the same order as training data
         syn_tgt_data = syn_tgt_data[trn_tgt_data.columns]
@@ -231,7 +231,9 @@ def report(
             hol_sample_size or float("inf"),
         )
 
-        def _calc_pull_embeds(df_tgt: pd.DataFrame, df_ctx: pd.DataFrame, start: int, stop: int) -> np.ndarray:
+        def _calc_pull_embeds(
+            df_tgt: pd.DataFrame, df_ctx: pd.DataFrame, progress_from: int, progress_to: int
+        ) -> np.ndarray:
             strings = pull_data_for_embeddings(
                 df_tgt=df_tgt,
                 df_ctx=df_ctx,
@@ -240,21 +242,21 @@ def report(
                 max_sample_size=max_sample_size_embeddings,
             )
             # split into buckets for calculating embeddings to avoid memory issues and report continuous progress
-            buckets = np.array_split(strings, stop - start)
+            buckets = np.array_split(strings, progress_to - progress_from)
             buckets = [b for b in buckets if len(b) > 0]
             embeds = []
             for i, bucket in enumerate(buckets, 1):
                 embeds += [calculate_embeddings(bucket.tolist())]
-                progress.update(completed=start + i, total=100)
-            progress.update(completed=stop, total=100)
+                progress.update(completed=progress_from + i, total=100)
+            progress.update(completed=progress_to, total=100)
             embeds = np.concatenate(embeds, axis=0)
             _LOG.info(f"calculated embeddings {embeds.shape}")
             return embeds
 
-        syn_embeds = _calc_pull_embeds(df_tgt=syn_tgt_data, df_ctx=syn_ctx_data, start=20, stop=40)
-        trn_embeds = _calc_pull_embeds(df_tgt=trn_tgt_data, df_ctx=trn_ctx_data, start=40, stop=60)
+        syn_embeds = _calc_pull_embeds(df_tgt=syn_tgt_data, df_ctx=syn_ctx_data, progress_from=20, progress_to=40)
+        trn_embeds = _calc_pull_embeds(df_tgt=trn_tgt_data, df_ctx=trn_ctx_data, progress_from=40, progress_to=60)
         if hol_tgt_data is not None:
-            hol_embeds = _calc_pull_embeds(df_tgt=hol_tgt_data, df_ctx=hol_ctx_data, start=60, stop=80)
+            hol_embeds = _calc_pull_embeds(df_tgt=hol_tgt_data, df_ctx=hol_ctx_data, progress_from=60, progress_to=80)
         else:
             hol_embeds = None
         progress.update(completed=80, total=100)
@@ -313,6 +315,7 @@ def report(
             acc_biv=acc_biv,
             corr_trn=corr_trn,
         )
+        progress.update(completed=100, total=100)
         return report_path, metrics
 
 
