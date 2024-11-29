@@ -83,8 +83,8 @@ report_path, metrics = qa.report(
 
 ## Sample Reports
 
-* **[Baseball Players](https://html-preview.github.io/?url=https://github.com/mostly-ai/mostlyai-qa/blob/main/examples/baseball-players.html)** (Flat Data)
-* **[Baseball Seasons](https://html-preview.github.io/?url=https://github.com/mostly-ai/mostlyai-qa/blob/main/examples/baseball-seasons-with-context.html)** (Sequential Data)
+* [Baseball Players](https://html-preview.github.io/?url=https://github.com/mostly-ai/mostlyai-qa/blob/main/examples/baseball-players.html) (Flat Data)
+* [Baseball Seasons](https://html-preview.github.io/?url=https://github.com/mostly-ai/mostlyai-qa/blob/main/examples/baseball-seasons-with-context.html) (Sequential Data)
 
 ## Citation
 
