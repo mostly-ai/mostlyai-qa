@@ -52,13 +52,8 @@ nav:
   - API Reference: api.md
   - Examples: examples.md
 
-extra:
-  version:
-    provider: mike
-
 plugins:
   - search
-  - mike
   - mkdocstrings:
       handlers:
         python:
