@@ -4,6 +4,7 @@ repo_name: "mostly-ai/mostly-python"
 theme:
   name: material
   logo: logo.png
+  favicon: favicon.png
 
   palette:
   - media: "(prefers-color-scheme)"
@@ -31,8 +32,8 @@ theme:
   features:
     - navigation.instant
     - navigation.instant.prefetch
-    - navigation.tabs
-    - navigation.tabs.sticky
+#    - navigation.tabs
+#    - navigation.tabs.sticky
     - search.suggest
     - search.highlight
     - search.share

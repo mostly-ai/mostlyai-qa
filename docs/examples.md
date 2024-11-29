@@ -71,6 +71,7 @@ report_path, metrics = report(
     syn_tgt_data=pd.read_parquet(f"{repo}/{path}/synthetic-target.pqt"),
     trn_tgt_data=pd.read_parquet(f"{repo}/{path}/training-target.pqt"),
     hol_tgt_data=pd.read_parquet(f"{repo}/{path}/holdout-target.pqt"),
+    tgt_context_key="players_id",
     report_subtitle=" for Baseball Seasons",
     report_path="baseball-seasons.html",
 )
@@ -98,7 +99,7 @@ report_path, metrics = report(
     trn_ctx_data=pd.read_parquet(f"{repo}/{path}/training-context.pqt"),
     hol_tgt_data=pd.read_parquet(f"{repo}/{path}/holdout-target.pqt"),
     hol_ctx_data=pd.read_parquet(f"{repo}/{path}/holdout-context.pqt"),
-    tgt_context_key="id",
+    tgt_context_key="players_id",
     ctx_primary_key="id",
     report_subtitle=" for Baseball Seasons",
     report_path="baseball-seasons-with-context.html",
