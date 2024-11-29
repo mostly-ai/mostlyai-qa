@@ -1,6 +1,6 @@
 site_name: mostlyai-qa
-repo_url: "https://github.com/mostly-ai/mostly-python"
-repo_name: "mostly-ai/mostly-python"
+repo_url: "https://github.com/mostly-ai/mostlyai-qa"
+repo_name: "mostly-ai/mostlyai-qa"
 theme:
   name: material
   logo: logo.png
