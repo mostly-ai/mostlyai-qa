@@ -1,5 +1,5 @@
 ---
-exclude: '^(src/mostlyai/qa/assets)/'
+exclude: '^(src/mostlyai/qa/assets|examples)/'
 repos:
 - repo: local
   hooks:
