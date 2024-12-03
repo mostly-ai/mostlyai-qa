@@ -33,7 +33,7 @@ release-pypi: clean-dist build upload docs ## release pypi: build, check and upl
 
 # Default files to update
 PYPROJECT_TOML = pyproject.toml
-INIT_FILE = src/mostlyai/qa/__init__.py
+INIT_FILE = mostlyai/qa/__init__.py
 
 # Default bump type
 BUMP_TYPE ?= PATCH
