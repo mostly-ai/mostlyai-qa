@@ -34,7 +34,7 @@ from mostlyai.qa.common import (
     MIN_RARE_CAT_PROTECTION,
     OTHER_BIN,
     RARE_BIN,
-    MAX_UNIVARIATE_PLOTS,
+    MAX_UNIVARIATE_TGT_PLOTS,
     MAX_BIVARIATE_TGT_PLOTS,
     MAX_BIVARIATE_CTX_PLOTS,
     MAX_BIVARIATE_NXT_PLOTS,
@@ -43,6 +43,8 @@ from mostlyai.qa.common import (
     NXT_COLUMN_PREFIX,
     MAX_ENGINE_RARE_CATEGORY_THRESHOLD,
     TGT_COLUMN,
+    CTX_COLUMN,
+    NXT_COLUMN,
 )
 from plotly import graph_objs as go
 
@@ -56,10 +58,14 @@ def calculate_univariates(
     syn_bin: pd.DataFrame,
 ) -> pd.DataFrame:
     """
-    Calculates univariate accuracies for all target columns.
+    Calculates univariate accuracies.
+    - once for all target columns
+    - once for sequences per category (if sequential)
+    - once for categories per sequences (if sequential)
     """
 
-    tgt_cols = [c for c in trn_bin.columns if c.startswith(TGT_COLUMN)]
+    # calculate univariate accuracies for target
+    tgt_cols = [c for c in trn_bin.columns if c.startswith(TGT_COLUMN_PREFIX)]
     accuracies = pd.DataFrame({"column": tgt_cols})
     with parallel_config("loky", n_jobs=min(cpu_count() - 1, 16)):
         results = Parallel()(
@@ -70,6 +76,7 @@ def calculate_univariates(
             for _, row in accuracies.iterrows()
         )
         accuracies["accuracy"], accuracies["accuracy_max"] = zip(*results)
+    accuracies["type"] = TGT_COLUMN
     return accuracies
 
 
@@ -105,8 +112,8 @@ def calculate_bivariates(
     else:
         # enforce consistent columns
         accuracies[["accuracy", "accuracy_max"]] = None
-        # ensure required number of progress messages are sent
 
+    # append symmetric pairs
     accuracies = pd.concat(
         [
             accuracies,
@@ -127,35 +134,35 @@ def calculate_bivariate_columns(trn_bin: pd.DataFrame, append_symetric: bool = T
     ctx_cols = [c for c in trn_bin.columns if c.startswith(CTX_COLUMN_PREFIX)]
     nxt_cols = [c for c in trn_bin.columns if c.startswith(NXT_COLUMN_PREFIX)]
 
-    # create cross-combinations between all `tgt` columns
+    # create cross-combinations between all `tgt` columns for bivariates within target columns
     columns_df = pd.merge(
         pd.DataFrame({"col1": tgt_cols}),
         pd.DataFrame({"col2": tgt_cols}),
         how="cross",
-    ).assign(type="tgt")
+    ).assign(type=TGT_COLUMN)
     columns_df = columns_df.loc[columns_df.col1 < columns_df.col2]
 
-    # create combinations between all `tgt` and all `ctx` columns
+    # create combinations between all `tgt` and all `ctx` columns for bivariates between target and context columns
     if len(ctx_cols) > 0:
         ctx_accuracies = pd.merge(
             pd.DataFrame({"col1": tgt_cols}),
             pd.DataFrame({"col2": ctx_cols}),
             how="cross",
-        ).assign(type="ctx")
+        ).assign(type=CTX_COLUMN)
         columns_df = pd.concat([columns_df, ctx_accuracies], axis=0).reset_index(drop=True)
 
-    # create combinations between all `tgt` and their corresponding `ntx` column
+    # create combinations between all `tgt` and their corresponding `nxt` column for coherence:auto-correlation
     if len(nxt_cols) > 0:
         nxt_accuracies = pd.merge(
             pd.DataFrame({"col1": tgt_cols}),
             pd.DataFrame({"col2": nxt_cols}),
             how="cross",
-        ).assign(type="nxt")
+        ).assign(type=NXT_COLUMN)
         nxt_accuracies = nxt_accuracies.loc[nxt_accuracies.col1.str[4:] == nxt_accuracies.col2.str[4:]]
         columns_df = pd.concat([columns_df, nxt_accuracies], axis=0).reset_index(drop=True)
 
+    # append symmetric pairs
     if append_symetric:
-        # calculate symmetric combinations
         columns_df = pd.concat(
             [
                 columns_df,
@@ -821,11 +828,9 @@ def plot_store_accuracy_matrix(
 
 def plot_accuracy_matrix(acc_uni: pd.DataFrame, acc_biv: pd.DataFrame) -> go.Figure:
     # prepare data
-    acc_df = pd.concat(
-        ([acc_biv[acc_biv.type == "tgt"]] if not acc_biv.empty else [])
-        + [acc_uni.assign(col1=acc_uni.column).assign(col2=acc_uni.column)],
-        axis=0,
-    ).reset_index(drop=True)
+    acc_uni = [acc_uni.assign(col1=acc_uni.column).assign(col2=acc_uni.column)]
+    acc_biv = [acc_biv[acc_biv.type == TGT_COLUMN]] if not acc_biv.empty else []
+    acc_df = pd.concat(acc_uni + acc_biv, axis=0).reset_index(drop=True)
     acc_mat = acc_df.pivot(index="col1", columns="col2", values="accuracy")
     # plot layout
     layout = go.Layout(
@@ -945,46 +950,48 @@ def binning_data(
 def bin_data(df: pd.DataFrame, bins: int | dict[str, list]) -> tuple[pd.DataFrame, dict[str, list]]:
     """
     Splits data into bins.
+
     Binning algorithm depends on column type. Categorical binning creates 'n' bins corresponding to the highest
     cardinality categories and so-called '(other)' bin for all remaining categories. Numerical binning attempts to
     create 'n' equally-sized bins and so-called '(n/a)' bin for missing values. Bins can also be provided as a
     dictionary of column names and lists of bin boundaries. In this case, binning boundaries search is skipped and
     bin boundaries are used as is. Regardless of binning strategy, bin boundaries are calculated with respect to
     training data and synthetic data is mapped accordingly.
+
+    Args:
+        df: DataFrame to bin.
+        bins: Number of bins or dictionary of column names and bin boundaries.
+
+    Returns:
+        Binned DataFrame and dictionary of column names and bin boundaries.
     """
 
     # Note, that we create a new pd.DataFrame to avoid fragmentation warning messages that can occur if we try to
     # replace hundreds of columns of a large dataset
     cols = {}
 
-    bins_dct = {}
-    num_cols = [c for c in df.columns if pd.api.types.is_numeric_dtype(df[c])]
-    dat_cols = [c for c in df.columns if pd.api.types.is_datetime64_any_dtype(df[c])]
-    cat_cols = [c for c in df.columns if c not in num_cols + dat_cols]
-    if isinstance(bins, int):
-        for col in num_cols:
-            cols[col], bins_dct[col] = bin_numeric(df[col], bins)
-        for col in dat_cols:
-            cols[col], bins_dct[col] = bin_datetime(df[col], bins)
-        for col in cat_cols:
-            cols[col], bins_dct[col] = bin_categorical(df[col], bins)
-    else:  # bins is a dict
-        for col in num_cols:
-            if col in bins:
-                cols[col], _ = bin_numeric(df[col], bins[col])
-            else:
-                _LOG.warning(f"'{col}' is missing in bins")
-        for col in dat_cols:
-            if col in bins:
-                cols[col], _ = bin_datetime(df[col], bins[col])
-            else:
-                _LOG.warning(f"'{col}' is missing in bins")
-        for col in cat_cols:
-            if col in bins:
-                cols[col], _ = bin_categorical(df[col], bins[col])
-            else:
-                _LOG.warning(f"'{col}' is missing in bins")
-        bins_dct = bins
+    bins_dct = bins if isinstance(bins, dict) else {}
+    for col in df.columns:
+        values = df[col]
+        if isinstance(bins, int):
+            if pd.api.types.is_numeric_dtype(values):
+                values_binned, bins_dct[col] = bin_numeric(values, bins)
+            elif pd.api.types.is_datetime64_any_dtype(values):
+                values_binned, bins_dct[col] = bin_datetime(values, bins)
+            else:  # categorical column
+                values_binned, bins_dct[col] = bin_categorical(values, bins)
+        elif isinstance(bins, dict) and col in bins:
+            if pd.api.types.is_numeric_dtype(values):
+                values_binned, _ = bin_numeric(values, bins[col])
+            elif pd.api.types.is_datetime64_any_dtype(values):
+                values_binned, _ = bin_datetime(values, bins[col])
+            else:  # categorical column
+                values_binned, _ = bin_categorical(values, bins[col])
+        else:
+            _LOG.warning(f"'{col}' is missing in bins")
+            values_binned = None
+        cols[col] = values_binned
+
     return pd.DataFrame(cols), bins_dct
 
 
@@ -1272,9 +1279,9 @@ def filter_head_tail(df: pd.DataFrame, n: int) -> pd.DataFrame:
 
 def filter_uni_acc_for_plotting(acc_uni: pd.DataFrame) -> pd.DataFrame:
     # limit displayed univariate charts; with half being most accurate, and half being least accurate
-    acc_uni = acc_uni.sort_values("accuracy", ascending=False)
-    acc_uni = filter_head_tail(acc_uni, MAX_UNIVARIATE_PLOTS)
-    return acc_uni.reset_index(drop=True)
+    acc_uni_tgt = acc_uni.sort_values("accuracy", ascending=False)
+    acc_uni_tgt = filter_head_tail(acc_uni_tgt, MAX_UNIVARIATE_TGT_PLOTS)
+    return acc_uni_tgt
 
 
 def filter_biv_acc_for_plotting(acc_biv: pd.DataFrame, corr_trn: pd.DataFrame | None) -> pd.DataFrame:
@@ -1302,4 +1309,4 @@ def filter_biv_acc_for_plotting(acc_biv: pd.DataFrame, corr_trn: pd.DataFrame | 
     acc_biv_nxt = filter_head_tail(acc_biv_nxt, MAX_BIVARIATE_NXT_PLOTS)
     # concatenate all together
     acc = pd.concat([acc_biv_tgt, acc_biv_ctx, acc_biv_nxt]).reset_index(drop=True)
-    return acc.reset_index(drop=True)
+    return acc

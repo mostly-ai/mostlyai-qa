@@ -16,7 +16,10 @@ import logging
 from functools import partial
 from typing import Protocol, Callable
 
+import numpy as np
 import pandas as pd
+import pyarrow as pa
+from pandas.core.dtypes.common import is_numeric_dtype, is_datetime64_dtype
 from rich.progress import Progress
 
 from mostlyai.qa.filesystem import Statistics
@@ -26,7 +29,7 @@ _LOG = logging.getLogger(__name__)
 
 ACCURACY_MAX_COLUMNS = 300  # should be an even number and greater than 100
 
-MAX_UNIVARIATE_PLOTS = 300
+MAX_UNIVARIATE_TGT_PLOTS = 300
 MAX_BIVARIATE_TGT_PLOTS = 300
 MAX_BIVARIATE_CTX_PLOTS = 60
 MAX_BIVARIATE_NXT_PLOTS = 60
@@ -141,3 +144,44 @@ def determine_data_size(
         return len(tgt_data)
     else:
         return 0
+
+
+def downcast_dtypes(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Downcast dtypes of a DataFrame to a small set of nullable dtypes.
+
+    - datetime columns  -> datetime64[ns]
+    - numeric columns   -> Float64
+    - all other columns -> string[pyarrow]
+    """
+
+    def is_timestamp_dtype(x: pd.Series) -> bool:
+        if isinstance(x.dtype, pd.ArrowDtype):
+            return pa.types.is_timestamp(x.dtype.pyarrow_dtype)
+        else:
+            return pd.api.types.is_datetime64_any_dtype(x)
+
+    for col in df:
+        try:
+            if is_timestamp_dtype(df[col]):
+                df[col] = df[col].astype("datetime64[ns]")
+            elif pd.api.types.is_numeric_dtype(df[col]):
+                df[col] = df[col].astype("Float64")
+            else:
+                df[col] = df[col].astype("string[pyarrow]")
+        except Exception:  # leave dtype as-is, but just log a warning message
+            _LOG.warning(f"Could not downcast dtype of column {col}.")
+            pass
+    return df
+
+
+def harmonize_dtypes(df: pd.DataFrame, dtypes: dict[str, np.dtype]) -> pd.DataFrame:
+    if not all(c in df.columns for c in dtypes.keys()):
+        raise ValueError("Column names do not match between DataFrames.")
+    for col, dtype in dtypes.items():
+        if is_numeric_dtype(dtype):
+            df[col] = pd.to_numeric(df[col], errors="coerce")
+        elif is_datetime64_dtype(dtype):
+            df[col] = pd.to_datetime(df[col], errors="coerce")
+        df[col] = df[col].astype(dtype)
+    return df[dtypes.keys()]

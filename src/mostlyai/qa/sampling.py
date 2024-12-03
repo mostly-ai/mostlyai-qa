@@ -31,7 +31,6 @@ import time
 
 import numpy as np
 import pandas as pd
-import pyarrow as pa
 import torch
 
 from mostlyai.qa.common import (
@@ -97,7 +96,7 @@ def pull_data_for_accuracy(
     df_cnt = df_tgt.groupby(key).size().to_frame(COUNT_COLUMN).reset_index()
     df_cnt.columns = [TGT_COLUMN_PREFIX + c if c != key else c for c in df_cnt.columns]
 
-    # pick two random consecutive rows (if sequential)
+    # pick two random consecutive for coherence:auto-correlation
     df_tgt, df_nxt = sample_two_consecutive_rows(df_tgt, key)
 
     # prefix column names to avoid column name conflicts when merging
@@ -124,9 +123,6 @@ def pull_data_for_accuracy(
         df = df.drop(columns=[c for c in df.columns if c.startswith(NXT_COLUMN_PREFIX)])
     if setup == "1:1" and len(df.columns) > 1:
         df = df.drop(columns=[count_column])
-
-    # harmonize dtypes
-    df = df.apply(harmonize_dtype)
 
     # sample tokens from text-like columns
     df = sample_text_tokens(df)
@@ -258,30 +254,6 @@ def sample_text_tokens(df: pd.DataFrame) -> pd.DataFrame:
         return x.apply(tokenize_and_sample)
 
     return df.apply(process_text_columns)
-
-
-def harmonize_dtype(x: pd.Series):
-    # Convert to a small set of nullable dtypes, so that we avoid issues if
-    # there is a dtype mismatch between `tgt` and `syn`. We leave dtype
-    # as-is in case of casting error, to continue QA.
-
-    def is_timestamp_dtype(x: pd.Series) -> bool:
-        if isinstance(x.dtype, pd.ArrowDtype):
-            return pa.types.is_timestamp(x.dtype.pyarrow_dtype)
-        else:
-            return pd.api.types.is_datetime64_any_dtype(x)
-
-    try:
-        if is_timestamp_dtype(x):
-            x = x.astype("datetime64[ns]")
-        elif pd.api.types.is_numeric_dtype(x):
-            x = x.astype("Float64")
-        else:
-            x = x.astype("object")
-    except Exception:
-        # leave dtype as-is, but just log a warning message
-        pass
-    return x
 
 
 def is_text_heuristic(x: pd.Series) -> bool:

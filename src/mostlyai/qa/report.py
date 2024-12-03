@@ -18,7 +18,6 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from pandas.core.dtypes.common import is_numeric_dtype, is_datetime64_dtype
 
 from mostlyai.qa import distances, similarity, html_report
 from mostlyai.qa.accuracy import (
@@ -48,6 +47,8 @@ from mostlyai.qa.common import (
     TGT_COLUMN_PREFIX,
     REPORT_CREDITS,
     ProgressCallbackWrapper,
+    harmonize_dtypes,
+    downcast_dtypes,
 )
 from mostlyai.qa.filesystem import Statistics, TemporaryWorkspace
 
@@ -125,14 +126,16 @@ def report(
         TemporaryWorkspace() as workspace,
         ProgressCallbackWrapper(update_progress, description="Create report 🚀") as progress,
     ):
-        # ensure all columns are present and in the same order as training data
-        syn_tgt_data = syn_tgt_data[trn_tgt_data.columns]
+        # ensure all columns are present, in the same order and have the same dtype as the training data
+        trn_tgt_data = downcast_dtypes(df=trn_tgt_data)
+        syn_tgt_data = harmonize_dtypes(df=syn_tgt_data, dtypes=trn_tgt_data.dtypes.to_dict())
         if hol_tgt_data is not None:
-            hol_tgt_data = hol_tgt_data[trn_tgt_data.columns]
-        if syn_ctx_data is not None and trn_ctx_data is not None:
-            syn_ctx_data = syn_ctx_data[trn_ctx_data.columns]
-        if hol_ctx_data is not None and trn_ctx_data is not None:
-            hol_ctx_data = hol_ctx_data[trn_ctx_data.columns]
+            hol_tgt_data = harmonize_dtypes(df=hol_tgt_data, dtypes=trn_tgt_data.dtypes.to_dict())
+        if trn_ctx_data is not None:
+            trn_ctx_data = downcast_dtypes(df=trn_ctx_data)
+            syn_ctx_data = harmonize_dtypes(df=syn_ctx_data, dtypes=trn_ctx_data.dtypes.to_dict())
+            if hol_ctx_data is not None:
+                hol_ctx_data = harmonize_dtypes(df=hol_ctx_data, dtypes=trn_ctx_data.dtypes.to_dict())
 
         # prepare report_path
         if report_path is None:
@@ -207,14 +210,6 @@ def report(
             setup=setup,
         )
         progress.update(completed=10, total=100)
-
-        # coerce dtypes to match the original training data dtypes
-        for col in trn:
-            if is_numeric_dtype(trn[col]):
-                syn[col] = pd.to_numeric(syn[col], errors="coerce")
-            elif is_datetime64_dtype(trn[col]):
-                syn[col] = pd.to_datetime(syn[col], errors="coerce")
-            syn[col] = syn[col].astype(trn[col].dtype)
 
         _LOG.info("report accuracy and correlations")
         acc_uni, acc_biv, corr_trn = report_accuracy_and_correlations(
@@ -434,7 +429,7 @@ def report_accuracy_and_correlations(
     # calculate univariate accuracies
     acc_uni = calculate_univariates(trn_bin, syn_bin)
 
-    # calculate bivariate accuracies
+    # calculate bivariate accuracies (tgt-tgt, ctx-tgt, tgt-nxt)
     acc_biv = calculate_bivariates(trn_bin, syn_bin)
 
     # plot and store accuracy matrix
