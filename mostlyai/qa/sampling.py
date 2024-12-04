@@ -241,6 +241,7 @@ def calculate_embeddings(
     progress_from: int | None = None,
     progress_to: int | None = None,
 ) -> np.ndarray:
+    t0 = time.time()
     # load embedder
     embedder = load_embedder(device="cuda" if torch.cuda.is_available() else "cpu")
     # split into buckets for calculating embeddings to avoid memory issues and report continuous progress
@@ -250,13 +251,13 @@ def calculate_embeddings(
     # calculate embeddings for each bucket
     embeds = []
     for i, bucket in enumerate(buckets, 1):
-        embeds += [embedder.encode(bucket.tolist())]
+        embeds += [embedder.encode(bucket.tolist(), show_progress_bar=False)]
         if progress is not None:
             progress.update(completed=progress_from + i, total=100)
     if progress is not None:
         progress.update(completed=progress_to, total=100)
     embeds = np.concatenate(embeds, axis=0)
-    _LOG.info(f"calculated embeddings {embeds.shape}")
+    _LOG.info(f"calculated embeddings {embeds.shape} in {time.time() - t0:.2f}s")
     return embeds
 
 

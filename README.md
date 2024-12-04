@@ -20,6 +20,12 @@ The latest release of `mostlyai-qa` can be installed via pip:
 pip install -U mostlyai-qa
 ```
 
+The latest development version can be installed directly from GitHub:
+
+```bash
+pip install -U git+https://github.com/mostly-ai/mostlyai-qa.git@main
+```
+
 ## Quick Start
 
 ```python
