@@ -107,13 +107,16 @@ def report_from_statistics(
 
         _LOG.info("calculate embeddings for synthetic")
         syn_embeds = calculate_embeddings(
-            pull_data_for_embeddings(
+            strings=pull_data_for_embeddings(
                 df_tgt=syn_tgt_data,
                 df_ctx=syn_ctx_data,
                 ctx_primary_key=ctx_primary_key,
                 tgt_context_key=tgt_context_key,
                 max_sample_size=max_sample_size_embeddings,
-            )
+            ),
+            progress=progress,
+            progress_from=30,
+            progress_to=50,
         )
 
         _LOG.info("report similarity")

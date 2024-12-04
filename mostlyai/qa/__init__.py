@@ -15,6 +15,7 @@
 import os
 
 import pandas as pd
+from packaging.version import Version
 
 from mostlyai.qa.report import report
 from mostlyai.qa.report_from_statistics import report_from_statistics
@@ -23,4 +24,5 @@ __all__ = ["report", "report_from_statistics"]
 __version__ = "1.3.0"
 
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
-pd.set_option("future.no_silent_downcasting", True)
+if Version(pd.__version__) >= Version("2.2.0"):
+    pd.set_option("future.no_silent_downcasting", True)

@@ -40,6 +40,7 @@ from mostlyai.qa.common import (
     NXT_COLUMN_PREFIX,
     COUNT_COLUMN,
     ACCURACY_MAX_COLUMNS,
+    ProgressCallbackWrapper,
 )
 from mostlyai.qa.assets import load_embedder, load_tokenizer
 
@@ -221,8 +222,9 @@ def pull_data_for_embeddings(
         return ", ".join(sequence.apply(row_to_string, axis=1))
 
     strings = (
-        df_tgt.groupby(tgt_context_key)
-        .apply(sequence_to_string, include_groups=False)
+        df_tgt.set_index(tgt_context_key)
+        .groupby(tgt_context_key)
+        .apply(sequence_to_string)
         .sample(frac=1)
         .reset_index(drop=True)
     )
@@ -233,13 +235,29 @@ def pull_data_for_embeddings(
     return strings.to_list()
 
 
-def calculate_embeddings(strings: list[str]) -> np.ndarray:
-    t0 = time.time()
+def calculate_embeddings(
+    strings: list[str],
+    progress: ProgressCallbackWrapper | None = None,
+    progress_from: int | None = None,
+    progress_to: int | None = None,
+) -> np.ndarray:
+    # load embedder
     embedder = load_embedder(device="cuda" if torch.cuda.is_available() else "cpu")
-    embeddings = embedder.encode(strings)
-    time_elapsed = time.time() - t0
-    _LOG.info(f"created embeddings for {len(strings):,} records ({time_elapsed=:.2f}s)")
-    return embeddings
+    # split into buckets for calculating embeddings to avoid memory issues and report continuous progress
+    steps = progress_to - progress_from if progress_to is not None and progress_from is not None else 1
+    buckets = np.array_split(strings, steps)
+    buckets = [b for b in buckets if len(b) > 0]
+    # calculate embeddings for each bucket
+    embeds = []
+    for i, bucket in enumerate(buckets, 1):
+        embeds += [embedder.encode(bucket.tolist())]
+        if progress is not None:
+            progress.update(completed=progress_from + i, total=100)
+    if progress is not None:
+        progress.update(completed=progress_to, total=100)
+    embeds = np.concatenate(embeds, axis=0)
+    _LOG.info(f"calculated embeddings {embeds.shape}")
+    return embeds
 
 
 def sample_text_tokens(df: pd.DataFrame) -> pd.DataFrame:

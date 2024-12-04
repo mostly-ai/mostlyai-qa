@@ -233,7 +233,7 @@ def report(
             hol_sample_size or float("inf"),
         )
 
-        if max_sample_size_embeddings_final >= 10_000 and max_sample_size_embeddings is None:
+        if max_sample_size_embeddings_final > 10_000 and max_sample_size_embeddings is None:
             warnings.warn(
                 UserWarning(
                     "More than 10k embeddings will be calculated per dataset. "
@@ -241,32 +241,46 @@ def report(
                 )
             )
 
-        def _calc_pull_embeds(
-            df_tgt: pd.DataFrame, df_ctx: pd.DataFrame, progress_from: int, progress_to: int
-        ) -> np.ndarray:
-            strings = pull_data_for_embeddings(
-                df_tgt=df_tgt,
-                df_ctx=df_ctx,
+        _LOG.info("calculate embeddings for synthetic")
+        syn_embeds = calculate_embeddings(
+            strings=pull_data_for_embeddings(
+                df_tgt=syn_tgt_data,
+                df_ctx=syn_ctx_data,
                 ctx_primary_key=ctx_primary_key,
                 tgt_context_key=tgt_context_key,
                 max_sample_size=max_sample_size_embeddings_final,
-            )
-            # split into buckets for calculating embeddings to avoid memory issues and report continuous progress
-            buckets = np.array_split(strings, progress_to - progress_from)
-            buckets = [b for b in buckets if len(b) > 0]
-            embeds = []
-            for i, bucket in enumerate(buckets, 1):
-                embeds += [calculate_embeddings(bucket.tolist())]
-                progress.update(completed=progress_from + i, total=100)
-            progress.update(completed=progress_to, total=100)
-            embeds = np.concatenate(embeds, axis=0)
-            _LOG.info(f"calculated embeddings {embeds.shape}")
-            return embeds
-
-        syn_embeds = _calc_pull_embeds(df_tgt=syn_tgt_data, df_ctx=syn_ctx_data, progress_from=20, progress_to=40)
-        trn_embeds = _calc_pull_embeds(df_tgt=trn_tgt_data, df_ctx=trn_ctx_data, progress_from=40, progress_to=60)
+            ),
+            progress=progress,
+            progress_from=20,
+            progress_to=40,
+        )
+        _LOG.info("calculate embeddings for training")
+        trn_embeds = calculate_embeddings(
+            strings=pull_data_for_embeddings(
+                df_tgt=trn_tgt_data,
+                df_ctx=trn_ctx_data,
+                ctx_primary_key=ctx_primary_key,
+                tgt_context_key=tgt_context_key,
+                max_sample_size=max_sample_size_embeddings_final,
+            ),
+            progress=progress,
+            progress_from=40,
+            progress_to=60,
+        )
         if hol_tgt_data is not None:
-            hol_embeds = _calc_pull_embeds(df_tgt=hol_tgt_data, df_ctx=hol_ctx_data, progress_from=60, progress_to=80)
+            _LOG.info("calculate embeddings for holdout")
+            hol_embeds = calculate_embeddings(
+                strings=pull_data_for_embeddings(
+                    df_tgt=hol_tgt_data,
+                    df_ctx=hol_ctx_data,
+                    ctx_primary_key=ctx_primary_key,
+                    tgt_context_key=tgt_context_key,
+                    max_sample_size=max_sample_size_embeddings_final,
+                ),
+                progress=progress,
+                progress_from=60,
+                progress_to=80,
+            )
         else:
             hol_embeds = None
         progress.update(completed=80, total=100)

@@ -13,18 +13,17 @@
 # limitations under the License.
 
 import numpy as np
-import pandas as pd
 
 from mostlyai.qa.similarity import calculate_cosine_similarities, calculate_discriminator_auc
 from mostlyai.qa.sampling import calculate_embeddings
 
 
 def test_calculate_embeddings():
-    trn = pd.Series(["apple recipe", "car engine repair", "apple recipe"])
+    trn = ["apple recipe", "car engine repair", "apple recipe"]
     # semantically close synthetic data
-    syn_close = pd.Series(["apple pie", "car maintenance"])
+    syn_close = ["apple pie", "car maintenance"]
     # semantically distant synthetic data
-    syn_distant = pd.Series(["quantum physics theory", "deep space exploration"])
+    syn_distant = ["quantum physics theory", "deep space exploration"]
 
     trn_embeds = calculate_embeddings(trn)
     syn_close_embeds = calculate_embeddings(syn_close)
