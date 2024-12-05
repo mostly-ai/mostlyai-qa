@@ -37,7 +37,7 @@ NEW_VERSION := $(shell echo $(CURRENT_VERSION) | awk -F. -v bump=$(BUMP_TYPE) '{
     } else if (bump == "major") { \
         printf("%d.0.0", $$1 + 1); \
     } else { \
-        print "Error: Invalid BUMP_TYPE=" bump; \
+        print "Error: Invalid BUMP_TYPE. Expected patch, minor or major. Input was BUMP_TYPE=" bump; \
         exit 1; \
     } \
 }')
