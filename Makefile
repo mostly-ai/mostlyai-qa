@@ -21,11 +21,6 @@ test: ## run tests
 .PHONY: all
 all: clean install lint test ## run all commands
 
-.PHONY: examples
-examples: ## run all examples
-	find ./examples -maxdepth 1 -type f -name "*.ipynb" -print -execdir jupyter nbconvert --to script {} \;
-	find ./examples -maxdepth 1 -type f -name "*.py" -print -execdir python {} \;
-
 # Targets for Release Workflow/Automation
 .PHONY: release-pypi bump-version update-vars-version build confirm-upload upload clean-dist docs
 
