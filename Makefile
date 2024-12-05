@@ -1,25 +1,25 @@
 .PHONY: help
-help: ## show definition of each function
+help: ## Show definition of each function
 	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z1-9_-]+:.*?## / {printf "\033[36m%-25s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 
 .PHONY: clean
-clean: ## remove .gitignore files
+clean: ## Remove .gitignore files
 	git clean -fdX
 
 .PHONY: install
-install: # install dependencies
+install: # Install dependencies
 	poetry install
 
 .PHONY: lint
-lint: ## run lints
+lint: ## Run lints
 	poetry run pre-commit run --all-files
 
 .PHONY: test
-test: ## run tests
+test: ## Run tests
 	poetry run pytest
 
 .PHONY: all
-all: clean install lint test ## run the commands: clean install lint test
+all: clean install lint test ## Run the commands: clean install lint test
 
 # Default files to update
 PYPROJECT_TOML = pyproject.toml
@@ -96,6 +96,8 @@ build: # Build the project and create the dist directory if it doesn't exist
 	@mkdir -p dist
 	@poetry build
 	@echo "Built the project"
+	@twine check --strict dist/*
+	@echo "Project is checked"
 
 confirm-upload: # Confirm before the irreversible zone
 	@echo "Are you sure you want to upload to PyPI? (yes/no)"
