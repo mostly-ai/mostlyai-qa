@@ -7,7 +7,7 @@ clean: ## remove .gitignore files
 	git clean -fdX
 
 .PHONY: install
-install: ## install dependencies
+install: # install dependencies
 	poetry install
 
 .PHONY: lint
@@ -19,27 +19,22 @@ test: ## run tests
 	poetry run pytest
 
 .PHONY: all
-all: clean install lint test ## run all commands
-
-# Targets for Release Workflow/Automation
-.PHONY: release-pypi bump-version update-vars-version build confirm-upload upload clean-dist docs
-
-release-pypi: clean-dist build upload docs ## release pypi: build, check and upload to pypi
+all: clean install lint test ## run the commands: clean install lint test
 
 # Default files to update
 PYPROJECT_TOML = pyproject.toml
 INIT_FILE = mostlyai/qa/__init__.py
 
-# Default bump type
-BUMP_TYPE ?= PATCH
+# Internal Variables for Release Workflow
+BUMP_TYPE ?= patch
 CURRENT_VERSION := $(shell grep -m 1 'version = ' $(PYPROJECT_TOML) | sed -e 's/version = "\(.*\)"/\1/')
 # Assuming current_version is already set from pyproject.toml
 NEW_VERSION := $(shell echo $(CURRENT_VERSION) | awk -F. -v bump=$(BUMP_TYPE) '{ \
-    if (bump == "PATCH") { \
+    if (bump == "patch") { \
         printf("%d.%d.%d", $$1, $$2, $$3 + 1); \
-    } else if (bump == "MINOR") { \
+    } else if (bump == "minor") { \
         printf("%d.%d.0", $$1, $$2 + 1); \
-    } else if (bump == "MAJOR") { \
+    } else if (bump == "major") { \
         printf("%d.0.0", $$1 + 1); \
     } else { \
         print "Error: Invalid BUMP_TYPE=" bump; \
@@ -47,8 +42,28 @@ NEW_VERSION := $(shell echo $(CURRENT_VERSION) | awk -F. -v bump=$(BUMP_TYPE) '{
     } \
 }')
 
-# Rule to bump the version
-bump-version: ## bump the version in pyproject.toml and __init__.py
+
+# Targets for Release Workflow/Automation
+.PHONY: update-version-gh release-pypi docs
+
+update-version-gh: pull-main bump-version update-vars-version create-branch ## Update version in GitHub: pull main, bump version, create and push the new branch
+
+release-pypi: clean-dist pull-main build upload docs  ## Release to PyPI: pull main, build and upload to PyPI
+
+
+pull-main: # Pull main branch
+	# stash changes
+	@git stash
+	# switch to main branch
+	@git checkout main
+	# fetch latest changes
+	@git fetch origin main
+	# get a clean copy of main branch
+	@git reset --hard origin/main
+	# clean
+	@git clean -fdX
+
+bump-version: # Bump version (default: patch, options: patch, minor, major)
 	@echo "Bumping $(BUMP_TYPE) version from $(CURRENT_VERSION) to $(NEW_VERSION)"
 	@echo "Replaces $(CURRENT_VERSION) to $(NEW_VERSION) in $(PYPROJECT_TOML)"
 	@echo "Replaces $(CURRENT_VERSION) to $(NEW_VERSION) in $(INIT_FILE)"
@@ -66,32 +81,29 @@ bump-version: ## bump the version in pyproject.toml and __init__.py
         sed -i 's/version = "$(CURRENT_VERSION)"/version = "$(NEW_VERSION)"/g' $(PYPROJECT_TOML); \
         sed -i 's/__version__ = "$(CURRENT_VERSION)"/__version__ = "$(NEW_VERSION)"/g' $(INIT_FILE); \
     fi
-	@VERSION=$$(poetry version -s)
-	@echo "Now we have version $(VERSION) in $(PYPROJECT_TOML) and $(INIT_FILE)."
 
-update-vars-version: ## update the required variables after bump
+update-vars-version: # Update the required variables after bump
 	$(eval VERSION := $(shell poetry version -s))
 	$(eval BRANCH := verbump_$(shell echo $(VERSION) | tr '.' '_'))
 	$(eval TAG := $(VERSION))
 	@echo "Updated VERSION to $(VERSION), BRANCH to $(BRANCH), TAG to $(TAG)"
 
-build: ## build package
-	@echo "Step: building package"
-	poetry build
-	twine check --strict dist/*
+clean-dist: # Remove "volatile" directory dist
+	@rm -rf dist
+	@echo "Cleaned up dist directory"
 
-confirm-upload: ## confirm before the irreversible zone
+build: # Build the project and create the dist directory if it doesn't exist
+	@mkdir -p dist
+	@poetry build
+	@echo "Built the project"
+
+confirm-upload: # Confirm before the irreversible zone
 	@echo "Are you sure you want to upload to PyPI? (yes/no)"
 	@read ans && [ $${ans:-no} = yes ]
 
-upload: confirm-upload ## upload to PyPI (ensure the token is present in .pypirc file before running upload)
+upload-pypi: confirm-upload # Upload to PyPI (ensure the token is present in .pypirc file before running upload)
 	@twine upload dist/*$(VERSION)* --verbose
 	@echo "Uploaded version $(VERSION) to PyPI"
-
-clean-dist: ## remove "volatile" directory dist
-	@echo "Step: cleaning dist directory"
-	@rm -rf dist
-	@echo "Cleaned up dist directory"
 
 docs: ## Update docs site
 	@mkdocs gh-deploy
