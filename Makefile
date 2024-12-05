@@ -50,7 +50,6 @@ update-version-gh: pull-main bump-version update-vars-version create-branch ## U
 
 release-pypi: clean-dist pull-main build upload docs  ## Release to PyPI: pull main, build and upload to PyPI
 
-
 pull-main: # Pull main branch
 	# stash changes
 	@git stash
@@ -87,6 +86,17 @@ update-vars-version: # Update the required variables after bump
 	$(eval BRANCH := verbump_$(shell echo $(VERSION) | tr '.' '_'))
 	$(eval TAG := $(VERSION))
 	@echo "Updated VERSION to $(VERSION), BRANCH to $(BRANCH), TAG to $(TAG)"
+
+create-branch: # Create verbump_{new_ver} branch
+	@git checkout -b $(BRANCH)
+	@echo "Created branch $(BRANCH)"
+	# commit the version bump
+	@git add $(INIT_FILE)
+	@git add $(PYPROJECT_TOML)
+	@git commit -m "Version Bump to $(VERSION)"
+	@echo "Committed version bump to $(VERSION)"
+	@git push --set-upstream origin $(BRANCH)
+	@echo "Pushed branch $(BRANCH) to origin"
 
 clean-dist: # Remove "volatile" directory dist
 	@rm -rf dist
