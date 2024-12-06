@@ -211,7 +211,7 @@ def pull_data_for_embeddings(
 
     # harmonize numerical columns to double precision
     num_cols = df_tgt.select_dtypes("number").columns.drop(tgt_context_key, errors="ignore")
-    df_tgt[num_cols] = df_tgt[num_cols].astype("float64[pyarrow]")
+    df_tgt[num_cols] = df_tgt[num_cols].astype("Float64[pyarrow]")
 
     def row_to_string(row: pd.Series) -> str:
         # we concatenate all values as strings rather than convert to
@@ -294,11 +294,11 @@ def harmonize_dtype(x: pd.Series):
         if is_timestamp_dtype(x):
             x = x.astype("datetime64[ns]")
         elif pd.api.types.is_numeric_dtype(x):
-            x = x.astype("Float64")
+            x = x.astype("Float64[pyarrow]")
         else:
-            x = x.astype("object")
-    except Exception:
-        # leave dtype as-is, but just log a warning message
+            x = x.astype("string[pyarrow]")
+    except Exception as e:
+        _LOG.warning(f"Failed to harmonize dtype for column {x.name}: {e}")
         pass
     return x
 
