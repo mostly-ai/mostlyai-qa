@@ -211,7 +211,7 @@ def pull_data_for_embeddings(
 
     # harmonize numerical columns to double precision
     num_cols = df_tgt.select_dtypes("number").columns.drop(tgt_context_key, errors="ignore")
-    df_tgt[num_cols] = df_tgt[num_cols].astype("float64[pyarrow]")
+    df_tgt[num_cols] = df_tgt[num_cols].astype("Float64")
 
     def row_to_string(row: pd.Series) -> str:
         # we concatenate all values as strings rather than convert to
