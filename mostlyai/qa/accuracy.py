@@ -304,7 +304,7 @@ def calculate_categorical_uni_counts(
             # column is treated as categorical
             if is_empty:
                 # prerequsite for hashing is to deal with string-typed columns
-                series = series.astype("string")
+                series = series.astype("string[pyarrow]")
             cnts = series.value_counts(sort=False, dropna=False).to_frame("cnt").reset_index()
             if hash_rare_values:
                 # mask rare categories (for privacy reasons)
@@ -316,7 +316,7 @@ def calculate_categorical_uni_counts(
                     cnts["cnt"] <= MAX_ENGINE_RARE_CATEGORY_THRESHOLD,
                     (cnts[col]).apply(functools.partial(hash_rare, column_name=col)),
                 )
-            cnts = cnts.set_index(cnts[col].rename(None))["cnt"].rename(col)
+            cnts = cnts.set_index(cnts[col].rename(None))["cnt"].rename(col).astype("int64[pyarrow]")
             col_counts[col] = cnts
 
     if trn_col_counts is not None:
@@ -507,8 +507,8 @@ def prepare_categorical_plot_data_distribution(
     trn_col_cnts: pd.Series,
     syn_col_cnts: pd.Series,
 ) -> pd.DataFrame:
-    trn_col_cnts_idx = trn_col_cnts.index.to_series().astype("string").fillna(NA_BIN).replace("", EMPTY_BIN)
-    syn_col_cnts_idx = syn_col_cnts.index.to_series().astype("string").fillna(NA_BIN).replace("", EMPTY_BIN)
+    trn_col_cnts_idx = trn_col_cnts.index.to_series().astype("string[pyarrow]").fillna(NA_BIN).replace("", EMPTY_BIN)
+    syn_col_cnts_idx = syn_col_cnts.index.to_series().astype("string[pyarrow]").fillna(NA_BIN).replace("", EMPTY_BIN)
     trn_col_cnts = trn_col_cnts.set_axis(trn_col_cnts_idx)
     syn_col_cnts = syn_col_cnts.set_axis(syn_col_cnts_idx)
     t = trn_col_cnts.to_frame("target_cnt").reset_index()
