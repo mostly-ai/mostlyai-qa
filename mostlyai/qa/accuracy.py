@@ -1115,6 +1115,7 @@ def bin_non_categorical(
 
 
 def bin_categorical(col: pd.Series, bins: int | list[str]) -> tuple[pd.Categorical, list[str]]:
+    col = col.astype("string[pyarrow]")
     col = col.fillna(NA_BIN)
     col = col.replace("", EMPTY_BIN)
     # determine top values, if not provided
