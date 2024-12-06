@@ -292,7 +292,7 @@ def harmonize_dtype(x: pd.Series):
 
     try:
         if is_timestamp_dtype(x):
-            x = x.astype("datetime64[ns]")
+            x = x.astype("timestamp[ns, tz=UTC][pyarrow]")
         elif pd.api.types.is_numeric_dtype(x):
             x = x.astype("Float64[pyarrow]")
         else:
