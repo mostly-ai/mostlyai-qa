@@ -198,6 +198,7 @@ class Statistics:
                 row["count"],
                 index=row["cat"],
                 name=row["column"],
+                dtype="int64[pyarrow]",
             )
             for _, row in trn_cnts_uni.iterrows()
         }
