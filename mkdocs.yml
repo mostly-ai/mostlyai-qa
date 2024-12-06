@@ -1,4 +1,5 @@
 site_name: "mostlyai-qa"
+site_url: "https://mostly-ai.github.io/mostlyai-qa/"
 repo_url: "https://github.com/mostly-ai/mostlyai-qa"
 repo_name: "mostly-ai/mostlyai-qa"
 
@@ -6,49 +7,29 @@ theme:
   name: material
   logo: logo.png
   favicon: favicon.png
-
-  palette:
-  - media: "(prefers-color-scheme)"
-    scheme: default
-    primary: pink
-    accent: pink
-    toggle:
-      icon: material/lightbulb
-      name: "Switch to light mode"
-  - media: "(prefers-color-scheme: light)"
-    scheme: default
-    primary: pink
-    accent: pink
-    toggle:
-      icon: material/lightbulb-outline
-      name: "Switch to dark mode"
-  - media: "(prefers-color-scheme: dark)"
-    scheme: slate
-    primary: pink
-    accent: pink
-    toggle:
-      icon: material/lightbulb-auto-outline
-      name: "Switch to system preference"
-
+  font:
+    text: Lato
   features:
-    - navigation.instant
-    - navigation.instant.prefetch
-#    - navigation.tabs
-#    - navigation.tabs.sticky
-    - search.suggest
-    - search.highlight
-    - search.share
+    - navigation.top
+    - navigation.tracking
+    - navigation.tabs
+    - navigation.tabs.sticky
     - content.code.select
     - content.code.copy
-    - content.code.annotate
-    - content.tooltips
     - navigation.footer
-    - navigation.indexes
-    - navigation.sections
-    - toc.follow
+
+  palette:
+    - scheme: default
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      toggle:
+        icon: material/brightness-2
+        name: Switch to light mode
 
 nav:
-  - Home: index.md
+  - Getting started: index.md
   - Metrics: metrics.md
   - API Reference: api.md
   - Examples: examples.md
@@ -79,3 +60,5 @@ markdown_extensions:
   - pymdownx.inlinehilite
   - pymdownx.snippets
   - pymdownx.superfences
+  - toc:
+      permalink: true
