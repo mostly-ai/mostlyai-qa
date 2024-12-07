@@ -38,6 +38,7 @@ from mostlyai.qa.accuracy import (
     calculate_correlations,
     plot_store_correlation_matrices,
     bin_categorical,
+    bin_non_categorical,
 )
 from mostlyai.qa.sampling import pull_data_for_accuracy, sample_two_consecutive_rows
 from mostlyai.qa.common import (
@@ -544,6 +545,10 @@ class TestBinData:
                 ),
                 ["⪰ 2023-01-30 13:00:00.333000"] * 20,
             ),  # two values
+            (
+                pd.Series([pd.NaT, "2024-11-20"], dtype="datetime64[ns]"),
+                ["(n/a)", "⪰ 2024-Nov-20"],
+            ),  # single value with leading N/A
         ]
 
         for col, expected in cases:

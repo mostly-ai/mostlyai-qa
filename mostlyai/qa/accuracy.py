@@ -1046,7 +1046,7 @@ def bin_datetime(col: pd.Series, bins: int | list[str]) -> tuple[pd.Categorical,
 
         if col.nunique() == 1:
             # ensure 2 breaks for single-valued columns
-            val = col.iloc[0]
+            val = col.dropna().iloc[0]
             upper_limit = [val + np.timedelta64(1, "D")] if not pd.isna(val) else []
             breaks = [val] + upper_limit
         else:
