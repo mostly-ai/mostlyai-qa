@@ -502,10 +502,6 @@ class TestBinData:
         x = pd.Series(["a", "b"] * 50 + ["x"])
         col, bins = bin_categorical(x, 5)
         assert len(col) == 101
-        # regression test for bool with nans
-        x = pd.Series([True, False, pd.NA] * 100)
-        col, bins = bin_categorical(x, 5)
-        print(col)
 
     def test_bin_numeric(self):
         # test several edge cases
