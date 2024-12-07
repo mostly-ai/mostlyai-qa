@@ -38,7 +38,6 @@ from mostlyai.qa.accuracy import (
     calculate_correlations,
     plot_store_correlation_matrices,
     bin_categorical,
-    bin_non_categorical,
 )
 from mostlyai.qa.sampling import pull_data_for_accuracy, sample_two_consecutive_rows
 from mostlyai.qa.common import (
