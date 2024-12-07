@@ -499,8 +499,11 @@ class TestBinData:
 
     def test_bin_categorical(self):
         x = pd.Series(["a", "b"] * 50 + ["x"])
-        col, bins = bin_categorical(x, 5)
+        col, _ = bin_categorical(x, 5)
         assert len(col) == 101
+        x = pd.Series([True, False] * 50 + [np.nan] * 100, dtype="object")
+        col, _ = bin_categorical(x, 5)
+        assert len(col) == 200
 
     def test_bin_numeric(self):
         # test several edge cases
