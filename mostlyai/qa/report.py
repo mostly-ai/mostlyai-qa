@@ -36,6 +36,7 @@ from mostlyai.qa.accuracy import (
     plot_store_univariates,
     plot_store_bivariates,
 )
+from mostlyai.qa.assets import load_embedder
 from mostlyai.qa.metrics import Metrics, Accuracy, Similarity, Distances
 from mostlyai.qa.sampling import calculate_embeddings, pull_data_for_accuracy, pull_data_for_embeddings
 from mostlyai.qa.common import (
@@ -107,7 +108,7 @@ def report(
         max_sample_size_accuracy: Max sample size for accuracy
         max_sample_size_embeddings: Max sample size for embeddings (similarity & distances)
         statistics_path: Path of where to store the statistics to be used by `report_from_statistics`
-        device: Device to use for embeddings calculation. Default: `cuda` if GPU available, otherwise `cpu`
+        device: Device (like “cuda”, “cpu”) that should be used for computation. If None, checks if a GPU can be used.
         update_progress: A custom progress callback
 
     Returns:
@@ -244,7 +245,9 @@ def report(
             )
 
         _LOG.info("calculate embeddings for synthetic")
+        embedder = load_embedder(device=device)
         syn_embeds = calculate_embeddings(
+            embedder=embedder,
             strings=pull_data_for_embeddings(
                 df_tgt=syn_tgt_data,
                 df_ctx=syn_ctx_data,
@@ -252,13 +255,13 @@ def report(
                 tgt_context_key=tgt_context_key,
                 max_sample_size=max_sample_size_embeddings_final,
             ),
-            device=device,
             progress=progress,
             progress_from=20,
             progress_to=40,
         )
         _LOG.info("calculate embeddings for training")
         trn_embeds = calculate_embeddings(
+            embedder=embedder,
             strings=pull_data_for_embeddings(
                 df_tgt=trn_tgt_data,
                 df_ctx=trn_ctx_data,
@@ -266,7 +269,6 @@ def report(
                 tgt_context_key=tgt_context_key,
                 max_sample_size=max_sample_size_embeddings_final,
             ),
-            device=device,
             progress=progress,
             progress_from=40,
             progress_to=60,
@@ -274,6 +276,7 @@ def report(
         if hol_tgt_data is not None:
             _LOG.info("calculate embeddings for holdout")
             hol_embeds = calculate_embeddings(
+                embedder=embedder,
                 strings=pull_data_for_embeddings(
                     df_tgt=hol_tgt_data,
                     df_ctx=hol_ctx_data,
@@ -281,7 +284,6 @@ def report(
                     tgt_context_key=tgt_context_key,
                     max_sample_size=max_sample_size_embeddings_final,
                 ),
-                device=device,
                 progress=progress,
                 progress_from=60,
                 progress_to=80,

@@ -32,7 +32,7 @@ import time
 import numpy as np
 import pandas as pd
 import pyarrow as pa
-import torch
+from sentence_transformers import SentenceTransformer
 
 from mostlyai.qa.common import (
     CTX_COLUMN_PREFIX,
@@ -42,7 +42,7 @@ from mostlyai.qa.common import (
     ACCURACY_MAX_COLUMNS,
     ProgressCallbackWrapper,
 )
-from mostlyai.qa.assets import load_embedder, load_tokenizer
+from mostlyai.qa.assets import load_tokenizer
 
 
 _LOG = logging.getLogger(__name__)
@@ -236,17 +236,13 @@ def pull_data_for_embeddings(
 
 
 def calculate_embeddings(
+    embedder: SentenceTransformer,
     strings: list[str],
-    device: str | None = None,
     progress: ProgressCallbackWrapper | None = None,
     progress_from: int | None = None,
     progress_to: int | None = None,
 ) -> np.ndarray:
     t0 = time.time()
-    # load embedder
-    if device is None:
-        device = "cuda" if torch.cuda.is_available() else "cpu"
-    embedder = load_embedder(device=device)
     # split into buckets for calculating embeddings to avoid memory issues and report continuous progress
     steps = progress_to - progress_from if progress_to is not None and progress_from is not None else 1
     buckets = np.array_split(strings, steps)

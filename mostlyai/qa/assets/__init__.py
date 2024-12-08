@@ -37,7 +37,7 @@ def load_tokenizer():
     return GPT2Tokenizer.from_pretrained(_MODULE_DIR / "tokenizers" / "transformers" / "gpt2")
 
 
-def load_embedder(device: str):
+def load_embedder(device: str | None = None):
     from sentence_transformers import SentenceTransformer
 
     path = _MODULE_DIR / "embedders" / "sentence-transformers" / "all-MiniLM-L6-v2"

@@ -21,6 +21,7 @@ import pandas as pd
 import mostlyai.qa.accuracy
 import mostlyai.qa.sampling
 from mostlyai.qa import accuracy, similarity, html_report
+from mostlyai.qa.assets import load_embedder
 from mostlyai.qa.sampling import pull_data_for_embeddings, calculate_embeddings
 from mostlyai.qa.common import (
     ProgressCallback,
@@ -107,7 +108,9 @@ def report_from_statistics(
         progress.update(completed=30, total=100)
 
         _LOG.info("calculate embeddings for synthetic")
+        embedder = load_embedder(device=device)
         syn_embeds = calculate_embeddings(
+            embedder=embedder,
             strings=pull_data_for_embeddings(
                 df_tgt=syn_tgt_data,
                 df_ctx=syn_ctx_data,
@@ -115,7 +118,6 @@ def report_from_statistics(
                 tgt_context_key=tgt_context_key,
                 max_sample_size=max_sample_size_embeddings,
             ),
-            device=device,
             progress=progress,
             progress_from=30,
             progress_to=50,
