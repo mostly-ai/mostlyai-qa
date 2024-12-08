@@ -30,8 +30,8 @@ theme:
 
 nav:
   - Getting started: index.md
-  - Metrics: metrics.md
   - API Reference: api.md
+  - Metrics: metrics.md
   - Examples: examples.md
 
 plugins:
@@ -42,6 +42,7 @@ plugins:
           options:
             show_root_toc_entry: false
             show_root_heading: true
+            show_bases: false
             show_docstring: true
             show_source: false
             show_signature: true

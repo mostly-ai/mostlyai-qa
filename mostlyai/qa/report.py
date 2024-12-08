@@ -90,9 +90,9 @@ def report(
     Limit the compute time used by setting `max_sample_size_accuracy` and `max_sample_size_embeddings`.
 
     Args:
-        syn_tgt_data: Synthetic samples
-        trn_tgt_data: Training samples
-        hol_tgt_data: Holdout samples
+        syn_tgt_data: Synthetic (target) samples
+        trn_tgt_data: Training (target) samples
+        hol_tgt_data: Holdout (target) samples
         syn_ctx_data: Synthetic context samples
         trn_ctx_data: Training context samples
         hol_ctx_data: Holdout context samples
