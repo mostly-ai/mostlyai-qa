@@ -32,7 +32,6 @@ import time
 import numpy as np
 import pandas as pd
 import pyarrow as pa
-import torch
 
 from mostlyai.qa._common import (
     CTX_COLUMN_PREFIX,
@@ -243,7 +242,7 @@ def calculate_embeddings(
 ) -> np.ndarray:
     t0 = time.time()
     # load embedder
-    embedder = load_embedder(device="cuda" if torch.cuda.is_available() else "cpu")
+    embedder = load_embedder()
     # split into buckets for calculating embeddings to avoid memory issues and report continuous progress
     steps = progress_to - progress_from if progress_to is not None and progress_from is not None else 1
     buckets = np.array_split(strings, steps)
