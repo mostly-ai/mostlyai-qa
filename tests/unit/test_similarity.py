@@ -14,8 +14,8 @@
 
 import numpy as np
 
-from mostlyai.qa.similarity import calculate_cosine_similarities, calculate_discriminator_auc
-from mostlyai.qa.sampling import calculate_embeddings
+from mostlyai.qa._similarity import calculate_cosine_similarities, calculate_discriminator_auc
+from mostlyai.qa._sampling import calculate_embeddings
 
 
 def test_calculate_embeddings():

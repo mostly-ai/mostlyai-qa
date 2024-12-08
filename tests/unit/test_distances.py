@@ -15,12 +15,12 @@
 import pandas as pd
 import pytest
 
-from mostlyai.qa.common import TGT_COLUMN_PREFIX
-from mostlyai.qa.distances import (
+from mostlyai.qa._common import TGT_COLUMN_PREFIX
+from mostlyai.qa._distances import (
     calculate_distances,
     plot_store_distances,
 )
-from mostlyai.qa.sampling import calculate_embeddings
+from mostlyai.qa._sampling import calculate_embeddings
 
 
 @pytest.fixture()

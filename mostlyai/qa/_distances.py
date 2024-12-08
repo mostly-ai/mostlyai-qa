@@ -17,11 +17,11 @@ import logging
 import numpy as np
 from joblib import cpu_count
 
-from mostlyai.qa.common import (
+from mostlyai.qa._common import (
     CHARTS_COLORS,
     CHARTS_FONTS,
 )
-from mostlyai.qa.filesystem import TemporaryWorkspace
+from mostlyai.qa._filesystem import TemporaryWorkspace
 from plotly import graph_objs as go
 from sklearn.neighbors import NearestNeighbors
 

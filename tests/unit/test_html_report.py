@@ -12,15 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import mostlyai.qa.accuracy
-from mostlyai.qa import accuracy, html_report, distances
-from mostlyai.qa.common import CTX_COLUMN_PREFIX, TGT_COLUMN_PREFIX
-from mostlyai.qa.report import calculate_metrics
-from mostlyai.qa.similarity import (
-    calculate_cosine_similarities,
-    calculate_discriminator_auc,
-)
-from mostlyai.qa.sampling import calculate_embeddings, pull_data_for_embeddings
+from mostlyai.qa import _accuracy, _html_report, _distances, _similarity
+from mostlyai.qa._common import CTX_COLUMN_PREFIX, TGT_COLUMN_PREFIX
+from mostlyai.qa.report import _calculate_metrics
+from mostlyai.qa._sampling import calculate_embeddings, pull_data_for_embeddings
 
 
 def test_generate_store_report(tmp_path, cols, workspace):
@@ -30,25 +25,25 @@ def test_generate_store_report(tmp_path, cols, workspace):
     columns = [f"{p}{c}" for p, c in zip(prefixes, trn.columns)]
     trn.columns, hol.columns, syn.columns = columns, columns, columns
     trn["nxt::dt"], hol["nxt::dt"], syn["nxt::dt"] = trn["tgt::dt"], hol["tgt::dt"], syn["tgt::dt"]
-    acc_trn, bins = accuracy.bin_data(trn, 3)
-    acc_syn, _ = accuracy.bin_data(syn, bins)
-    acc_uni = accuracy.calculate_univariates(acc_trn, acc_syn)
-    acc_biv = accuracy.calculate_bivariates(acc_trn, acc_syn)
-    corr_trn = accuracy.calculate_correlations(acc_trn)
+    acc_trn, bins = _accuracy.bin_data(trn, 3)
+    acc_syn, _ = _accuracy.bin_data(syn, bins)
+    acc_uni = _accuracy.calculate_univariates(acc_trn, acc_syn)
+    acc_biv = _accuracy.calculate_bivariates(acc_trn, acc_syn)
+    corr_trn = _accuracy.calculate_correlations(acc_trn)
     syn_embeds = calculate_embeddings(pull_data_for_embeddings(df_tgt=syn))
     trn_embeds = calculate_embeddings(pull_data_for_embeddings(df_tgt=trn))
     hol_embeds = calculate_embeddings(pull_data_for_embeddings(df_tgt=hol))
-    sim_cosine_trn_hol, sim_cosine_trn_syn = calculate_cosine_similarities(
+    sim_cosine_trn_hol, sim_cosine_trn_syn = _similarity.calculate_cosine_similarities(
         syn_embeds=syn_embeds,
         trn_embeds=trn_embeds,
         hol_embeds=hol_embeds,
     )
-    sim_auc_trn_hol, sim_auc_trn_syn = calculate_discriminator_auc(
+    sim_auc_trn_hol, sim_auc_trn_syn = _similarity.calculate_discriminator_auc(
         syn_embeds=syn_embeds,
         trn_embeds=trn_embeds,
         hol_embeds=hol_embeds,
     )
-    dcr_trn, dcr_hol = distances.calculate_distances(
+    dcr_trn, dcr_hol = _distances.calculate_distances(
         syn_embeds=syn_embeds, trn_embeds=trn_embeds, hol_embeds=hol_embeds
     )
 
@@ -65,7 +60,7 @@ def test_generate_store_report(tmp_path, cols, workspace):
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text("<div></div>")
 
-    metrics = calculate_metrics(
+    metrics = _calculate_metrics(
         acc_uni=acc_uni,
         acc_biv=acc_biv,
         dcr_trn=dcr_trn,
@@ -84,7 +79,7 @@ def test_generate_store_report(tmp_path, cols, workspace):
     }
 
     report_path = tmp_path / "report.html"
-    html_report.store_report(
+    _html_report.store_report(
         report_path=report_path,
         workspace=workspace,
         report_type="model_report",
@@ -104,11 +99,11 @@ def test_summarize_accuracies_by_column(tmp_path, cols):
     columns = [f"{p}{c}" for p, c in zip(prefixes, trn.columns)]
     trn.columns, syn.columns = columns, columns
     trn["nxt::dt"], syn["nxt::dt"] = trn["tgt::dt"], syn["tgt::dt"]
-    trn, bins = mostlyai.qa.accuracy.bin_data(trn, 3)
-    syn, _ = mostlyai.qa.accuracy.bin_data(syn, bins)
-    uni_acc = accuracy.calculate_univariates(trn, syn)
-    biv_acc = accuracy.calculate_bivariates(trn, syn)
-    tbl_acc = html_report.summarize_accuracies_by_column(uni_acc, biv_acc)
+    trn, bins = _accuracy.bin_data(trn, 3)
+    syn, _ = _accuracy.bin_data(syn, bins)
+    uni_acc = _accuracy.calculate_univariates(trn, syn)
+    biv_acc = _accuracy.calculate_bivariates(trn, syn)
+    tbl_acc = _html_report.summarize_accuracies_by_column(uni_acc, biv_acc)
     assert (tbl_acc["univariate"] >= 0.5).all()
     assert (tbl_acc["bivariate"] >= 0.5).all()
     assert (tbl_acc["coherence"] >= 0.5).all()

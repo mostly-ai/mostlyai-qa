@@ -20,8 +20,8 @@ import numpy as np
 import pandas as pd
 from pandas.core.dtypes.common import is_numeric_dtype, is_datetime64_dtype
 
-from mostlyai.qa import distances, similarity, html_report
-from mostlyai.qa.accuracy import (
+from mostlyai.qa import _distances, _similarity, _html_report
+from mostlyai.qa._accuracy import (
     binning_data,
     calculate_correlations,
     plot_store_correlation_matrices,
@@ -37,8 +37,8 @@ from mostlyai.qa.accuracy import (
     plot_store_bivariates,
 )
 from mostlyai.qa.metrics import Metrics, Accuracy, Similarity, Distances
-from mostlyai.qa.sampling import calculate_embeddings, pull_data_for_accuracy, pull_data_for_embeddings
-from mostlyai.qa.common import (
+from mostlyai.qa._sampling import calculate_embeddings, pull_data_for_accuracy, pull_data_for_embeddings
+from mostlyai.qa._common import (
     determine_data_size,
     ProgressCallback,
     PrerequisiteNotMetError,
@@ -49,7 +49,7 @@ from mostlyai.qa.common import (
     REPORT_CREDITS,
     ProgressCallbackWrapper,
 )
-from mostlyai.qa.filesystem import Statistics, TemporaryWorkspace
+from mostlyai.qa._filesystem import Statistics, TemporaryWorkspace
 
 _LOG = logging.getLogger(__name__)
 
@@ -166,7 +166,7 @@ def report(
         except PrerequisiteNotMetError as err:
             _LOG.info(err)
             statistics.mark_early_exit()
-            html_report.store_early_exit_report(report_path)
+            _html_report.store_early_exit_report(report_path)
             return report_path, None
 
         # prepare datasets for accuracy
@@ -217,7 +217,7 @@ def report(
             syn[col] = syn[col].astype(trn[col].dtype)
 
         _LOG.info("report accuracy and correlations")
-        acc_uni, acc_biv, corr_trn = report_accuracy_and_correlations(
+        acc_uni, acc_biv, corr_trn = _report_accuracy_and_correlations(
             trn=trn,
             syn=syn,
             statistics=statistics,
@@ -286,7 +286,7 @@ def report(
         progress.update(completed=80, total=100)
 
         _LOG.info("report similarity")
-        sim_cosine_trn_hol, sim_cosine_trn_syn, sim_auc_trn_hol, sim_auc_trn_syn = report_similarity(
+        sim_cosine_trn_hol, sim_cosine_trn_syn, sim_auc_trn_hol, sim_auc_trn_syn = _report_similarity(
             syn_embeds=syn_embeds,
             trn_embeds=trn_embeds,
             hol_embeds=hol_embeds,
@@ -296,7 +296,7 @@ def report(
         progress.update(completed=90, total=100)
 
         _LOG.info("report distances")
-        dcr_trn, dcr_hol = report_distances(
+        dcr_trn, dcr_hol = _report_distances(
             syn_embeds=syn_embeds,
             trn_embeds=trn_embeds,
             hol_embeds=hol_embeds,
@@ -304,7 +304,7 @@ def report(
         )
         progress.update(completed=99, total=100)
 
-        metrics = calculate_metrics(
+        metrics = _calculate_metrics(
             acc_uni=acc_uni,
             acc_biv=acc_biv,
             dcr_trn=dcr_trn,
@@ -329,7 +329,7 @@ def report(
             "report_extra_info": report_extra_info,
         }
         statistics.store_meta(meta=meta)
-        html_report.store_report(
+        _html_report.store_report(
             report_path=report_path,
             report_type="model_report",
             workspace=workspace,
@@ -343,7 +343,7 @@ def report(
         return report_path, metrics
 
 
-def calculate_metrics(
+def _calculate_metrics(
     *,
     acc_uni: pd.DataFrame | None = None,
     acc_biv: pd.DataFrame | None = None,
@@ -419,7 +419,7 @@ def calculate_metrics(
     )
 
 
-def report_accuracy_and_correlations(
+def _report_accuracy_and_correlations(
     *,
     trn: pd.DataFrame,
     syn: pd.DataFrame,
@@ -529,7 +529,7 @@ def report_accuracy_and_correlations(
     return acc_uni, acc_biv, trn_corr
 
 
-def report_similarity(
+def _report_similarity(
     *,
     syn_embeds: np.ndarray,
     trn_embeds: np.ndarray,
@@ -538,17 +538,17 @@ def report_similarity(
     statistics: Statistics,
 ) -> tuple[np.float64 | None, np.float64, np.float64 | None, np.float64]:
     _LOG.info("calculate centroid similarities")
-    sim_cosine_trn_hol, sim_cosine_trn_syn = similarity.calculate_cosine_similarities(
+    sim_cosine_trn_hol, sim_cosine_trn_syn = _similarity.calculate_cosine_similarities(
         syn_embeds=syn_embeds, trn_embeds=trn_embeds, hol_embeds=hol_embeds
     )
 
     _LOG.info("calculate discriminator AUC")
-    sim_auc_trn_hol, sim_auc_trn_syn = similarity.calculate_discriminator_auc(
+    sim_auc_trn_hol, sim_auc_trn_syn = _similarity.calculate_discriminator_auc(
         syn_embeds=syn_embeds, trn_embeds=trn_embeds, hol_embeds=hol_embeds
     )
 
     _LOG.info("plot and store PCA similarity contours")
-    pca_model, _, trn_pca, hol_pca = similarity.plot_store_similarity_contours(
+    pca_model, _, trn_pca, hol_pca = _similarity.plot_store_similarity_contours(
         syn_embeds=syn_embeds, trn_embeds=trn_embeds, hol_embeds=hol_embeds, workspace=workspace
     )
 
@@ -566,15 +566,15 @@ def report_similarity(
     )
 
 
-def report_distances(
+def _report_distances(
     *,
     syn_embeds: np.ndarray,
     trn_embeds: np.ndarray,
     hol_embeds: np.ndarray | None,
     workspace: TemporaryWorkspace,
 ) -> tuple[np.ndarray, np.ndarray | None]:
-    dcr_trn, dcr_hol = distances.calculate_distances(
+    dcr_trn, dcr_hol = _distances.calculate_distances(
         syn_embeds=syn_embeds, trn_embeds=trn_embeds, hol_embeds=hol_embeds
     )
-    distances.plot_store_distances(dcr_trn, dcr_hol, workspace)
+    _distances.plot_store_distances(dcr_trn, dcr_hol, workspace)
     return dcr_trn, dcr_hol

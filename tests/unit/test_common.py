@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from mostlyai.qa.accuracy import format_display_prefixes, trim_label
+from mostlyai.qa._accuracy import format_display_prefixes, trim_label
 
 
 def test_format_display_prefixes():

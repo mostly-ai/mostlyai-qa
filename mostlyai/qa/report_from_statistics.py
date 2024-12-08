@@ -18,11 +18,9 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-import mostlyai.qa.accuracy
-import mostlyai.qa.sampling
-from mostlyai.qa import accuracy, similarity, html_report
-from mostlyai.qa.sampling import pull_data_for_embeddings, calculate_embeddings
-from mostlyai.qa.common import (
+from mostlyai.qa import _accuracy, _sampling, _similarity, _html_report
+from mostlyai.qa._sampling import pull_data_for_embeddings, calculate_embeddings
+from mostlyai.qa._common import (
     ProgressCallback,
     PrerequisiteNotMetError,
     check_min_sample_size,
@@ -31,7 +29,7 @@ from mostlyai.qa.common import (
     REPORT_CREDITS,
     ProgressCallbackWrapper,
 )
-from mostlyai.qa.filesystem import Statistics, TemporaryWorkspace
+from mostlyai.qa._filesystem import Statistics, TemporaryWorkspace
 
 _LOG = logging.getLogger(__name__)
 
@@ -72,7 +70,7 @@ def report_from_statistics(
             check_statistics_prerequisite(statistics)
             check_min_sample_size(syn_sample_size, 100, "synthetic")
         except PrerequisiteNotMetError:
-            html_report.store_early_exit_report(report_path)
+            _html_report.store_early_exit_report(report_path)
             return report_path
 
         meta = statistics.load_meta()
@@ -87,7 +85,7 @@ def report_from_statistics(
 
         # prepare data
         _LOG.info("sample synthetic data started")
-        syn = mostlyai.qa.sampling.pull_data_for_accuracy(
+        syn = _sampling.pull_data_for_accuracy(
             df_tgt=syn_tgt_data,
             df_ctx=syn_ctx_data,
             ctx_primary_key=ctx_primary_key,
@@ -98,7 +96,7 @@ def report_from_statistics(
         progress.update(completed=20, total=100)
 
         # calculate and plot accuracy and correlations
-        acc_uni, acc_biv, corr_trn = report_accuracy_and_correlations_from_statistics(
+        acc_uni, acc_biv, corr_trn = _report_accuracy_and_correlations_from_statistics(
             syn=syn,
             statistics=statistics,
             workspace=workspace,
@@ -120,7 +118,7 @@ def report_from_statistics(
         )
 
         _LOG.info("report similarity")
-        report_similarity_from_statistics(
+        _report_similarity_from_statistics(
             syn_embeds=syn_embeds,
             workspace=workspace,
             statistics=statistics,
@@ -136,7 +134,7 @@ def report_from_statistics(
         }
 
         # HTML report
-        html_report.store_report(
+        _html_report.store_report(
             report_path=report_path,
             report_type="data_report",
             workspace=workspace,
@@ -150,7 +148,7 @@ def report_from_statistics(
         return report_path
 
 
-def report_accuracy_and_correlations_from_statistics(
+def _report_accuracy_and_correlations_from_statistics(
     *,
     syn: pd.DataFrame,
     statistics: Statistics,
@@ -161,7 +159,7 @@ def report_accuracy_and_correlations_from_statistics(
     syn = syn[bins.keys()].copy()
 
     _LOG.info("calculate synthetic bins")
-    syn_bin, _ = mostlyai.qa.accuracy.bin_data(syn, bins)
+    syn_bin, _ = _accuracy.bin_data(syn, bins)
 
     _LOG.info("load univariates and bivariates")
     acc_uni = statistics.load_univariate_accuracies()
@@ -180,10 +178,10 @@ def report_accuracy_and_correlations_from_statistics(
     corr_trn = statistics.load_correlations()
 
     _LOG.info("calculate synthetic correlations")
-    corr_syn = mostlyai.qa.accuracy.calculate_correlations(binned=syn_bin, corr_cols=corr_trn.columns)
+    corr_syn = _accuracy.calculate_correlations(binned=syn_bin, corr_cols=corr_trn.columns)
 
     _LOG.info("plot correlations")
-    mostlyai.qa.accuracy.plot_store_correlation_matrices(corr_trn=corr_trn, corr_syn=corr_syn, workspace=workspace)
+    _accuracy.plot_store_correlation_matrices(corr_trn=corr_trn, corr_syn=corr_syn, workspace=workspace)
 
     _LOG.info("filter columns for plotting")
     syn = syn[acc_uni["column"]]
@@ -191,20 +189,20 @@ def report_accuracy_and_correlations_from_statistics(
     syn_bin = syn_bin[acc_cols]
 
     _LOG.info("calculate numeric KDEs for synthetic")
-    syn_num_kdes = accuracy.calculate_numeric_uni_kdes(df=syn, trn_kdes=trn_num_kdes)
+    syn_num_kdes = _accuracy.calculate_numeric_uni_kdes(df=syn, trn_kdes=trn_num_kdes)
 
     _LOG.info("calculate categorical counts for synthetic")
-    syn_cat_uni_cnts = accuracy.calculate_categorical_uni_counts(
+    syn_cat_uni_cnts = _accuracy.calculate_categorical_uni_counts(
         df=syn,
         trn_col_counts=trn_cat_uni_cnts,
         hash_rare_values=False,
     )
 
     _LOG.info("calculate bin counts for synthetic")
-    syn_bin_cnts_uni, syn_bin_cnts_biv = accuracy.calculate_bin_counts(syn_bin)
+    syn_bin_cnts_uni, syn_bin_cnts_biv = _accuracy.calculate_bin_counts(syn_bin)
 
     _LOG.info("plot univariates")
-    accuracy.plot_store_univariates(
+    _accuracy.plot_store_univariates(
         trn_num_kdes=trn_num_kdes,
         syn_num_kdes=syn_num_kdes,
         trn_cat_cnts=trn_cat_uni_cnts,
@@ -217,7 +215,7 @@ def report_accuracy_and_correlations_from_statistics(
     )
 
     _LOG.info("plot bivariates")
-    accuracy.plot_store_bivariates(
+    _accuracy.plot_store_bivariates(
         trn_cnts_uni=trn_bin_cnts_uni,
         syn_cnts_uni=syn_bin_cnts_uni,
         trn_cnts_biv=trn_bin_cnts_biv,
@@ -230,7 +228,7 @@ def report_accuracy_and_correlations_from_statistics(
     return acc_uni, acc_biv, corr_trn
 
 
-def report_similarity_from_statistics(
+def _report_similarity_from_statistics(
     *,
     syn_embeds: np.ndarray,
     statistics: Statistics,
@@ -246,6 +244,6 @@ def report_similarity_from_statistics(
     trn_pca, hol_pca = statistics.load_trn_hol_pcas()
 
     _LOG.info("plot and store PCA similarity contours")
-    similarity.plot_store_similarity_contours(
+    _similarity.plot_store_similarity_contours(
         pca_model=pca_model, trn_pca=trn_pca, hol_pca=hol_pca, syn_embeds=syn_embeds, workspace=workspace
     )

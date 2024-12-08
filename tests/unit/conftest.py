@@ -18,7 +18,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from mostlyai.qa.filesystem import TemporaryWorkspace
+from mostlyai.qa._filesystem import TemporaryWorkspace
 
 
 @pytest.fixture()

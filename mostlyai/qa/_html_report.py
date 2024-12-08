@@ -19,8 +19,8 @@ from typing import Literal
 
 import pandas as pd
 from jinja2 import Environment, FileSystemLoader
-from mostlyai.qa.accuracy import trim_label, filter_uni_acc_for_plotting, filter_biv_acc_for_plotting
-from mostlyai.qa.filesystem import TemporaryWorkspace
+from mostlyai.qa._accuracy import trim_label, filter_uni_acc_for_plotting, filter_biv_acc_for_plotting
+from mostlyai.qa._filesystem import TemporaryWorkspace
 from mostlyai.qa.assets import (
     HTML_ASSETS_PATH,
     read_html_assets,

@@ -34,7 +34,7 @@ import pandas as pd
 import pyarrow as pa
 import torch
 
-from mostlyai.qa.common import (
+from mostlyai.qa._common import (
     CTX_COLUMN_PREFIX,
     TGT_COLUMN_PREFIX,
     NXT_COLUMN_PREFIX,

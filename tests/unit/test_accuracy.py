@@ -17,7 +17,7 @@ import pandas as pd
 from numpy.testing import assert_array_equal
 from pandas._testing import assert_frame_equal
 
-from mostlyai.qa.accuracy import (
+from mostlyai.qa._accuracy import (
     calculate_accuracy,
     calculate_bivariate_columns,
     calculate_expected_l1_multinomial,
@@ -39,8 +39,8 @@ from mostlyai.qa.accuracy import (
     plot_store_correlation_matrices,
     bin_categorical,
 )
-from mostlyai.qa.sampling import pull_data_for_accuracy, sample_two_consecutive_rows
-from mostlyai.qa.common import (
+from mostlyai.qa._sampling import pull_data_for_accuracy, sample_two_consecutive_rows
+from mostlyai.qa._common import (
     OTHER_BIN,
     EMPTY_BIN,
     NA_BIN,

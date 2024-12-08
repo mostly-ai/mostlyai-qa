@@ -19,7 +19,7 @@ from typing import Protocol, Callable
 import pandas as pd
 from rich.progress import Progress
 
-from mostlyai.qa.filesystem import Statistics
+from mostlyai.qa._filesystem import Statistics
 
 _LOG = logging.getLogger(__name__)
 

@@ -26,7 +26,7 @@ import scipy.cluster
 import scipy.stats
 from joblib import Parallel, delayed, parallel_config, cpu_count
 
-from mostlyai.qa.common import (
+from mostlyai.qa._common import (
     CHARTS_COLORS,
     CHARTS_FONTS,
     EMPTY_BIN,
@@ -46,7 +46,7 @@ from mostlyai.qa.common import (
 )
 from plotly import graph_objs as go
 
-from mostlyai.qa.filesystem import TemporaryWorkspace, Statistics
+from mostlyai.qa._filesystem import TemporaryWorkspace, Statistics
 
 _LOG = logging.getLogger(__name__)
 

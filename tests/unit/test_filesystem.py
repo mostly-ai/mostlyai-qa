@@ -14,12 +14,12 @@
 
 import pandas as pd
 
-from mostlyai.qa.accuracy import (
+from mostlyai.qa._accuracy import (
     calculate_bin_counts,
     calculate_categorical_uni_counts,
     bin_data,
 )
-from mostlyai.qa.filesystem import Statistics
+from mostlyai.qa._filesystem import Statistics
 
 
 class TestStatistics:

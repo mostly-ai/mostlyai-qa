@@ -19,11 +19,11 @@ import plotly.graph_objects as go
 from sklearn.decomposition import PCA
 from sklearn.metrics.pairwise import cosine_similarity
 
-from mostlyai.qa.common import (
+from mostlyai.qa._common import (
     CHARTS_FONTS,
     CHARTS_COLORS,
 )
-from mostlyai.qa.filesystem import TemporaryWorkspace
+from mostlyai.qa._filesystem import TemporaryWorkspace
 import scipy.stats
 from sklearn.model_selection import StratifiedKFold
 from sklearn.linear_model import LogisticRegression
