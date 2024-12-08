@@ -50,6 +50,7 @@ def report_from_statistics(
     report_extra_info: str = "",
     max_sample_size_accuracy: int | None = None,
     max_sample_size_embeddings: int | None = None,
+    device: str | None = None,
     update_progress: ProgressCallback | None = None,
 ) -> Path:
     with (
@@ -114,6 +115,7 @@ def report_from_statistics(
                 tgt_context_key=tgt_context_key,
                 max_sample_size=max_sample_size_embeddings,
             ),
+            device=device,
             progress=progress,
             progress_from=30,
             progress_to=50,

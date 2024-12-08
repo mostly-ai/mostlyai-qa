@@ -72,6 +72,7 @@ def report(
     max_sample_size_accuracy: int | None = None,
     max_sample_size_embeddings: int | None = None,
     statistics_path: str | Path | None = None,
+    device: str | None = None,
     update_progress: ProgressCallback | None = None,
 ) -> tuple[Path, Metrics | None]:
     """
@@ -106,6 +107,7 @@ def report(
         max_sample_size_accuracy: Max sample size for accuracy
         max_sample_size_embeddings: Max sample size for embeddings (similarity & distances)
         statistics_path: Path of where to store the statistics to be used by `report_from_statistics`
+        device: Device to use for embeddings calculation. Default: `cuda` if GPU available, otherwise `cpu`
         update_progress: A custom progress callback
 
     Returns:
@@ -250,6 +252,7 @@ def report(
                 tgt_context_key=tgt_context_key,
                 max_sample_size=max_sample_size_embeddings_final,
             ),
+            device=device,
             progress=progress,
             progress_from=20,
             progress_to=40,
@@ -263,6 +266,7 @@ def report(
                 tgt_context_key=tgt_context_key,
                 max_sample_size=max_sample_size_embeddings_final,
             ),
+            device=device,
             progress=progress,
             progress_from=40,
             progress_to=60,
@@ -277,6 +281,7 @@ def report(
                     tgt_context_key=tgt_context_key,
                     max_sample_size=max_sample_size_embeddings_final,
                 ),
+                device=device,
                 progress=progress,
                 progress_from=60,
                 progress_to=80,

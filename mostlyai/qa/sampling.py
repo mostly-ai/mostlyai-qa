@@ -237,13 +237,16 @@ def pull_data_for_embeddings(
 
 def calculate_embeddings(
     strings: list[str],
+    device: str | None = None,
     progress: ProgressCallbackWrapper | None = None,
     progress_from: int | None = None,
     progress_to: int | None = None,
 ) -> np.ndarray:
     t0 = time.time()
     # load embedder
-    embedder = load_embedder(device="cuda" if torch.cuda.is_available() else "cpu")
+    if device is None:
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+    embedder = load_embedder(device=device)
     # split into buckets for calculating embeddings to avoid memory issues and report continuous progress
     steps = progress_to - progress_from if progress_to is not None and progress_from is not None else 1
     buckets = np.array_split(strings, steps)
