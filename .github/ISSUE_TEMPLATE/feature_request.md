@@ -1,25 +1,17 @@
-name: 🚀 Feature request
-description: Submit a proposal/request for a new feature
+---
+name: "\U0001F680 Feature Request"
+about: Suggest an idea for this project
+title: ''
+labels: ''
+assignees: ''
 
-body:
-- type: textarea
-  attributes:
-    label: 🚀 The feature, motivation and pitch
-    description: >
-      A clear and concise description of the feature proposal. Please outline the motivation for the proposal. Is your feature request related to a specific problem? e.g., *"I'm working on X and would like Y to be possible"*. If this is related to another GitHub issue, please link here too.
-  validations:
-    required: true
-- type: textarea
-  attributes:
-    label: Alternatives
-    description: >
-      A description of any alternative solutions or features you've considered, if any.
-- type: textarea
-  attributes:
-    label: Additional context
-    description: >
-      Add any other context or screenshots about the feature request.
-- type: markdown
-  attributes:
-    value: >
-      Thanks for contributing 🎉!
+---
+
+**Is your feature request related to a problem? Please describe.**
+A clear and concise description of what the problem is.
+
+**Describe the solution you'd like**
+A clear and concise description of what you want to happen.
+
+**Describe alternatives you've considered**
+A clear and concise description of any alternative solutions or features you've considered.

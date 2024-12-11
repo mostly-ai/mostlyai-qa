@@ -1,20 +1,14 @@
-name: 📚 Documentation
-description: Report an issue related to our documentation.
+---
+name: "	0x0001F4DA Documentation"
+about: Report an issue related to our documentation.
+title: ''
+labels: ''
+assignees: ''
 
-body:
-- type: textarea
-  attributes:
-    label: 📚 The doc issue
-    description: >
-      A clear and concise description of what content in our documentation is an issue.
-  validations:
-    required: true
-- type: textarea
-  attributes:
-    label: Suggest a potential alternative/fix
-    description: >
-      Tell us how we could improve the documentation in this regard.
-- type: markdown
-  attributes:
-    value: >
-      Thanks for contributing 🎉!
+---
+
+**Describe the bug**
+Please provide a clear and concise description of what the bug is.
+
+**Expected behavior**
+A clear and concise description of what you expected to see.
