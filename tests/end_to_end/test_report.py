@@ -191,6 +191,20 @@ def test_report_flat_early_exit(tmp_path):
     assert metrics is None
 
 
+def test_report_mismatch_keys(tmp_path):
+    ctx_df = pd.DataFrame({"id": range(100, 200)})
+    tgt_df = pd.DataFrame({"id": range(200, 300), "x": "a"})
+    _, metrics = qa.report(
+        syn_tgt_data=tgt_df,
+        trn_tgt_data=tgt_df,
+        syn_ctx_data=ctx_df,
+        trn_ctx_data=ctx_df,
+        tgt_context_key="id",
+        ctx_primary_key="id",
+    )
+    assert metrics is None
+
+
 def test_report_sequential_early_exit(tmp_path):
     def make_dfs(
         ctx_rows: int, tgt_rows: int, ctx_cols: list[str] = None, tgt_cols: list[str] = None, shift: int = 0
