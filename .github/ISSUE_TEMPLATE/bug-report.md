@@ -12,6 +12,7 @@ body:
 
       ```python
       # All necessary imports at the beginning
+      import pandas as pd
       from mostlyai import qa
 
       # A succinct reproducing example trimmed down to the essential parts:
