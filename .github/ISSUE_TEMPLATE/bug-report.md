@@ -2,10 +2,6 @@ name: 🐛 Bug Report
 description: Create a report to help us reproduce and fix the bug
 
 body:
-- type: markdown
-  attributes:
-    value: >
-      #### Before submitting a bug, please make sure the issue hasn't been already addressed by searching through [the existing and past issues](https://github.com/pytorch/pytorch/issues?q=is%3Aissue+sort%3Acreated-desc+).
 - type: textarea
   attributes:
     label: 🐛 Describe the bug
