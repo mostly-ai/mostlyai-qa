@@ -132,12 +132,13 @@ def determine_data_size(
     tgt_context_key: str | None = None,
 ) -> int:
     if ctx_data is not None and ctx_primary_key is not None:
-        return len(ctx_data[ctx_primary_key].unique())
-    elif ctx_data is not None and not ctx_data.empty:
-        return len(ctx_data)
+        # consider number of matching keys for sample size
+        ctx_keys = ctx_data[ctx_primary_key].unique()
+        tgt_keys = tgt_data[tgt_context_key].unique()
+        keys = set(ctx_keys).intersection(set(tgt_keys))
+        return len(keys)
     elif tgt_data is not None and tgt_context_key is not None:
-        return len(tgt_data[tgt_context_key].unique())
-    elif tgt_data is not None and not tgt_data.empty:
-        return len(tgt_data)
+        tgt_keys = tgt_data[tgt_context_key].unique()
+        return len(tgt_keys)
     else:
-        return 0
+        return len(tgt_data)

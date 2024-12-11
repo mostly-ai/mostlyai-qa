@@ -205,6 +205,8 @@ def test_report_sequential_early_exit(tmp_path):
     test_dfs = [
         # setups with <100 rows in tgt/ctx should early terminate
         {"dfs": make_dfs(ctx_rows=99, tgt_rows=99, ctx_cols=["ctx_col"], tgt_cols=["tgt_col"]), "early_term": True},
+        {"dfs": make_dfs(ctx_rows=100, tgt_rows=100, shift=90, tgt_cols=["tgt_col"]), "early_term": True},
+        {"dfs": make_dfs(ctx_rows=100, tgt_rows=100, shift=100, tgt_cols=["tgt_col"]), "early_term": True},
         # other setups should produce report
         {"dfs": make_dfs(ctx_rows=100, tgt_rows=100), "early_term": False},
         {"dfs": make_dfs(ctx_rows=100, tgt_rows=100, ctx_cols=["ctx_col"], tgt_cols=["tgt_col"]), "early_term": False},
@@ -234,23 +236,6 @@ def test_report_few_holdout_records(tmp_path):
         syn_tgt_data=tgt,
         trn_tgt_data=tgt,
         hol_tgt_data=tgt[:10],
-    )
-    assert metrics is not None
-
-
-def test_report_sequential_few_records(tmp_path):
-    # ensure that we don't crash in case of dominant zero-seq-length
-    ctx = pd.DataFrame({"id": list(range(1000))})
-    tgt = pd.DataFrame({"id": [1, 2, 3, 4, 5] * 100, "col": ["a"] * 500})
-    _, metrics = qa.report(
-        syn_tgt_data=tgt,
-        trn_tgt_data=tgt,
-        hol_tgt_data=tgt,
-        syn_ctx_data=ctx,
-        trn_ctx_data=ctx,
-        hol_ctx_data=ctx,
-        tgt_context_key="id",
-        ctx_primary_key="id",
     )
     assert metrics is not None
 
