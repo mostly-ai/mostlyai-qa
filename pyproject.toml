@@ -6,7 +6,7 @@ readme = "README.md"
 license = "Apache-2.0"
 authors = ["MOSTLY AI <dev@mostly.ai>"]
 packages = [
-    { include = "mostlyai.qa" }
+    { include = "mostlyai/qa" }
 ]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
