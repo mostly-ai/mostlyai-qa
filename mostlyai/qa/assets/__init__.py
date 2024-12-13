@@ -42,3 +42,6 @@ def load_embedder():
 
     model_name = "sentence-transformers/all-MiniLM-L6-v2"
     return SentenceTransformer(model_name)
+
+
+__all__ = ["load_embedder"]
