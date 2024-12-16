@@ -131,7 +131,7 @@ def make_contour_and_centroid_traces(
 
     # estimate gaussian kernels
     data = data.T
-    data = data + np.random.normal(0, 1e-10, size=data.shape)
+    data += np.random.normal(0, 1e-10, size=data.shape)
     Z = scipy.stats.gaussian_kde(data)(np.vstack([X.ravel(), Y.ravel()])).reshape(X.shape)
 
     # make contour
