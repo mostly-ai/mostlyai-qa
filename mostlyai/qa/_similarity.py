@@ -131,11 +131,8 @@ def make_contour_and_centroid_traces(
 
     # estimate gaussian kernels
     data = data.T
-    try:
-        Z = scipy.stats.gaussian_kde(data)(np.vstack([X.ravel(), Y.ravel()])).reshape(X.shape)
-    except Exception as e:
-        _LOG.warning(f"gaussian_kde failed, using ones instead: {e}")
-        Z = np.ones_like(X)
+    data = data + np.random.normal(0, 1e-5, size=data.shape)
+    Z = scipy.stats.gaussian_kde(data)(np.vstack([X.ravel(), Y.ravel()])).reshape(X.shape)
 
     # make contour
     contour = go.Contour(
