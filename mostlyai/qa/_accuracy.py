@@ -250,7 +250,7 @@ def calculate_numeric_uni_kdes(df: pd.DataFrame, trn_kdes: dict[str, pd.Series] 
 
             # estimate gaussian kernels
             series_vals = series.dropna().to_numpy("float")
-            series_vals = series_vals + np.random.normal(0, 1e-5, size=series.shape)
+            series_vals = series_vals + np.random.normal(0, 1e-10, size=series.shape)
             series_kde = scipy.stats.gaussian_kde(series_vals)
             val_y = series_kde(val_x.to_numpy("float"))
             val_y = (val_y / (val_y.sum() + 1e-30)).round(5)
