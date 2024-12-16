@@ -134,7 +134,11 @@ def make_contour_and_centroid_traces(
     # avoid singular matrix error by adding 0.1% noise
     noise = np.abs(_min * 1e-3 if (_min := np.min(data)) == 0 else 1e-3)
     data += np.random.normal(0, noise, size=data.shape)
-    Z = scipy.stats.gaussian_kde(data)(np.vstack([X.ravel(), Y.ravel()])).reshape(X.shape)
+    try:
+        Z = scipy.stats.gaussian_kde(data)(np.vstack([X.ravel(), Y.ravel()])).reshape(X.shape)
+    except Exception as e:
+        _LOG.warning(f"gaussian_kde failed, using ones instead: {e}")
+        Z = np.ones_like(X)
 
     # make contour
     contour = go.Contour(
