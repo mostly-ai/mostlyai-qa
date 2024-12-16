@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
 from pathlib import Path
 
 _MODULE_DIR = Path(__file__).resolve().parent
@@ -41,7 +42,7 @@ def load_embedder():
     from sentence_transformers import SentenceTransformer
 
     model_name = "sentence-transformers/all-MiniLM-L6-v2"
-    return SentenceTransformer(model_name)
+    return SentenceTransformer(model_name, cache_folder=os.getenv("SENTENCE_TRANSFORMERS_HOME"))
 
 
 __all__ = ["load_embedder"]
