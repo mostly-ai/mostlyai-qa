@@ -42,7 +42,7 @@ def load_embedder():
     from sentence_transformers import SentenceTransformer
 
     model_name = "sentence-transformers/all-MiniLM-L6-v2"
-    return SentenceTransformer(model_name, cache_folder=os.getenv("SENTENCE_TRANSFORMERS_HOME"))
+    return SentenceTransformer(model_name, cache_folder=os.getenv("MOSTLY_HF_HOME"))
 
 
 __all__ = ["load_embedder"]
