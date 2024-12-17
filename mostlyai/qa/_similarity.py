@@ -131,9 +131,9 @@ def make_contour_and_centroid_traces(
 
     # estimate gaussian kernels
     data = data.T
-    # avoid singular matrix error by adding 0.1% noise
-    noise = np.abs(_min * 1e-3 if (_min := np.min(data)) != 0 else 1e-3)
-    data += np.random.normal(0, noise, size=data.shape)
+    # avoid singular matrix error by adding some noise
+    noise = np.abs(minimum * 1e-3 if (minimum := np.min(data)) != 0 else 1e-18)
+    data += np.random.normal(loc=0, scale=noise, size=data.shape)
     try:
         Z = scipy.stats.gaussian_kde(data)(np.vstack([X.ravel(), Y.ravel()])).reshape(X.shape)
     except Exception as e:

@@ -250,9 +250,9 @@ def calculate_numeric_uni_kdes(df: pd.DataFrame, trn_kdes: dict[str, pd.Series] 
 
             # estimate gaussian kernels
             series_vals = series.dropna().to_numpy("float")
-            # avoid singular matrix error by adding 0.1% noise
-            noise = np.abs(_min * 1e-3 if (_min := np.min(series_vals)) != 0 else 1e-3)
-            series_vals += np.random.normal(0, noise, size=series_vals.shape)
+            # avoid singular matrix error by adding some noise
+            noise = np.abs(minimum * 1e-3 if (minimum := np.min(series_vals)) != 0 else 1e-18)
+            series_vals += np.random.normal(loc=0, scale=noise, size=series_vals.shape)
             try:
                 series_kde = scipy.stats.gaussian_kde(series_vals)
                 val_y = series_kde(val_x.to_numpy("float"))
