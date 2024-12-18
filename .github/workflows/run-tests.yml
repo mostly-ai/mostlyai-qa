@@ -17,3 +17,7 @@ jobs:
         run: poetry install
       - name: Run tests
         run: poetry run pytest tests/
+      - name: Install doc dependencies
+        run: poetry install --with docs
+      - name: Build mkdocs
+        run: poetry run mkdocs build --strict
