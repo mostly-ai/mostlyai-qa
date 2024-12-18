@@ -36,7 +36,7 @@ from mostlyai.qa._accuracy import (
     plot_store_univariates,
     plot_store_bivariates,
 )
-from mostlyai.qa.metrics import Metrics, Accuracy, Similarity, Distances
+from mostlyai.qa.metrics import ModelMetrics, Accuracy, Similarity, Distances
 from mostlyai.qa._sampling import calculate_embeddings, pull_data_for_accuracy, pull_data_for_embeddings
 from mostlyai.qa._common import (
     determine_data_size,
@@ -73,7 +73,7 @@ def report(
     max_sample_size_embeddings: int | None = None,
     statistics_path: str | Path | None = None,
     update_progress: ProgressCallback | None = None,
-) -> tuple[Path, Metrics | None]:
+) -> tuple[Path, ModelMetrics | None]:
     """
     Generate HTML report and metrics for assessing synthetic data quality.
 
@@ -353,7 +353,7 @@ def _calculate_metrics(
     sim_cosine_trn_syn: np.float64 | None = None,
     sim_auc_trn_hol: np.float64 | None = None,
     sim_auc_trn_syn: np.float64 | None = None,
-) -> Metrics:
+) -> ModelMetrics:
     do_accuracy = acc_uni is not None and acc_biv is not None
     do_distances = dcr_trn is not None
     do_similarity = sim_cosine_trn_syn is not None
@@ -412,7 +412,7 @@ def _calculate_metrics(
         )
     else:
         distances = Distances()
-    return Metrics(
+    return ModelMetrics(
         accuracy=accuracy,
         similarity=similarity,
         distances=distances,
