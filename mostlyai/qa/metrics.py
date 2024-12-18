@@ -220,7 +220,7 @@ class Distances(CustomBaseModel):
         return round(value, precision) if value is not None else None
 
 
-class Metrics(CustomBaseModel):
+class ModelMetrics(CustomBaseModel):
     accuracy: Accuracy | None = Field(
         default=None,
         description="Metrics regarding the accuracy of synthetic data, measured as the closeness of discretized lower "
