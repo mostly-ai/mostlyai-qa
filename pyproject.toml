@@ -57,6 +57,7 @@ mkdocs-material = "^9.0.0"
 griffe = "^1.0.0"
 pymdown-extensions = "^10.0.0"
 griffe-fieldz = "^0.2.0"
+black = ">=22.1.0"
 
 [tool.ruff]
 target-version = "py310"
