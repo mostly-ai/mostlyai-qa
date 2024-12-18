@@ -584,6 +584,71 @@
     <div class="doc doc-contents first">
 
 
+        
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>accuracy</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="mostlyai.qa.metrics.Accuracy" href="#mostlyai.qa.metrics.Accuracy">Accuracy</a> | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Metrics regarding the accuracy of synthetic data, measured as the closeness of discretized lower dimensional marginal distributions.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>similarity</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="mostlyai.qa.metrics.Similarity" href="#mostlyai.qa.metrics.Similarity">Similarity</a> | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Metrics regarding the similarity of the full joint distributions of samples within an embedding space.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>distances</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="mostlyai.qa.metrics.Distances" href="#mostlyai.qa.metrics.Distances">Distances</a> | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Metrics regarding the nearest neighbor distances between training, holdout, and synthetic samples in an embedding space. Useful for assessing the novelty / privacy of synthetic data.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
 
 
 
@@ -643,6 +708,149 @@ The accuracy metrics shall be as close as possible to the theoretical maximum, b
 this would indicate overfitting.</p>
 
 
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>overall</code>
+            </td>
+            <td>
+                  <code>float | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Overall accuracy of synthetic data, averaged across univariate, bivariate, and coherence.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>univariate</code>
+            </td>
+            <td>
+                  <code>float | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Average accuracy of discretized univariate distributions.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>bivariate</code>
+            </td>
+            <td>
+                  <code>float | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Average accuracy of discretized bivariate distributions.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>coherence</code>
+            </td>
+            <td>
+                  <code>float | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Average accuracy of discretized coherence distributions. Only applicable for sequential data.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>overall_max</code>
+            </td>
+            <td>
+                  <code>float | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Expected overall accuracy of a same-sized holdout. Serves as a reference for <code>overall</code>.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>univariate_max</code>
+            </td>
+            <td>
+                  <code>float | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Expected univariate accuracy of a same-sized holdout. Serves as a reference for <code>univariate</code>.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>bivariate_max</code>
+            </td>
+            <td>
+                  <code>float | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Expected bivariate accuracy of a same-sized holdout. Serves as a reference for <code>bivariate</code>.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>coherence_max</code>
+            </td>
+            <td>
+                  <code>float | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Expected coherence accuracy of a same-sized holdout. Serves as a reference for <code>coherence</code>.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
 
 
 
@@ -699,6 +907,85 @@ synthetic data to be considered realistic, the AUC score should be close to 0.5,
 data is indistinguishable from the training data.</p>
 
 
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>cosine_similarity_training_synthetic</code>
+            </td>
+            <td>
+                  <code>float | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Cosine similarity between training and synthetic centroids.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>cosine_similarity_training_holdout</code>
+            </td>
+            <td>
+                  <code>float | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Cosine similarity between training and holdout centroids. Serves as a reference for <code>cosine_similarity_training_synthetic</code>.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>discriminator_auc_training_synthetic</code>
+            </td>
+            <td>
+                  <code>float | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Cross-validated AUC of a discriminative model to distinguish between training and synthetic samples.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>discriminator_auc_training_holdout</code>
+            </td>
+            <td>
+                  <code>float | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Cross-validated AUC of a discriminative model to distinguish between training and holdout samples. Serves as a reference for <code>discriminator_auc_training_synthetic</code>.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
 
 
 
@@ -750,6 +1037,101 @@ metrics are calculated:
 - Distance to Closest Record (DCR): The average distance of synthetic to training or holdout samples.</p>
 <p>For privacy-safe synthetic data we expect to see about as many identical matches, and about the same distances
 for synthetic samples to training, as we see for synthetic samples to holdout.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>ims_training</code>
+            </td>
+            <td>
+                  <code>float | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Share of synthetic samples that are identical to a training sample.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>ims_holdout</code>
+            </td>
+            <td>
+                  <code>float | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Share of synthetic samples that are identical to a holdout sample. Serves as a reference for <code>ims_training</code>.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>dcr_training</code>
+            </td>
+            <td>
+                  <code>float | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Average L2 nearest-neighbor distance between synthetic and training samples.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>dcr_holdout</code>
+            </td>
+            <td>
+                  <code>float | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Average L2 nearest-neighbor distance between synthetic and holdout samples. Serves as a reference for <code>dcr_training</code>.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>dcr_share</code>
+            </td>
+            <td>
+                  <code>float | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Share of synthetic samples that are closer to a training sample than to a holdout sample. This should not be significantly larger than 50%.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
 
 
 
