@@ -250,18 +250,16 @@ def calculate_numeric_uni_kdes(df: pd.DataFrame, trn_kdes: dict[str, pd.Series] 
 
             # estimate gaussian kernels
             series_vals = series.dropna().to_numpy("float")
-            if len(series_vals) > 1:
-                try:
-                    series_kde = scipy.stats.gaussian_kde(series_vals)
-                    val_y = series_kde(val_x.to_numpy("float"))
-                    val_y = (val_y / (val_y.sum() + 1e-30)).round(5)
-                except np.linalg.LinAlgError:
-                    # handle `singular matrix` error that can occur for constants
-                    val_y = [1] * len(val_x)
-            elif len(series_vals) == 1:
+            # avoid singular matrix error by adding some noise
+            noise = np.abs(minimum * 1e-3 if (minimum := np.min(series_vals)) != 0 else 1e-18)
+            series_vals += np.random.normal(loc=0, scale=noise, size=series_vals.shape)
+            try:
+                series_kde = scipy.stats.gaussian_kde(series_vals)
+                val_y = series_kde(val_x.to_numpy("float"))
+                val_y = (val_y / (val_y.sum() + 1e-30)).round(5)
+            except Exception as e:
+                _LOG.warning(f"gaussian_kde failed, using ones instead: {e}")
                 val_y = [1] * len(val_x)
-            else:
-                val_y = [np.nan] * len(val_x)
             col_kdes[col] = pd.Series(val_y, index=val_x, name=col)
 
     if trn_kdes is not None:
