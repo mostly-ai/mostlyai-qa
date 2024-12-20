@@ -14,7 +14,8 @@
 
 import logging
 from functools import partial
-from typing import Protocol, Callable
+from typing import Protocol
+from collections.abc import Callable
 
 import pandas as pd
 from rich.progress import Progress
