@@ -75,7 +75,7 @@ def report(
     update_progress: ProgressCallback | None = None,
 ) -> tuple[Path, ModelMetrics | None]:
     """
-    Generate HTML report and metrics for assessing synthetic data quality.
+    Generate an HTML report and metrics for assessing synthetic data quality.
 
     Compares synthetic data samples with original training samples in terms of accuracy, similarity and distances.
     Provide holdout samples to calculate reference values for similarity and distances (recommended).
@@ -90,27 +90,27 @@ def report(
     Limit the compute time used by setting `max_sample_size_accuracy` and `max_sample_size_embeddings`.
 
     Args:
-        syn_tgt_data: Synthetic (target) samples
-        trn_tgt_data: Training (target) samples
-        hol_tgt_data: Holdout (target) samples
-        syn_ctx_data: Synthetic context samples
-        trn_ctx_data: Training context samples
-        hol_ctx_data: Holdout context samples
-        ctx_primary_key: Column within the context data that contains the primary key
-        tgt_context_key: Column within the target data that contains the key to link to the context
-        report_path: Path of where to store the HTML report
-        report_title: Title of the HTML report
-        report_subtitle: Subtitle of the HTML report
-        report_credits: Credits of the HTML report
-        report_extra_info: Extra details to be included to the HTML report
-        max_sample_size_accuracy: Max sample size for accuracy
-        max_sample_size_embeddings: Max sample size for embeddings (similarity & distances)
-        statistics_path: Path of where to store the statistics to be used by `report_from_statistics`
-        update_progress: A custom progress callback
+        syn_tgt_data: The synthetic (target) data.
+        trn_tgt_data: The training (target) data.
+        hol_tgt_data: The holdout (target) data.
+        syn_ctx_data: The synthetic context data.
+        trn_ctx_data: The training context data.
+        hol_ctx_data: The holdout context data.
+        ctx_primary_key: The primary key of the context data.
+        tgt_context_key: The context key of the target data.
+        report_path: The path to store the HTML report.
+        report_title: The title of the report.
+        report_subtitle: The subtitle of the report.
+        report_credits: The credits of the report.
+        report_extra_info: The extra information of the report.
+        max_sample_size_accuracy: The maximum sample size for accuracy calculations.
+        max_sample_size_embeddings: The maximum sample size for embedding calculations (similarity & distances)
+        statistics_path: The path of where to store the statistics to be used by `report_from_statistics`
+        update_progress: The progress callback.
 
     Returns:
-        Path to the generated HTML report
-        Metrics instance with accuracy, similarity, and distances metrics
+        The path to the generated HTML report.
+        Metrics instance with accuracy, similarity, and distances metrics.
     """
 
     if syn_ctx_data is not None:

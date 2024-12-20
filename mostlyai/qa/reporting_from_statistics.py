@@ -50,6 +50,28 @@ def report_from_statistics(
     max_sample_size_embeddings: int | None = None,
     update_progress: ProgressCallback | None = None,
 ) -> Path:
+    """
+    Generate an HTML report based on previously generated statistics and newly provided synthetic data samples.
+
+    Args:
+        syn_tgt_data: The synthetic (target) data.
+        syn_ctx_data: The synthetic context data.
+        statistics_path: The path from where to fetch the statistics files.
+        ctx_primary_key: The primary key of the context data.
+        tgt_context_key: The context key of the target data.
+        report_path: The path to store the HTML report.
+        report_title: The title of the report.
+        report_subtitle: The subtitle of the report.
+        report_credits: The credits of the report.
+        report_extra_info: The extra information of the report.
+        max_sample_size_accuracy: The maximum sample size for accuracy calculations.
+        max_sample_size_embeddings: The maximum sample size for embedding calculations (similarity & distances)
+        update_progress: The progress callback.
+
+    Returns:
+        The path to the generated HTML report.
+    """
+
     with (
         TemporaryWorkspace() as workspace,
         ProgressCallbackWrapper(update_progress, description="Create report 🚀") as progress,

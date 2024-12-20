@@ -14,7 +14,7 @@
 
 from mostlyai.qa import _accuracy, _html_report, _distances, _similarity
 from mostlyai.qa._common import CTX_COLUMN_PREFIX, TGT_COLUMN_PREFIX
-from mostlyai.qa.report import _calculate_metrics
+from mostlyai.qa.reporting import _calculate_metrics
 from mostlyai.qa._sampling import calculate_embeddings, pull_data_for_embeddings
 
 
