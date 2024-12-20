@@ -16,7 +16,8 @@ import functools
 import hashlib
 import logging
 import math
-from typing import Any, Callable, Iterable
+from typing import Any
+from collections.abc import Callable, Iterable
 
 import fastcluster
 import numpy as np
@@ -896,7 +897,7 @@ def trim_label(label: str, max_length: int = None, reserved_labels: set[str] = N
         n -= 3  # three dots replace text
         n_1 = math.ceil(n / 2)
         n_2 = math.floor(n / 2)
-        return "{0}...{1}".format(s[:n_1], s[-n_2:])
+        return f"{s[:n_1]}...{s[-n_2:]}"
 
     if max_length is not None:
         label = truncate_middle(label, max_length)
@@ -1013,7 +1014,7 @@ def bin_numeric(col: pd.Series, bins: int | list[str]) -> tuple[pd.Categorical, 
 
         precisions = list(range(20))
         for precision in precisions:
-            if len(set([_floor(b, precision) for b in breaks])) == len(breaks):
+            if len({_floor(b, precision) for b in breaks}) == len(breaks):
                 breaks = [_floor(b, precision) for b in breaks[:-1]] + [breaks[-1]]
                 break
 

@@ -119,7 +119,7 @@ class Statistics:
             json.dump(meta, file)
 
     def load_meta(self) -> dict:
-        with open(self.meta_path, "r") as file:
+        with open(self.meta_path) as file:
             return json.load(file)
 
     def store_bins(self, bins: dict[str, list]) -> None:
