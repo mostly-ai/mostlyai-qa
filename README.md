@@ -6,7 +6,7 @@
 
 Assess the fidelity and novelty of synthetic samples with respect to original samples:
 
-1. calculate a rich set of accuracy, similarity and distance metrics
+1. calculate a rich set of accuracy, similarity and distance [metrics](https://mostly-ai.github.io/mostlyai-qa/api/#mostlyai.qa.metrics.ModelMetrics)
 2. visualize statistics for easy comparison to training and holdout samples
 3. generate a standalone, easy-to-share, easy-to-read HTML summary report
 
@@ -18,12 +18,6 @@ The latest release of `mostlyai-qa` can be installed via pip:
 
 ```bash
 pip install -U mostlyai-qa
-```
-
-The latest development version can be installed directly from GitHub:
-
-```bash
-pip install -U git+https://github.com/mostly-ai/mostlyai-qa.git@main
 ```
 
 ## Quick Start

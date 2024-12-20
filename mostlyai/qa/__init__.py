@@ -17,8 +17,8 @@ import os
 import pandas as pd
 from packaging.version import Version
 
-from mostlyai.qa.report import report
-from mostlyai.qa.report_from_statistics import report_from_statistics
+from mostlyai.qa.reporting import report
+from mostlyai.qa.reporting_from_statistics import report_from_statistics
 
 __all__ = ["report", "report_from_statistics"]
 __version__ = "1.4.1"
