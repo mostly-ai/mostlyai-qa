@@ -7,7 +7,6 @@ hide:
 
 ::: mostlyai.qa
     options:
-        heading_level: 3
         members:
             - report
             - report_from_statistics
@@ -16,7 +15,6 @@ hide:
 
 ::: mostlyai.qa.metrics
     options:
-        heading_level: 3
         members:
             - ModelMetrics
             - Accuracy
