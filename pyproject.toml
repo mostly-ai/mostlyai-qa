@@ -1,13 +1,11 @@
-[tool.poetry]
+[project]
 name = "mostlyai-qa"
 version = "1.4.1"
 description = "Synthetic Data - Quality Assurance"
+authors = [{ name = "MOSTLY AI", email = "dev@mostly.ai" }]
+requires-python = ">=3.10,<3.13"
 readme = "README.md"
 license = "Apache-2.0"
-authors = ["MOSTLY AI <dev@mostly.ai>"]
-packages = [
-    { include = "mostlyai/qa" }
-]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Developers",
@@ -21,48 +19,54 @@ classifiers = [
     "Topic :: Software Development :: Libraries",
     "Typing :: Typed",
 ]
+dependencies = [
+    "pydantic>=2.0.0,<3.0.0",
+    "numpy>=1.26.3,<2.0.0",
+    "scipy>=1.11.0",
+    "pandas>=2.0.0",
+    "pyarrow>=14.0.0",
+    "plotly>=5.18.0",
+    "phik>=0.12.4",
+    "fastcluster>=1.2.6",
+    "joblib>=1.2.0",
+    "Jinja2>=3.1.2",
+    "scikit-learn>=1.4.0",
+    "sentence-transformers>=3.1.0",
+    "rich>=13.9.4,<14",
+]
 
-[tool.poetry.urls]
-"Homepage" = "https://github.com/mostly-ai/mostlyai-qa"
-"Documentation" = "https://mostly-ai.github.io/mostlyai-qa/"
-"Source" = "https://github.com/mostly-ai/mostlyai-qa"
+[project.urls]
+Homepage = "https://github.com/mostly-ai/mostlyai-qa"
+Documentation = "https://mostly-ai.github.io/mostlyai-qa/"
+Source = "https://github.com/mostly-ai/mostlyai-qa"
 
+[project.optional-dependencies]
+dev = [
+    "ruff==0.7.0",
+    "pytest>=7.1.2",
+    "pre-commit>=3.2.0",
+    "twine>=5.1.1,<6",
+]
+docs = [
+    "mkdocs>=1.5.3",
+    "mkdocstrings[crystal, python]>=0.27.0,<0.28",
+    "mkdocs-material>=9.0.0,<10",
+    "griffe>=1.0.0,<2",
+    "pymdown-extensions>=10.0.0,<11",
+    "griffe-fieldz>=0.2.0,<0.3",
+    "black>=22.1.0",
+]
 
-[tool.poetry.dependencies]
-python = "^3.10"
-pydantic = ">=2.0.0,<3.0.0"
-numpy = ">=1.26.3,<2.0.0"
-scipy = ">=1.11.0"
-pandas = ">=2.0.0"
-pyarrow = ">=14.0.0"
-plotly = ">=5.18.0"
-phik = ">=0.12.4"
-fastcluster = ">=1.2.6"
-joblib = ">=1.2.0"
-Jinja2 = ">=3.1.2"
-scikit-learn = ">=1.4.0"
-sentence-transformers = ">=3.1.0"
-rich = "^13.9.4"
+[tool.hatch.build.targets.sdist]
+include = ["mostlyai/qa"]
 
-[tool.poetry.group.dev.dependencies]
-ruff = "0.7.0"
-pytest = ">=7.1.2"
-pre-commit = ">=3.2.0"
-twine = "^5.1.1"
+[tool.hatch.build.targets.wheel]
+include = ["mostlyai/qa"]
 
-[tool.poetry.group.docs.dependencies]
-mkdocs = ">=1.5.3"
-mkdocstrings = { version = "^0.27.0", extras = ["crystal", "python"] }
-mkdocs-material = "^9.0.0"
-griffe = "^1.0.0"
-pymdown-extensions = "^10.0.0"
-griffe-fieldz = "^0.2.0"
-black = ">=22.1.0"
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
 [tool.ruff]
 target-version = "py310"
 line-length = 120
-
-[build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
