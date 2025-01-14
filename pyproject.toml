@@ -3,6 +3,9 @@ name = "mostlyai-qa"
 version = "1.4.1"
 description = "Synthetic Data - Quality Assurance"
 authors = [{ name = "MOSTLY AI", email = "dev@mostly.ai" }]
+packages = [
+    { include = "mostlyai/qa" }
+]
 requires-python = ">=3.10,<3.13"
 readme = "README.md"
 license = "Apache-2.0"
