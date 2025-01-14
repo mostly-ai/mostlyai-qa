@@ -22,6 +22,6 @@ jobs:
       - name: Run tests
         run: uv run pytest tests/
       - name: Install doc dependencies
-        run: uv install --with docs
+        run: uv sync --with docs
       - name: Build mkdocs
         run: uv run mkdocs build --strict
