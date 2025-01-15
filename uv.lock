@@ -1030,7 +1030,7 @@ dependencies = [
     { name = "sentence-transformers" },
 ]
 
-[package.optional-dependencies]
+[package.dev-dependencies]
 dev = [
     { name = "pre-commit" },
     { name = "pytest" },
@@ -1049,30 +1049,36 @@ docs = [
 
 [package.metadata]
 requires-dist = [
-    { name = "black", marker = "extra == 'docs'", specifier = ">=22.1.0" },
     { name = "fastcluster", specifier = ">=1.2.6" },
-    { name = "griffe", marker = "extra == 'docs'", specifier = ">=1.0.0,<2" },
-    { name = "griffe-fieldz", marker = "extra == 'docs'", specifier = ">=0.2.0,<0.3" },
     { name = "jinja2", specifier = ">=3.1.2" },
     { name = "joblib", specifier = ">=1.2.0" },
-    { name = "mkdocs", marker = "extra == 'docs'", specifier = ">=1.5.3" },
-    { name = "mkdocs-material", marker = "extra == 'docs'", specifier = ">=9.0.0,<10" },
-    { name = "mkdocstrings", extras = ["crystal", "python"], marker = "extra == 'docs'", specifier = ">=0.27.0,<0.28" },
     { name = "numpy", specifier = ">=1.26.3,<2.0.0" },
     { name = "pandas", specifier = ">=2.0.0" },
     { name = "phik", specifier = ">=0.12.4" },
     { name = "plotly", specifier = ">=5.18.0" },
-    { name = "pre-commit", marker = "extra == 'dev'", specifier = ">=3.2.0" },
     { name = "pyarrow", specifier = ">=14.0.0" },
     { name = "pydantic", specifier = ">=2.0.0,<3.0.0" },
-    { name = "pymdown-extensions", marker = "extra == 'docs'", specifier = ">=10.0.0,<11" },
-    { name = "pytest", marker = "extra == 'dev'", specifier = ">=7.1.2" },
     { name = "rich", specifier = ">=13.9.4,<14" },
-    { name = "ruff", marker = "extra == 'dev'", specifier = "==0.7.0" },
     { name = "scikit-learn", specifier = ">=1.4.0" },
     { name = "scipy", specifier = ">=1.11.0" },
     { name = "sentence-transformers", specifier = ">=3.1.0" },
-    { name = "twine", marker = "extra == 'dev'", specifier = ">=5.1.1,<6" },
+]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "pre-commit", specifier = ">=3.2.0" },
+    { name = "pytest", specifier = ">=7.1.2" },
+    { name = "ruff", specifier = "==0.7.0" },
+    { name = "twine", specifier = ">=5.1.1,<6" },
+]
+docs = [
+    { name = "black", specifier = ">=22.1.0" },
+    { name = "griffe", specifier = ">=1.0.0,<2" },
+    { name = "griffe-fieldz", specifier = ">=0.2.0,<0.3" },
+    { name = "mkdocs", specifier = ">=1.5.3" },
+    { name = "mkdocs-material", specifier = ">=9.0.0,<10" },
+    { name = "mkdocstrings", extras = ["crystal", "python"], specifier = ">=0.27.0,<0.28" },
+    { name = "pymdown-extensions", specifier = ">=10.0.0,<11" },
 ]
 
 [[package]]
