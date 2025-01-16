@@ -1,6 +1,6 @@
 [project]
 name = "mostlyai-qa"
-version = "1.4.3"
+version = "1.4.4"
 description = "Synthetic Data - Quality Assurance"
 authors = [{ name = "MOSTLY AI", email = "dev@mostly.ai" }]
 packages = [
@@ -75,5 +75,5 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.ruff]
-target-version = "1.4.3"
+target-version = "1.4.4"
 line-length = 120
