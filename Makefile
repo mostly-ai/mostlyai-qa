@@ -8,15 +8,15 @@ clean: ## Remove .gitignore files
 
 .PHONY: install
 install: # Install dependencies
-	poetry install
+	uv sync
 
 .PHONY: lint
 lint: ## Run lints
-	poetry run pre-commit run --all-files
+	uv run pre-commit run --all-files
 
 .PHONY: test
 test: ## Run tests
-	poetry run pytest
+	uv run pytest
 
 .PHONY: all
 all: clean install lint test ## Run the commands: clean install lint test
@@ -82,7 +82,7 @@ bump-version: # Bump version (default: patch, options: patch, minor, major)
     fi
 
 update-vars-version: # Update the required variables after bump
-	$(eval VERSION := $(shell poetry version -s))
+	$(eval VERSION := $(shell python -c "import tomllib; print(tomllib.load(open('pyproject.toml', 'rb'))['project']['version'])"))
 	$(eval BRANCH := verbump_$(shell echo $(VERSION) | tr '.' '_'))
 	$(eval TAG := $(VERSION))
 	@echo "Updated VERSION to $(VERSION), BRANCH to $(BRANCH), TAG to $(TAG)"
@@ -104,7 +104,7 @@ clean-dist: # Remove "volatile" directory dist
 
 build: # Build the project and create the dist directory if it doesn't exist
 	@mkdir -p dist
-	@poetry build
+	@uv build
 	@echo "Built the project"
 	@twine check --strict dist/*
 	@echo "Project is checked"
