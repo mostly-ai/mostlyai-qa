@@ -1012,7 +1012,7 @@ wheels = [
 
 [[package]]
 name = "mostlyai-qa"
-version = "1.4.5"
+version = "1.4.2"
 source = { editable = "." }
 dependencies = [
     { name = "fastcluster" },
