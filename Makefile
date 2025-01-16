@@ -8,7 +8,7 @@ clean: ## Remove .gitignore files
 
 .PHONY: install
 install: # Install dependencies
-	uv sync
+	uv sync --frozen
 
 .PHONY: lint
 lint: ## Run lints
