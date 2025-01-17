@@ -242,7 +242,7 @@ def plot_store_similarity_contours(
     color_scales = ["Blues", "Greens", "Blues"][: len(pcas)]
     for row, (pca_y, pca_x) in enumerate(pca_combos):
         # update axes labels of subplots
-        label_x, label_y = f"Principal Component {pca_x+1}", f"Principal Component {pca_y+1}"
+        label_x, label_y = f"Principal Component {pca_x + 1}", f"Principal Component {pca_y + 1}"
         fig.update_xaxes(row=row + 1, title_text=label_x, showgrid=True, zeroline=True)
         # add contours and centroid traces to subplots
         for col, pca in enumerate(pcas):
