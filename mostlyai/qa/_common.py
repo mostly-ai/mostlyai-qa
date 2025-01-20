@@ -13,12 +13,9 @@
 # limitations under the License.
 
 import logging
-from functools import partial
 from typing import Protocol
-from collections.abc import Callable
 
 import pandas as pd
-from rich.progress import Progress
 
 from mostlyai.qa._filesystem import Statistics
 
@@ -79,30 +76,11 @@ class ProgressCallback(Protocol):
 
 
 class ProgressCallbackWrapper:
-    @staticmethod
-    def _wrap_progress_callback(
-        update_progress: ProgressCallback | None = None, **kwargs
-    ) -> tuple[ProgressCallback, Callable]:
-        if not update_progress:
-            rich_progress = Progress()
-            rich_progress.start()
-            task_id = rich_progress.add_task(**kwargs)
-            update_progress = partial(rich_progress.update, task_id=task_id)
-        else:
-            rich_progress = None
-
-        def teardown_progress():
-            if rich_progress:
-                rich_progress.refresh()
-                rich_progress.stop()
-
-        return update_progress, teardown_progress
-
     def update(self, total: float | None = None, completed: float | None = None, **kwargs) -> None:
         self._update_progress(total=total, completed=completed, **kwargs)
 
-    def __init__(self, update_progress: ProgressCallback | None = None, **kwargs):
-        self._update_progress, self._teardown_progress = self._wrap_progress_callback(update_progress, **kwargs)
+    def __init__(self, update_progress: ProgressCallback | None = None):
+        self._update_progress = update_progress if update_progress is not None else (lambda *args, **kwargs: None)
 
     def __enter__(self):
         self._update_progress(completed=0, total=1)
@@ -111,7 +89,6 @@ class ProgressCallbackWrapper:
     def __exit__(self, exc_type, exc_value, traceback):
         if exc_type is None:
             self._update_progress(completed=1, total=1)
-        self._teardown_progress()
 
 
 def check_min_sample_size(size: int, min: int, type: str) -> None:
