@@ -288,6 +288,8 @@ class Statistics:
         sio.dump(pca_model, self.pca_model_path)
 
     def load_pca_model(self) -> PCA | None:
+        if not self.pca_model_path.exists():
+            return None
         unknown_types = sio.get_untrusted_types(file=self.pca_model_path)
         if unknown_types:
             raise ValueError(f"Unknown types found in file {self.pca_model_path}: {unknown_types}")
