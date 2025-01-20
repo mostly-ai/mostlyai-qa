@@ -124,6 +124,8 @@ class Statistics:
     def store_bins(self, bins: dict[str, list]) -> None:
         df = pd.Series(bins).to_frame("bins").reset_index().rename(columns={"index": "column"})
         self.bins_dir.mkdir(exist_ok=True, parents=True)
+        empty_df = pd.DataFrame(columns=["column", "bins"])
+        empty_df.to_parquet(self.bins_dir / "empty.parquet")
         for i, row in df.iterrows():
             row_df = pd.DataFrame([row]).explode("bins")
             row_df.to_parquet(self.bins_dir / f"{i:05}.parquet")
@@ -170,6 +172,8 @@ class Statistics:
             columns=["column", "x", "y"],
         )
         self.numeric_kdes_uni_dir.mkdir(exist_ok=True, parents=True)
+        empty_df = pd.DataFrame(columns=["column", "x", "y"])
+        empty_df.to_parquet(self.numeric_kdes_uni_dir / "empty.parquet")
         for i, row in trn_kdes.iterrows():
             row_df = pd.DataFrame([row]).explode(["x", "y"])
             row_df.to_parquet(self.numeric_kdes_uni_dir / f"{i:05}.parquet")
@@ -195,6 +199,8 @@ class Statistics:
             columns=["column", "cat", "count"],
         )
         self.categorical_counts_uni_dir.mkdir(exist_ok=True, parents=True)
+        empty_df = pd.DataFrame(columns=["column", "cat", "count"])
+        empty_df.to_parquet(self.categorical_counts_uni_dir / "empty.parquet")
         for i, row in trn_cnts_uni.iterrows():
             row_df = pd.DataFrame([row]).explode(["cat", "count"])
             row_df.to_parquet(self.categorical_counts_uni_dir / f"{i:05}.parquet")
