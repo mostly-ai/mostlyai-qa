@@ -54,7 +54,7 @@ def pull_data_for_accuracy(
     ctx_primary_key: str | None = None,
     tgt_context_key: str | None = None,
     max_sample_size: int | None = None,
-    setup: str | None = None,
+    setup: str,
 ) -> pd.DataFrame:
     """
     Prepare single dataset for accuracy report.
@@ -64,7 +64,7 @@ def pull_data_for_accuracy(
     assert df_ctx is None or (ctx_primary_key is not None and tgt_context_key is not None)
     assert tgt_context_key is None or tgt_context_key in df_tgt.columns
     assert ctx_primary_key is None or ctx_primary_key in df_ctx.columns
-    assert setup is None or setup in ["1:1", "1:N"]
+    assert setup in ["1:1", "1:N"]
 
     key = "__KEY"
 
@@ -115,9 +115,6 @@ def pull_data_for_accuracy(
     count_column = f"{TGT_COLUMN_PREFIX}{COUNT_COLUMN}"
     df[count_column] = df[count_column].fillna(0).astype("Int64")
     df = df.loc[df[count_column] > 0].reset_index(drop=True)
-
-    if setup is None:
-        setup = "1:1" if (df[count_column] == 1).all() else "1:N"
 
     # for 1:1 ctx/tgt setups, drop nxt and count columns; ensure at least one column remains
     if setup == "1:1":
