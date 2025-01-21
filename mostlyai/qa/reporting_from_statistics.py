@@ -113,6 +113,9 @@ def report_from_statistics(
             ctx_primary_key=ctx_primary_key,
             tgt_context_key=tgt_context_key,
             max_sample_size=max_sample_size_accuracy,
+            # always pull Sequence Length and nxt columns for synthetic data
+            # and let downstream functions decide if they are needed
+            setup="1:N",
         )
         _LOG.info(f"sample synthetic data finished ({syn.shape=})")
         progress.update(completed=20, total=100)
