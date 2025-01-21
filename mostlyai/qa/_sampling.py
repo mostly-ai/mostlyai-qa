@@ -64,7 +64,7 @@ def pull_data_for_accuracy(
     assert df_ctx is None or (ctx_primary_key is not None and tgt_context_key is not None)
     assert tgt_context_key is None or tgt_context_key in df_tgt.columns
     assert ctx_primary_key is None or ctx_primary_key in df_ctx.columns
-    assert setup in ["1:1", "1:N"]
+    assert setup is None or setup in ["1:1", "1:N"]
 
     key = "__KEY"
 
