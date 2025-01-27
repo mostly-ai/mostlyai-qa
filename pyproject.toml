@@ -1,7 +1,7 @@
 [project]
 name = "mostlyai-qa"
 version = "1.5.1"
-description = "Synthetic Data - Quality Assurance"
+description = "Synthetic Data Quality Assurance"
 authors = [{ name = "MOSTLY AI", email = "dev@mostly.ai" }]
 packages = [
     { include = "mostlyai/qa" }
@@ -44,9 +44,9 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/mostly-ai/mostlyai-qa"
-Documentation = "https://mostly-ai.github.io/mostlyai-qa/"
-Source = "https://github.com/mostly-ai/mostlyai-qa"
+homepage = "https://github.com/mostly-ai/mostlyai-qa"
+repository = "https://github.com/mostly-ai/mostlyai-qa"
+documentation = "https://mostly-ai.github.io/mostlyai-qa/"
 
 [dependency-groups]
 dev = [
