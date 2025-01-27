@@ -26,6 +26,7 @@ pip install -U mostlyai-qa
 import pandas as pd
 import webbrowser
 from mostlyai import qa
+qa.init_logging()
 
 # fetch original + synthetic data
 base_url = "https://github.com/mostly-ai/mostlyai-qa/raw/refs/heads/main/examples/quick-start"
@@ -52,6 +53,7 @@ webbrowser.open(f"file://{report_path.absolute()}")
 
 ```python
 from mostlyai import qa
+qa.init_logging()
 
 # analyze single-table data
 report_path, metrics = qa.report(

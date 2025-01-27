@@ -17,15 +17,13 @@ import os
 import pandas as pd
 from packaging.version import Version
 
-from mostlyai.qa.logging import setup_logging
+from mostlyai.qa.logging import init_logging
 from mostlyai.qa.reporting import report
 from mostlyai.qa.reporting_from_statistics import report_from_statistics
 
-__all__ = ["report", "report_from_statistics"]
+__all__ = ["report", "report_from_statistics", "init_logging"]
 __version__ = "1.5.0"
 
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 if Version(pd.__version__) >= Version("2.2.0"):
     pd.set_option("future.no_silent_downcasting", True)
-
-setup_logging()
