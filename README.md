@@ -27,6 +27,9 @@ import pandas as pd
 import webbrowser
 from mostlyai import qa
 
+# initialize logging to stdout
+qa.init_logging()
+
 # fetch original + synthetic data
 base_url = "https://github.com/mostly-ai/mostlyai-qa/raw/refs/heads/main/examples/quick-start"
 syn = pd.read_csv(f"{base_url}/census2k-syn_mostly.csv.gz")
@@ -52,6 +55,9 @@ webbrowser.open(f"file://{report_path.absolute()}")
 
 ```python
 from mostlyai import qa
+
+# initialize logging to stdout
+qa.init_logging()
 
 # analyze single-table data
 report_path, metrics = qa.report(
