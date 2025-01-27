@@ -26,6 +26,7 @@ pip install -U mostlyai-qa
 import pandas as pd
 import webbrowser
 from mostlyai import qa
+
 qa.init_logging()
 
 # fetch original + synthetic data
@@ -53,6 +54,7 @@ webbrowser.open(f"file://{report_path.absolute()}")
 
 ```python
 from mostlyai import qa
+
 qa.init_logging()
 
 # analyze single-table data
