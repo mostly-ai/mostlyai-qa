@@ -22,7 +22,7 @@ from mostlyai.qa.reporting import report
 from mostlyai.qa.reporting_from_statistics import report_from_statistics
 
 __all__ = ["report", "report_from_statistics", "init_logging"]
-__version__ = "1.5.0"
+__version__ = "1.5.1"
 
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 if Version(pd.__version__) >= Version("2.2.0"):
