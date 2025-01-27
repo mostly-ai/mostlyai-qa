@@ -124,14 +124,13 @@ class Statistics:
     def store_bins(self, bins: dict[str, list]) -> None:
         df = pd.Series(bins).to_frame("bins").reset_index().rename(columns={"index": "column"})
         self.bins_dir.mkdir(exist_ok=True, parents=True)
-        empty_df = pd.DataFrame(columns=["column", "bins"])
-        empty_df.to_parquet(self.bins_dir / "empty.parquet")
         for i, row in df.iterrows():
             row_df = pd.DataFrame([row]).explode("bins")
             row_df.to_parquet(self.bins_dir / f"{i:05}.parquet")
 
     def load_bins(self) -> dict[str, list]:
-        df = pd.concat([pd.read_parquet(p) for p in sorted(self.bins_dir.glob("*.parquet"))])
+        files = sorted(self.bins_dir.glob("*.parquet"))
+        df = pd.concat([pd.read_parquet(p) for p in files]) if files else pd.DataFrame(columns=["column", "bins"])
         df = df.groupby("column", sort=False).agg(list).reset_index()
         # harmonise older prefix formats to <prefix>:: for compatibility with older versions
         df["column"] = df["column"].str.replace(_OLD_COL_PREFIX, _NEW_COL_PREFIX, regex=True)
@@ -172,14 +171,15 @@ class Statistics:
             columns=["column", "x", "y"],
         )
         self.numeric_kdes_uni_dir.mkdir(exist_ok=True, parents=True)
-        empty_df = pd.DataFrame(columns=["column", "x", "y"])
-        empty_df.to_parquet(self.numeric_kdes_uni_dir / "empty.parquet")
         for i, row in trn_kdes.iterrows():
             row_df = pd.DataFrame([row]).explode(["x", "y"])
             row_df.to_parquet(self.numeric_kdes_uni_dir / f"{i:05}.parquet")
 
     def load_numeric_uni_kdes(self) -> dict[str, pd.Series]:
-        trn_kdes = pd.concat([pd.read_parquet(p) for p in sorted(self.numeric_kdes_uni_dir.glob("*.parquet"))])
+        files = sorted(self.numeric_kdes_uni_dir.glob("*.parquet"))
+        trn_kdes = (
+            pd.concat([pd.read_parquet(p) for p in files]) if files else pd.DataFrame(columns=["column", "x", "y"])
+        )
         trn_kdes = trn_kdes.groupby("column", sort=False).agg(list).reset_index()
         # harmonise older prefix formats to <prefix>:: for compatibility with older versions
         trn_kdes["column"] = trn_kdes["column"].str.replace(_OLD_COL_PREFIX, _NEW_COL_PREFIX, regex=True)
@@ -199,15 +199,16 @@ class Statistics:
             columns=["column", "cat", "count"],
         )
         self.categorical_counts_uni_dir.mkdir(exist_ok=True, parents=True)
-        empty_df = pd.DataFrame(columns=["column", "cat", "count"])
-        empty_df.to_parquet(self.categorical_counts_uni_dir / "empty.parquet")
         for i, row in trn_cnts_uni.iterrows():
             row_df = pd.DataFrame([row]).explode(["cat", "count"])
             row_df.to_parquet(self.categorical_counts_uni_dir / f"{i:05}.parquet")
 
     def load_categorical_uni_counts(self) -> dict[str, pd.Series]:
-        trn_cnts_uni = pd.concat(
-            [pd.read_parquet(p) for p in sorted(self.categorical_counts_uni_dir.glob("*.parquet"))]
+        files = sorted(self.categorical_counts_uni_dir.glob("*.parquet"))
+        trn_cnts_uni = (
+            pd.concat([pd.read_parquet(p) for p in files])
+            if files
+            else pd.DataFrame(columns=["column", "cat", "count"])
         )
         trn_cnts_uni = trn_cnts_uni.groupby("column", sort=False).agg(list).reset_index()
         # harmonise older prefix formats to <prefix>:: for compatibility with older versions
