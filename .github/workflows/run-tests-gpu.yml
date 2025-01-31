@@ -13,7 +13,7 @@ jobs:
     runs-on: gha-gpu-public
     permissions:
       contents: read
-      packages: write    
+      packages: write
     steps:
       - name: Setup | Checkout
         uses: actions/checkout@v4
