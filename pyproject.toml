@@ -41,6 +41,16 @@ dependencies = [
     "sentence-transformers>=3.1.0",
     "rich>=13.9.4,<14",
     "skops>=0.11.0",
+    "torch>=2.5.1",
+]
+
+[project.optional-dependencies]
+gpu = [
+    "torch>=2.5.1",
+]
+cpu = [
+    "torch==2.5.1+cpu; sys_platform == 'linux'",
+    "torch>=2.5.1; sys_platform != 'linux'",
 ]
 
 [project.urls]
@@ -68,6 +78,22 @@ docs = [
 
 [tool.uv]
 default-groups = ["dev", "docs"]
+conflicts = [
+  [
+    { extra = "cpu" },
+    { extra = "gpu" },
+  ],
+]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[tool.uv.sources]
+torch = [
+  { index = "pytorch-cpu", extra = "cpu", marker = "sys_platform == 'linux'"},
+]
 
 [tool.hatch.build.targets.sdist]
 include = ["mostlyai/qa"]
