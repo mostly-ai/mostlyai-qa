@@ -26,12 +26,11 @@ jobs:
       - name: Setup | uv
         uses: astral-sh/setup-uv@v5
         with:
-          enable-cache: true
-          cache-dependency-glob: "**/pyproject.toml"
+          enable-cache: false
           python-version: '3.10'
 
       - name: Setup | dependencies
-        run: uv sync --frozen
+        run: uv sync --frozen --extra cpu
       - name: Run tests
         run: uv run pytest tests/
 
