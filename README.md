@@ -20,7 +20,7 @@ The latest release of `mostlyai-qa` can be installed via pip:
 pip install -U mostlyai-qa
 ```
 
-On Linux, one can explicitly install `mostlyai-qa[cpu]` or `mostlyai-qa[gpu]`, for CPU-only or CUDA support respectively
+On Linux, one can explicitly install `mostlyai-qa[cpu]` or `mostlyai-qa[gpu]`, for CPU-only or CUDA support respectively.
 
 ## Quick Start
 
