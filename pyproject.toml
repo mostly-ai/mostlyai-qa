@@ -1,6 +1,6 @@
 [project]
 name = "mostlyai-qa"
-version = "1.5.2"
+version = "1.5.3"
 description = "Synthetic Data Quality Assurance"
 authors = [{ name = "MOSTLY AI", email = "dev@mostly.ai" }]
 packages = [
