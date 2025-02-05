@@ -43,7 +43,7 @@ jobs:
         run: nvidia-smi
 
       - name: Run tests
-        run: uv run pytest --log-cli-level=INFO tests/
+        run: uv run pytest tests/
 
       - name: Build mkdocs
         run: uv run mkdocs build --strict
