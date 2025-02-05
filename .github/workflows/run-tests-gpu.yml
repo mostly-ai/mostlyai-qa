@@ -11,6 +11,9 @@ env:
 jobs:
   run-tests-gpu:
     runs-on: gha-gpu-public
+    container:
+      image: nvidia/cuda:12.4.1-cudnn-runtime-ubuntu22.04
+      options: --gpus all
     permissions:
       contents: read
       packages: write
@@ -32,8 +35,11 @@ jobs:
       - name: Setup | dependencies
         run: uv sync --frozen --extra gpu
 
+      - name: Setup | Check for available GPU-s
+        run: nvidia-smi
+
       - name: Run tests
-        run: uv run pytest tests/
+        run: uv run pytest --log-cli-level=INFO tests/
 
       - name: Build mkdocs
         run: uv run mkdocs build --strict
