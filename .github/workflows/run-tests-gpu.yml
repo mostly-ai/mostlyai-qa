@@ -3,7 +3,6 @@ name: "[GPU] mostlyai-qa Tests"
 on:
   workflow_call:
 
-
 env:
     PYTHON_KEYRING_BACKEND: keyring.backends.null.Keyring
     FORCE_COLOR: "1"
@@ -11,10 +10,18 @@ env:
 jobs:
   run-tests-gpu:
     runs-on: gha-gpu-public
+    container:
+      image: nvidia/cuda:12.4.1-cudnn-runtime-ubuntu22.04
+      options: --gpus all
     permissions:
       contents: read
       packages: write
     steps:
+      - name: Setup | Install Git
+        run: |
+          apt-get update -qq
+          apt-get install -y --no-install-recommends git
+
       - name: Setup | Checkout
         uses: actions/checkout@v4
 
@@ -31,6 +38,9 @@ jobs:
 
       - name: Setup | dependencies
         run: uv sync --frozen --extra gpu
+
+      - name: Setup | Check for available GPU-s
+        run: nvidia-smi
 
       - name: Run tests
         run: uv run pytest tests/
