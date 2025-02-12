@@ -5,39 +5,39 @@
 
 <nav class="navbar navbar-expand-md navbar-dark fixed-top bg-dark">
   <div class="container-fluid">
-    <a class="navbar-brand" href="#">{% if is_model_report %}Model Report{% else %}Data Report{% endif %}</a>
+    <a class="navbar-brand" href="#" onclick="scrollToSection(event, '')">{% if is_model_report %}Model Report{% else %}Data Report{% endif %}</a>
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
       <span class="navbar-toggler-icon"></span>
     </button>
     <div class="collapse navbar-collapse" id="navbarCollapse">
       <ul class="navbar-nav me-auto mb-2 mb-md-0">
         <li class="nav-item">
-          <a class="nav-link" href="#correlations">Correlations</a>
+          <a class="nav-link" href="#correlations" onclick="scrollToSection(event, 'correlations')">Correlations</a>
         </li>
         <li class="nav-item">
-          <a class="nav-link" href="#univariates">Univariates</a>
+          <a class="nav-link" href="#univariates" onclick="scrollToSection(event, 'univariates')">Univariates</a>
         </li>
         <li class="nav-item">
-          <a class="nav-link" href="#bivariates">Bivariates</a>
+          <a class="nav-link" href="#bivariates" onclick="scrollToSection(event, 'bivariates')">Bivariates</a>
         </li>
         {% if 'coherence' in accuracy_table_by_column %}
         <li class="nav-item">
-          <a class="nav-link" href="#coherence">Coherence</a>
+          <a class="nav-link" href="#coherence" onclick="scrollToSection(event, 'coherence')">Coherence</a>
         </li>
         {% endif %}
         {% if is_model_report %}
         <li class="nav-item">
-          <a class="nav-link" href="#accuracy">Accuracy</a>
+          <a class="nav-link" href="#accuracy" onclick="scrollToSection(event, 'accuracy')">Accuracy</a>
         </li>
         {% endif %}
         {% if similarity_pca_html_chart %}
         <li class="nav-item">
-          <a class="nav-link" href="#similarities">Similarity</a>
+          <a class="nav-link" href="#similarities" onclick="scrollToSection(event, 'similarities')">Similarity</a>
         </li>
         {% endif %}
         {% if is_model_report %}
         <li class="nav-item">
-          <a class="nav-link" href="#distances">Distances</a>
+          <a class="nav-link" href="#distances" onclick="scrollToSection(event, 'distances')">Distances</a>
         </li>
         {% endif %}
       </ul>
