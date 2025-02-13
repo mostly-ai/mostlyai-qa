@@ -53,10 +53,6 @@
       Generated on {{ report_creation_datetime.strftime("%d %b %Y, %H:%M") }}
       &nbsp;&nbsp;●&nbsp;&nbsp;
       {{ "{:,d}".format(meta.rows_original) }} original samples, {{ "{:,d}".format(meta.rows_synthetic) }} synthetic samples
-      {% if meta.report_extra_info %}
-        &nbsp;&nbsp;●&nbsp;&nbsp;
-        {{ meta.report_extra_info }}
-      {% endif %}
     </p>
     {% if is_model_report %}
     <div class="d-flex">

@@ -68,7 +68,6 @@ def report(
     report_title: str = "Model Report",
     report_subtitle: str = "",
     report_credits: str = REPORT_CREDITS,
-    report_extra_info: str = "",
     max_sample_size_accuracy: int | None = None,
     max_sample_size_embeddings: int | None = None,
     statistics_path: str | Path | None = None,
@@ -85,7 +84,7 @@ def report(
 
     If the data represents sequential data, provide the `tgt_context_key` to set the groupby column for the target data.
 
-    Customize the report with the `report_title`, `report_subtitle`, `report_credits`, and `report_extra_info`.
+    Customize the report with the `report_title`, `report_subtitle` and `report_credits`.
 
     Limit the compute time used by setting `max_sample_size_accuracy` and `max_sample_size_embeddings`.
 
@@ -102,7 +101,6 @@ def report(
         report_title: The title of the report.
         report_subtitle: The subtitle of the report.
         report_credits: The credits of the report.
-        report_extra_info: The extra information of the report.
         max_sample_size_accuracy: The maximum sample size for accuracy calculations.
         max_sample_size_embeddings: The maximum sample size for embedding calculations (similarity & distances)
         statistics_path: The path of where to store the statistics to be used by `report_from_statistics`
@@ -326,7 +324,6 @@ def report(
             "report_title": report_title,
             "report_subtitle": report_subtitle,
             "report_credits": report_credits,
-            "report_extra_info": report_extra_info,
         }
         statistics.store_meta(meta=meta)
         _html_report.store_report(
