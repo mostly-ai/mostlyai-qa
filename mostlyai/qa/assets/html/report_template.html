@@ -152,15 +152,9 @@
               <td style="width: 70px;">
                 <div class="result-box-title">
                   Distances
-                  {% if metrics.distances.dcr_share is not none %}
                   <div data-bs-toggle="tooltip" data-bs-title='Distances represent the proximity between synthetic samples and their nearest training samples, with an identical match having a distance of zero. For comparison, average distances to holdout samples are shown in light gray, helping assess if the model has learned general patterns common in both training and holdout sets. The DCR share indicates the proportion of synthetic samples that are closer to a training sample than to a holdout sample, and ideally, this value should not significantly exceed 50%, as a higher value could indicate overfitting.'>
                     {{html_assets['info.svg']}}
                   </div>
-                  {% else %}
-                  <div data-bs-toggle="tooltip" data-bs-title='This metric represents the average distance between synthetic samples and their nearest training samples. For comparison, the average distances between synthetic samples and samples from a holdout dataset is shown in light gray to assess if the trained model learned the general patterns that are common in training as well as in holdout sets.'>
-                    {{html_assets['info.svg']}}
-                  </div>
-                  {% endif %}
                 </div>
               </td>
               <td>
@@ -191,7 +185,7 @@
                     <td>DCR share</td>
                     <td align="left">
                       {% if metrics.distances.dcr_holdout is not none %}
-                      {{ "{:.3f}".format(metrics.distances.dcr_share) }}
+                      {{ "{:.1%}".format(metrics.distances.dcr_share) }}
                       {% endif %}
                     </td>
                   </tr>
@@ -377,7 +371,9 @@
     <p class="lead"></p>
     <div class="row">
       <div class="table-responsive col-md-8 offset-md-2">
-        <table class='table' style="text-align: left">
+        <table class="table" style="text-align: left; table-layout: fixed;">
+
+<!--        <table class='table' style="text-align: left">-->
           <thead>
             <tr>
               <td style="width: 33%"> </td>
@@ -409,8 +405,10 @@
         </div>
         <br />
         {% if metrics.distances.dcr_share is not none %}
-        <div class="table-responsive col-md-8 offset-md-2">
-        <table class='table' style="text-align: left">
+        <div class="table-responsive col-md-12">
+          <table class="table" style="text-align: left; table-layout: fixed;">
+
+<!--        <table class='table' style="text-align: left">-->
           <thead>
             <tr>
               <td style="width: 33%"> </td>
@@ -421,8 +419,8 @@
           <tbody>
             <tr>
               <td>DCR Share</td>
-              <td>{{ "{:.3f}".format(metrics.distances.dcr_share) }}</td>
-              <td><small class="muted-text">({{ "{:.3f}".format(0.5) }})</small></td>
+              <td>{{ "{:.1%}".format(metrics.distances.dcr_share) }}</td>
+              <td><small class="muted-text">({{ "{:.1%}".format(0.5) }})</small></td>
             </tr>
           </tbody>
         </table>
@@ -435,7 +433,6 @@
         <div class="explainer-icon">{{html_assets['explainer.svg']}}</div>
         <div class="explainer-title">Explainer</div>
       </div>
-      {% if metrics.distances.dcr_share is not none %}
       <div class="explainer-body">
         Synthetic data shall be as close to the original training samples, as it is close to original holdout samples, which serve us as a reference.
         This can be asserted empirically by measuring distances between synthetic samples to their closest original samples, whereas training and holdout sets are sampled to be of equal size.
@@ -444,15 +441,6 @@
         A green line that is significantly left of the gray line implies that synthetic samples are closer to the training samples than to the holdout samples, indicating that the data has overfitted to the training data.
         A green line that overlays with the gray line validates that the trained model indeed represents the general rules, that can be found in training just as well as in holdout samples.
       </div>
-      {% else %}
-      <div class="explainer-body">
-        Synthetic data shall be as close to the original training samples, as it is close to original holdout samples, which serve us as a reference.
-        This can be asserted empirically by measuring distances between synthetic samples to their closest original samples, whereas training and holdout sets are sampled to be of equal size.
-        For the visualization above, the distances of synthetic samples to the training samples are displayed in green, and the distances of synthetic samples to the holdout samples (if available) displayed in gray.
-        A green line that is significantly left of the gray line implies that synthetic samples are closer to the training samples than to the holdout samples, indicating that the data has overfitted to the training data.
-        A green line that overlays with the gray line validates that the trained model indeed represents the general rules, that can be found in training just as well as in holdout samples.
-      </div>
-      {% endif %}
     </div>
   </div>
   {% endif %}
