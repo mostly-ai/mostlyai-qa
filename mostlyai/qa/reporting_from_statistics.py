@@ -45,7 +45,6 @@ def report_from_statistics(
     report_title: str = "Data Report",
     report_subtitle: str = "",
     report_credits: str = REPORT_CREDITS,
-    report_extra_info: str = "",
     max_sample_size_accuracy: int | None = None,
     max_sample_size_embeddings: int | None = None,
     update_progress: ProgressCallback | None = None,
@@ -63,7 +62,6 @@ def report_from_statistics(
         report_title: The title of the report.
         report_subtitle: The subtitle of the report.
         report_credits: The credits of the report.
-        report_extra_info: The extra information of the report.
         max_sample_size_accuracy: The maximum sample size for accuracy calculations.
         max_sample_size_embeddings: The maximum sample size for embedding calculations (similarity & distances)
         update_progress: The progress callback.
@@ -155,7 +153,6 @@ def report_from_statistics(
             "report_title": report_title,
             "report_subtitle": report_subtitle,
             "report_credits": report_credits,
-            "report_extra_info": report_extra_info,
         }
 
         # HTML report
