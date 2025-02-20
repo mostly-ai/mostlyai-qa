@@ -29,3 +29,6 @@ warnings.filterwarnings("ignore", category=FutureWarning, module="phik")
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 if Version(pd.__version__) >= Version("2.2.0"):
     pd.set_option("future.no_silent_downcasting", True)
+
+# Suppress HF_TOKEN warning since we only use public models
+warnings.filterwarnings("ignore", category=UserWarning, message="The secret.*HF_TOKEN.*")
