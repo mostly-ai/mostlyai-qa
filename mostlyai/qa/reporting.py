@@ -36,8 +36,14 @@ from mostlyai.qa._accuracy import (
     plot_store_univariates,
     plot_store_bivariates,
 )
+from mostlyai.qa._coherence import calculate_coh_univariates, plot_store_coherences
 from mostlyai.qa.metrics import ModelMetrics, Accuracy, Similarity, Distances
-from mostlyai.qa._sampling import calculate_embeddings, pull_data_for_accuracy, pull_data_for_embeddings
+from mostlyai.qa._sampling import (
+    calculate_embeddings,
+    pull_data_for_accuracy,
+    pull_data_for_coherence,
+    pull_data_for_embeddings,
+)
 from mostlyai.qa._common import (
     determine_data_size,
     ProgressCallback,
@@ -239,6 +245,21 @@ def report(
                 )
             )
 
+        if setup == "1:N":
+            _LOG.info("prepare training data for coherence started")
+            trn_coh = pull_data_for_coherence(df_tgt=trn_tgt_data, tgt_context_key=tgt_context_key)
+            syn_coh = pull_data_for_coherence(df_tgt=syn_tgt_data, tgt_context_key=tgt_context_key)
+
+            _LOG.info("report coherence")
+            acc_coh = _report_coherence(
+                trn_coh=trn_coh,
+                syn_coh=syn_coh,
+                tgt_context_key=tgt_context_key,
+                workspace=workspace,
+            )
+        else:
+            acc_coh = None
+
         _LOG.info("calculate embeddings for synthetic")
         syn_embeds = calculate_embeddings(
             strings=pull_data_for_embeddings(
@@ -333,6 +354,7 @@ def report(
             metrics=metrics,
             meta=meta,
             acc_uni=acc_uni,
+            acc_coh=acc_coh,
             acc_biv=acc_biv,
             corr_trn=corr_trn,
         )
@@ -524,6 +546,29 @@ def _report_accuracy_and_correlations(
     )
 
     return acc_uni, acc_biv, trn_corr
+
+
+def _report_coherence(
+    *,
+    trn_coh: pd.DataFrame,
+    syn_coh: pd.DataFrame,
+    tgt_context_key: str,
+    workspace: TemporaryWorkspace,
+) -> pd.DataFrame:
+    trn_num_kdes = calculate_numeric_uni_kdes(trn_coh)
+    syn_num_kdes = calculate_numeric_uni_kdes(syn_coh, trn_num_kdes)
+    trn_cat_cnts = calculate_categorical_uni_counts(df=trn_coh, hash_rare_values=True)
+    syn_cat_cnts = calculate_categorical_uni_counts(df=syn_coh, hash_rare_values=True)
+    acc_coh = calculate_coh_univariates(trn_coh, syn_coh, tgt_context_key)
+    plot_store_coherences(
+        trn_num_kdes=trn_num_kdes,
+        syn_num_kdes=syn_num_kdes,
+        trn_cat_cnts=trn_cat_cnts,
+        syn_cat_cnts=syn_cat_cnts,
+        acc_coh=acc_coh,
+        workspace=workspace,
+    )
+    return acc_coh
 
 
 def _report_similarity(

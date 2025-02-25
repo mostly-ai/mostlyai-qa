@@ -276,3 +276,32 @@ def test_missing(tmp_path):
         trn_tgt_data=df1,
     )
     assert metrics is not None
+
+
+def test_coherence(tmp_path):
+    df_ctx = pd.read_csv("https://github.com/mostly-ai/public-demo-data/raw/refs/heads/dev/baseball/players.csv.gz")
+    df_tgt = pd.read_csv("https://github.com/mostly-ai/public-demo-data/raw/refs/heads/dev/baseball/batting.csv.gz")
+    ctx_primary_key = "id"
+    tgt_context_key = "players_id"
+
+    # trn_coh = pull_data_for_coherence(df_tgt=trn_tgt_data, tgt_context_key=tgt_context_key)
+    # syn_coh = pull_data_for_coherence(df_tgt=syn_tgt_data, tgt_context_key=tgt_context_key)
+
+    # with TemporaryWorkspace() as workspace:
+    #     _report_coherence(
+    #         trn_coh=trn_coh,
+    #         syn_coh=syn_coh,
+    #         columns=["league"],
+    #         workspace=workspace,
+    #     )
+
+    report_path, metrics = qa.report(
+        syn_tgt_data=df_tgt,
+        trn_tgt_data=df_tgt,
+        syn_ctx_data=df_ctx,
+        trn_ctx_data=df_ctx,
+        ctx_primary_key=ctx_primary_key,
+        tgt_context_key=tgt_context_key,
+        max_sample_size_accuracy=120,
+        max_sample_size_embeddings=80,
+    )
