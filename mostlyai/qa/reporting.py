@@ -36,12 +36,11 @@ from mostlyai.qa._accuracy import (
     plot_store_univariates,
     plot_store_bivariates,
 )
-from mostlyai.qa._coherence import calculate_coh_univariates, plot_store_coherences
+from mostlyai.qa._coherence import calculate_coh_univariates, plot_store_coherences, pull_data_for_coherence
 from mostlyai.qa.metrics import ModelMetrics, Accuracy, Similarity, Distances
 from mostlyai.qa._sampling import (
     calculate_embeddings,
     pull_data_for_accuracy,
-    pull_data_for_coherence,
     pull_data_for_embeddings,
 )
 from mostlyai.qa._common import (

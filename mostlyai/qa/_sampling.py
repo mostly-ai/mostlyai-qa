@@ -169,21 +169,6 @@ def sample_two_consecutive_rows(
     return first_rows, second_rows
 
 
-def pull_data_for_coherence(
-    *,
-    df_tgt: pd.DataFrame,
-    tgt_context_key: str,
-    max_sequence_length: int = 100,
-) -> pd.DataFrame:
-    """
-    Prepare sequential dataset for coherence metrics.
-    """
-    # randomly sample at most max_sequence_length rows per sequence
-    df_tgt = df_tgt.sample(frac=1).reset_index(drop=True)
-    df_tgt = df_tgt[df_tgt.groupby(tgt_context_key).cumcount() < max_sequence_length].reset_index(drop=True)
-    return df_tgt
-
-
 def pull_data_for_embeddings(
     *,
     df_tgt: pd.DataFrame,

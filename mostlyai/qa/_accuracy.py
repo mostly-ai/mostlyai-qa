@@ -434,6 +434,8 @@ def plot_univariate(
     trn_bin_col_cnts: pd.Series,
     syn_bin_col_cnts: pd.Series,
     accuracy: float | None,
+    trn_col_total: int | None = None,
+    syn_col_total: int | None = None,
 ) -> go.Figure:
     # either numerical/datetime KDEs or categorical counts must be provided
 
@@ -485,8 +487,16 @@ def plot_univariate(
         fig.layout.xaxis2.update(type="category")
     else:
         fig.layout.yaxis.update(tickformat=".0%")
-        trn_line1, syn_line1 = plot_univariate_distribution_categorical(trn_cat_col_cnts, syn_cat_col_cnts)
-        trn_line2, syn_line2 = plot_univariate_binned(trn_bin_col_cnts, syn_bin_col_cnts, sort_by_frequency=True)
+        trn_line1, syn_line1 = plot_univariate_distribution_categorical(
+            trn_cat_col_cnts, syn_cat_col_cnts, trn_col_total, syn_col_total
+        )
+        trn_line2, syn_line2 = plot_univariate_binned(
+            trn_bin_col_cnts,
+            syn_bin_col_cnts,
+            sort_by_frequency=True,
+            trn_col_total=trn_col_total,
+            syn_col_total=syn_col_total,
+        )
         # prevent Plotly from trying to convert strings to dates
         fig.layout.xaxis.update(type="category")
         fig.layout.xaxis2.update(type="category")
@@ -505,6 +515,8 @@ def plot_univariate(
 def prepare_categorical_plot_data_distribution(
     trn_col_cnts: pd.Series,
     syn_col_cnts: pd.Series,
+    trn_col_total: int | None = None,
+    syn_col_total: int | None = None,
 ) -> pd.DataFrame:
     trn_col_cnts_idx = trn_col_cnts.index.to_series().astype("string").fillna(NA_BIN).replace("", EMPTY_BIN)
     syn_col_cnts_idx = syn_col_cnts.index.to_series().astype("string").fillna(NA_BIN).replace("", EMPTY_BIN)
@@ -517,8 +529,8 @@ def prepare_categorical_plot_data_distribution(
     df["synthetic_cnt"] = df["synthetic_cnt"].fillna(0.0)
     df["avg_cnt"] = (df["target_cnt"] + df["synthetic_cnt"]) / 2
     df = df[df["avg_cnt"] > 0]
-    df["target_pct"] = df["target_cnt"] / df["target_cnt"].sum()
-    df["synthetic_pct"] = df["synthetic_cnt"] / df["synthetic_cnt"].sum()
+    df["target_pct"] = df["target_cnt"] / (trn_col_total or df["target_cnt"].sum())
+    df["synthetic_pct"] = df["synthetic_cnt"] / (syn_col_total or df["synthetic_cnt"].sum())
     df = df.rename(columns={"index": "category"})
     if df["category"].dtype.name == "category":
         df["category_code"] = df["category"].cat.codes
@@ -532,6 +544,8 @@ def prepare_categorical_plot_data_binned(
     trn_bin_col_cnts: pd.Series,
     syn_bin_col_cnts: pd.Series,
     sort_by_frequency: bool,
+    trn_col_total: int | None = None,
+    syn_col_total: int | None = None,
 ) -> pd.DataFrame:
     t = trn_bin_col_cnts.to_frame("target_cnt").reset_index(names="category")
     s = syn_bin_col_cnts.to_frame("synthetic_cnt").reset_index(names="category")
@@ -540,8 +554,8 @@ def prepare_categorical_plot_data_binned(
     df["synthetic_cnt"] = df["synthetic_cnt"].fillna(0.0)
     df["avg_cnt"] = (df["target_cnt"] + df["synthetic_cnt"]) / 2
     df = df[df["avg_cnt"] > 0]
-    df["target_pct"] = df["target_cnt"] / df["target_cnt"].sum()
-    df["synthetic_pct"] = df["synthetic_cnt"] / df["synthetic_cnt"].sum()
+    df["target_pct"] = df["target_cnt"] / (trn_col_total or df["target_cnt"].sum())
+    df["synthetic_pct"] = df["synthetic_cnt"] / (syn_col_total or df["synthetic_cnt"].sum())
     if df["category"].dtype.name == "category":
         df["category_code"] = df["category"].cat.codes
     else:
@@ -554,10 +568,13 @@ def prepare_categorical_plot_data_binned(
 
 
 def plot_univariate_distribution_categorical(
-    trn_cat_col_cnts: pd.Series, syn_cat_col_cnts: pd.Series
+    trn_cat_col_cnts: pd.Series,
+    syn_cat_col_cnts: pd.Series,
+    trn_col_total: int | None = None,
+    syn_col_total: int | None = None,
 ) -> tuple[go.Scatter, go.Scatter]:
     # prepare data
-    df = prepare_categorical_plot_data_distribution(trn_cat_col_cnts, syn_cat_col_cnts)
+    df = prepare_categorical_plot_data_distribution(trn_cat_col_cnts, syn_cat_col_cnts, trn_col_total, syn_col_total)
     df = df.sort_values("avg_cnt", ascending=False)
     # trim labels
     df["category"] = trim_labels(df["category"], max_length=10)
@@ -587,9 +604,13 @@ def plot_univariate_binned(
     trn_bin_col_cnts: pd.Series,
     syn_bin_col_cnts: pd.Series,
     sort_by_frequency: bool = False,
+    trn_col_total: int | None = None,
+    syn_col_total: int | None = None,
 ) -> tuple[go.Scatter, go.Scatter]:
     # prepare data
-    df = prepare_categorical_plot_data_binned(trn_bin_col_cnts, syn_bin_col_cnts, sort_by_frequency)
+    df = prepare_categorical_plot_data_binned(
+        trn_bin_col_cnts, syn_bin_col_cnts, sort_by_frequency, trn_col_total, syn_col_total
+    )
     # prepare plots
     trn_line = go.Scatter(
         mode="lines+markers",

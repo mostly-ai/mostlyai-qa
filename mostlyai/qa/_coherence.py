@@ -24,6 +24,7 @@ from mostlyai.qa._accuracy import (
 )
 from mostlyai.qa._common import CHARTS_COLORS, CHARTS_FONTS
 from mostlyai.qa._filesystem import TemporaryWorkspace
+from mostlyai.qa._sampling import harmonize_dtype
 
 
 def plot_store_coherences(
@@ -215,3 +216,90 @@ def calculate_coh_univariates(
         )
         accuracies["accuracy"], accuracies["accuracy_max"] = zip(*results)
     return accuracies
+
+
+def pull_data_for_coherence(
+    *,
+    df_tgt: pd.DataFrame,
+    tgt_context_key: str,
+    max_sequence_length: int = 100,
+) -> pd.DataFrame:
+    """
+    Prepare sequential dataset for coherence metrics.
+    """
+    # randomly sample at most max_sequence_length rows per sequence
+    df_tgt = df_tgt.sample(frac=1).reset_index(drop=True)
+    df_tgt = df_tgt[df_tgt.groupby(tgt_context_key).cumcount() < max_sequence_length].reset_index(drop=True)
+
+    # harmonize dtypes
+    # apply harmonize_dtype to all columns except tgt_context_key
+    df_tgt = df_tgt.apply(lambda col: harmonize_dtype(col) if col.name != tgt_context_key else col)
+
+    # TODO: discretize columns
+    for col in df_tgt.columns:
+        if col == tgt_context_key:
+            continue
+        df_tgt[col] = pd.Categorical(df_tgt[col], ordered=True)
+
+    # Example output (pd.DataFrame):
+    # | players_id | year   | team | league | G    | AB    | R    | H    | HR   | RBI  | SB   | CS   | BB   | SO   |
+    # |------------|--------|------|--------|------|-------|------|------|------|------|------|------|------|------|
+    # | borowha01  | 1943.0 | NYA  | AL     | 29.0 | 74.0  | 2.0  | 15.0 | 0.0  | 7.0  | 0.0  | 0.0  | 5.0  | 17.0 |
+    # | wallaja02  | 1946.0 | PHA  | AL     | 63.0 | 194.0 | 16.0 | 38.0 | 5.0  | 11.0 | 1.0  | 0.0  | 14.0 | 47.0 |
+    # players_id dtype: original, other columns dtype: category
+    return df_tgt
+
+
+def calculate_categories_per_sequence(df: pd.DataFrame, context_key: str) -> pd.DataFrame:
+    """
+    Calculate the number of categories per sequence for all columns except the context key.
+    """
+    # Example output (pd.DataFrame):
+    # | players_id | year | team | league | G  | AB | R  | H  | HR | RBI | SB | CS | BB | SO |
+    # |------------|------|------|--------|----|----|----|----|----|-----|----|----|----|----|
+    # | aardsda01  | 9    | 8    | 2      | 9  | 3  | 1  | 1  | 1  | 1   | 1  | 1  | 1  | 2  |
+    # | aaronha01  | 23   | 3    | 2      | 18 | 21 | 20 | 23 | 17 | 20  | 15 | 10 | 22 | 19 |
+    # players_id dtype: original, other columns dtype: int64
+    return df.groupby(context_key).nunique().reset_index()
+
+
+def calculate_sequences_per_category(
+    df: pd.DataFrame, context_key: str
+) -> tuple[dict[str, pd.Series], dict[str, pd.Series]]:
+    """
+    Calculate the number of sequences per category for all columns except the context key.
+    """
+    # replace all null values with '(n/a)'
+    df = df.copy()
+    for col in df.columns:
+        if col == context_key:
+            continue
+        # Add '(n/a)' category if needed and replace nulls
+        if df[col].isna().any():
+            df[col] = df[col].cat.add_categories("(n/a)")
+            df.loc[df[col].isna(), col] = "(n/a)"
+
+    # Example output for "team" (pd.Series):
+    # team
+    # ALT     18
+    # ANA    164
+    # Name: players_id, dtype: int64
+    sequences_per_category_dict = {
+        col: df.groupby(col)[context_key].nunique().rename_axis(None) for col in df.columns if col != context_key
+    }
+
+    # convert df to have top 9 categories w.r.t. frequency of belonging to sequences + '(other)' for all other categories
+    df = df.copy()
+    for col in df.columns:
+        if col == context_key:
+            continue
+        top_categories = sequences_per_category_dict[col].nlargest(9).index.tolist()
+        not_in_top_categories_mask = ~df[col].isin(top_categories)
+        if not_in_top_categories_mask.any():
+            df[col] = df[col].cat.add_categories("(other)")
+            df.loc[not_in_top_categories_mask, col] = "(other)"
+            df[col] = df[col].cat.remove_unused_categories()
+    sequences_per_category_binned_dict = {
+        col: df.groupby(col)[context_key].nunique().rename_axis(None) for col in df.columns if col != context_key
+    }
+    return sequences_per_category_dict, sequences_per_category_binned_dict
