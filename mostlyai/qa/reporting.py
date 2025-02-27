@@ -22,6 +22,7 @@ from pandas.core.dtypes.common import is_numeric_dtype, is_datetime64_dtype
 
 from mostlyai.qa import _distances, _similarity, _html_report
 from mostlyai.qa._accuracy import (
+    bin_data,
     binning_data,
     calculate_correlations,
     plot_store_correlation_matrices,
@@ -36,7 +37,13 @@ from mostlyai.qa._accuracy import (
     plot_store_univariates,
     plot_store_bivariates,
 )
-from mostlyai.qa._coherence import calculate_coh_univariates, plot_store_coherences, pull_data_for_coherence
+from mostlyai.qa._coherence import (
+    calculate_categories_per_sequence,
+    calculate_coh_univariates,
+    plot_store_categories_per_sequence,
+    plot_store_coherences,
+    pull_data_for_coherence,
+)
 from mostlyai.qa.metrics import ModelMetrics, Accuracy, Similarity, Distances
 from mostlyai.qa._sampling import (
     calculate_embeddings,
@@ -554,6 +561,29 @@ def _report_coherence(
     tgt_context_key: str,
     workspace: TemporaryWorkspace,
 ) -> pd.DataFrame:
+    # categories per sequence
+    cats_per_seq_trn = calculate_categories_per_sequence(df=trn_coh, context_key=tgt_context_key)
+    cats_per_seq_syn = calculate_categories_per_sequence(df=syn_coh, context_key=tgt_context_key)
+    cats_per_seq_trn_kdes = calculate_numeric_uni_kdes(df=cats_per_seq_trn)
+    cats_per_seq_syn_kdes = calculate_numeric_uni_kdes(df=cats_per_seq_syn, trn_kdes=cats_per_seq_trn_kdes)
+    cats_per_seq_trn_binned, bins = bin_data(cats_per_seq_trn, bins=10)
+    cats_per_seq_syn_binned, _ = bin_data(cats_per_seq_syn, bins=bins)
+    cats_per_seq_trn_binned_cnts = calculate_categorical_uni_counts(df=cats_per_seq_trn_binned, hash_rare_values=False)
+    cats_per_seq_syn_binned_cnts = calculate_categorical_uni_counts(df=cats_per_seq_syn_binned, hash_rare_values=False)
+    acc_cats_per_seq = pd.DataFrame({"column": cats_per_seq_trn_binned.columns, "accuracy": 0.5})
+    plot_store_categories_per_sequence(
+        cats_per_seq_trn_kdes=cats_per_seq_trn_kdes,
+        cats_per_seq_syn_kdes=cats_per_seq_syn_kdes,
+        cats_per_seq_trn_binned_cnts=cats_per_seq_trn_binned_cnts,
+        cats_per_seq_syn_binned_cnts=cats_per_seq_syn_binned_cnts,
+        acc_cats_per_seq=acc_cats_per_seq,
+        tgt_context_key=tgt_context_key,  # TODO: this should not exist by this point
+        workspace=workspace,
+    )
+
+    # sequences per category
+    # TODO:
+
     trn_num_kdes = calculate_numeric_uni_kdes(trn_coh)
     syn_num_kdes = calculate_numeric_uni_kdes(syn_coh, trn_num_kdes)
     trn_cat_cnts = calculate_categorical_uni_counts(df=trn_coh, hash_rare_values=True)
