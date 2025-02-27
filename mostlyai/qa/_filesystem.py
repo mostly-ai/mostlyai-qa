@@ -33,6 +33,7 @@ class TemporaryWorkspace(TemporaryDirectory):
         "univariate",
         "bivariate",
         "categories_per_sequence",
+        "sequences_per_category",
         "accuracy_matrix",
         "correlation_matrices",
         "similarity_pca",
@@ -84,7 +85,7 @@ class TemporaryWorkspace(TemporaryDirectory):
         )
 
     def store_figure_html(self, fig: go.Figure, figure_type: FIGURE_TYPE, *cols: str) -> None:
-        if figure_type in ["univariate", "bivariate", "categories_per_sequence"]:
+        if figure_type in ["univariate", "bivariate", "categories_per_sequence", "sequences_per_category"]:
             file = self.get_figure_path(figure_type, *cols)
         else:
             file = self.get_unique_figure_path(figure_type)

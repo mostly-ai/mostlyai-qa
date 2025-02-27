@@ -274,6 +274,23 @@
   </div>
   {% endif %}
 
+  {% if sequences_per_category_html_charts | length > 0 %}
+  <div class="p-4">
+    <h2 id="sequences_per_category" class="anchor charts-section-title">Sequences per Category</h2>
+    <p class="lead"></p>
+    <div class="white-box p-3">
+      {% for seq_per_cat_plots_row in sequences_per_category_html_charts | batch(3, '&nbsp;') %}
+      <div class="row p-3">
+        {% for seq_per_cat_plot in seq_per_cat_plots_row %}
+        <div class="col-sm-4">{{ seq_per_cat_plot }}</div>
+        {% endfor %}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+  
+
   {% if is_model_report %}
   <div class="p-4">
     <h2 id="accuracy" class="anchor">Accuracy</h2>

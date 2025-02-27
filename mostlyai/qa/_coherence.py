@@ -305,7 +305,7 @@ def plot_categories_per_sequence(
 
 def calculate_sequences_per_category(
     df: pd.DataFrame, context_key: str
-) -> tuple[dict[str, pd.Series], dict[str, pd.Series]]:
+) -> tuple[dict[str, pd.Series], dict[str, pd.Series], int]:
     """
     Calculate the number of sequences per category for all columns except the context key.
     """
@@ -319,11 +319,6 @@ def calculate_sequences_per_category(
             df[col] = df[col].cat.add_categories("(n/a)")
             df.loc[df[col].isna(), col] = "(n/a)"
 
-    # Example output for "team" (pd.Series):
-    # team
-    # ALT     18
-    # ANA    164
-    # Name: players_id, dtype: int64
     sequences_per_category_dict = {
         col: df.groupby(col)[context_key].nunique().rename_axis(None) for col in df.columns if col != context_key
     }
@@ -342,4 +337,66 @@ def calculate_sequences_per_category(
     sequences_per_category_binned_dict = {
         col: df.groupby(col)[context_key].nunique().rename_axis(None) for col in df.columns if col != context_key
     }
-    return sequences_per_category_dict, sequences_per_category_binned_dict
+
+    # cnt_sum to be used for univariate plot normalization
+    cnt_sum = df[context_key].nunique()
+
+    # Example output for "team" (pd.Series):
+    # team
+    # ALT     18
+    # ANA    164
+    # Name: players_id, dtype: int64
+    return sequences_per_category_dict, sequences_per_category_binned_dict, cnt_sum
+
+
+def plot_store_sequences_per_category(
+    seq_per_cat_trn_cnts: dict[str, pd.Series],
+    seq_per_cat_syn_cnts: dict[str, pd.Series],
+    seq_per_cat_trn_binned_cnts: dict[str, pd.Series],
+    seq_per_cat_syn_binned_cnts: dict[str, pd.Series],
+    trn_cnt_sum: int,
+    syn_cnt_sum: int,
+    acc_seq_per_cat: pd.DataFrame,
+    workspace: TemporaryWorkspace,
+) -> None:
+    with parallel_config("loky", n_jobs=min(cpu_count() - 1, 16)):
+        Parallel()(
+            delayed(plot_store_single_sequences_per_category)(
+                row["column"],
+                seq_per_cat_trn_cnts.get(row["column"]),
+                seq_per_cat_syn_cnts.get(row["column"]),
+                seq_per_cat_trn_binned_cnts.get(row["column"]),
+                seq_per_cat_syn_binned_cnts.get(row["column"]),
+                trn_cnt_sum,
+                syn_cnt_sum,
+                row["accuracy"],
+                workspace,
+            )
+            for _, row in acc_seq_per_cat.iterrows()
+        )
+
+
+def plot_store_single_sequences_per_category(
+    col: str,
+    seq_per_cat_trn_cnts: pd.Series,
+    seq_per_cat_syn_cnts: pd.Series,
+    seq_per_cat_trn_binned_cnt: pd.Series,
+    seq_per_cat_syn_binned_cnt: pd.Series,
+    trn_cnt_sum: int,
+    syn_cnt_sum: int,
+    accuracy: float,
+    workspace: TemporaryWorkspace,
+) -> None:
+    fig = plot_univariate(
+        col_name=col,
+        trn_num_kde=None,
+        syn_num_kde=None,
+        trn_cat_col_cnts=seq_per_cat_trn_cnts,
+        syn_cat_col_cnts=seq_per_cat_syn_cnts,
+        trn_bin_col_cnts=seq_per_cat_trn_binned_cnt,
+        syn_bin_col_cnts=seq_per_cat_syn_binned_cnt,
+        accuracy=accuracy,
+        trn_cnt_sum=trn_cnt_sum,
+        syn_cnt_sum=syn_cnt_sum,
+    )
+    workspace.store_figure_html(fig, "sequences_per_category", col)

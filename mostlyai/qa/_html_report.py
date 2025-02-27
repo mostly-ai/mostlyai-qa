@@ -42,6 +42,11 @@ def get_cats_per_seq_htmls(acc_cats_per_seq: pd.DataFrame, workspace: TemporaryW
     return [f.read_text() for f in paths_cats_per_seq]
 
 
+def get_seq_per_cat_htmls(acc_seq_per_cat: pd.DataFrame, workspace: TemporaryWorkspace) -> list[str]:
+    paths_seq_per_cat = workspace.get_figure_paths("sequences_per_category", acc_seq_per_cat[["column"]]).values()
+    return [f.read_text() for f in paths_seq_per_cat]
+
+
 def get_biv_htmls(acc_biv: pd.DataFrame, workspace: TemporaryWorkspace) -> tuple[list[str], list[str], list[str]]:
     acc_biv_ctx = acc_biv.loc[acc_biv.type == "ctx"]
     acc_biv_tgt = acc_biv.loc[acc_biv.type == "tgt"]
@@ -64,6 +69,7 @@ def store_report(
     acc_uni: pd.DataFrame,
     acc_biv: pd.DataFrame,
     acc_cats_per_seq: pd.DataFrame,
+    acc_seq_per_cat: pd.DataFrame,
     corr_trn: pd.DataFrame,
 ):
     """
@@ -77,6 +83,7 @@ def store_report(
     acc_uni = filter_uni_acc_for_plotting(acc_uni)
     html_uni = get_uni_htmls(acc_uni=acc_uni, workspace=workspace)
     html_cats_per_seq = get_cats_per_seq_htmls(acc_cats_per_seq=acc_cats_per_seq, workspace=workspace)
+    html_seq_per_cat = get_seq_per_cat_htmls(acc_seq_per_cat=acc_seq_per_cat, workspace=workspace)
     acc_biv = filter_biv_acc_for_plotting(acc_biv, corr_trn)
     html_biv_ctx, html_biv_tgt, html_biv_nxt = get_biv_htmls(acc_biv=acc_biv, workspace=workspace)
 
@@ -110,6 +117,7 @@ def store_report(
         distances_dcr_html_chart=distances_dcr_html_chart,
         univariate_html_charts=html_uni,
         categories_per_sequence_html_charts=html_cats_per_seq,
+        sequences_per_category_html_charts=html_seq_per_cat,
         bivariate_html_charts_tgt=html_biv_tgt,
         bivariate_html_charts_ctx=html_biv_ctx,
         bivariate_html_charts_nxt=html_biv_nxt,
