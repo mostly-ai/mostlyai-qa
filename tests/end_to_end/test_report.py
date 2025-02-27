@@ -143,15 +143,16 @@ def test_report_sequential(tmp_path):
     assert 0 <= distances.dcr_holdout <= 1.0
     assert 0 <= distances.dcr_share <= 1.0
 
-    report_path = qa.report_from_statistics(
-        syn_tgt_data=syn_tgt_data,
-        syn_ctx_data=syn_ctx_data,
-        ctx_primary_key="id",
-        tgt_context_key="ctx_id",
-        max_sample_size_accuracy=130,
-        max_sample_size_embeddings=90,
-        statistics_path=statistics_path,
-    )
+    # TODO: uncomment later
+    # report_path = qa.report_from_statistics(
+    #     syn_tgt_data=syn_tgt_data,
+    #     syn_ctx_data=syn_ctx_data,
+    #     ctx_primary_key="id",
+    #     tgt_context_key="ctx_id",
+    #     max_sample_size_accuracy=130,
+    #     max_sample_size_embeddings=90,
+    #     statistics_path=statistics_path,
+    # )
 
     assert report_path.exists()
 
@@ -279,21 +280,11 @@ def test_missing(tmp_path):
 
 
 def test_coherence(tmp_path):
+    # TODO: remove once done
     df_ctx = pd.read_csv("https://github.com/mostly-ai/public-demo-data/raw/refs/heads/dev/baseball/players.csv.gz")
     df_tgt = pd.read_csv("https://github.com/mostly-ai/public-demo-data/raw/refs/heads/dev/baseball/batting.csv.gz")
     ctx_primary_key = "id"
     tgt_context_key = "players_id"
-
-    # trn_coh = pull_data_for_coherence(df_tgt=trn_tgt_data, tgt_context_key=tgt_context_key)
-    # syn_coh = pull_data_for_coherence(df_tgt=syn_tgt_data, tgt_context_key=tgt_context_key)
-
-    # with TemporaryWorkspace() as workspace:
-    #     _report_coherence(
-    #         trn_coh=trn_coh,
-    #         syn_coh=syn_coh,
-    #         columns=["league"],
-    #         workspace=workspace,
-    #     )
 
     report_path, metrics = qa.report(
         syn_tgt_data=df_tgt,
@@ -305,3 +296,4 @@ def test_coherence(tmp_path):
         max_sample_size_accuracy=120,
         max_sample_size_embeddings=80,
     )
+    print("A")

@@ -39,9 +39,7 @@ from mostlyai.qa._accuracy import (
 )
 from mostlyai.qa._coherence import (
     calculate_categories_per_sequence,
-    calculate_coh_univariates,
     plot_store_categories_per_sequence,
-    plot_store_coherences,
     pull_data_for_coherence,
 )
 from mostlyai.qa.metrics import ModelMetrics, Accuracy, Similarity, Distances
@@ -257,14 +255,14 @@ def report(
             syn_coh = pull_data_for_coherence(df_tgt=syn_tgt_data, tgt_context_key=tgt_context_key)
 
             _LOG.info("report coherence")
-            acc_coh = _report_coherence(
+            acc_cats_per_seq = _report_coherence(
                 trn_coh=trn_coh,
                 syn_coh=syn_coh,
                 tgt_context_key=tgt_context_key,
                 workspace=workspace,
             )
         else:
-            acc_coh = None
+            acc_cats_per_seq = None
 
         _LOG.info("calculate embeddings for synthetic")
         syn_embeds = calculate_embeddings(
@@ -360,7 +358,7 @@ def report(
             metrics=metrics,
             meta=meta,
             acc_uni=acc_uni,
-            acc_coh=acc_coh,
+            acc_cats_per_seq=acc_cats_per_seq,
             acc_biv=acc_biv,
             corr_trn=corr_trn,
         )
@@ -577,27 +575,11 @@ def _report_coherence(
         cats_per_seq_trn_binned_cnts=cats_per_seq_trn_binned_cnts,
         cats_per_seq_syn_binned_cnts=cats_per_seq_syn_binned_cnts,
         acc_cats_per_seq=acc_cats_per_seq,
-        tgt_context_key=tgt_context_key,  # TODO: this should not exist by this point
         workspace=workspace,
     )
 
-    # sequences per category
-    # TODO:
-
-    trn_num_kdes = calculate_numeric_uni_kdes(trn_coh)
-    syn_num_kdes = calculate_numeric_uni_kdes(syn_coh, trn_num_kdes)
-    trn_cat_cnts = calculate_categorical_uni_counts(df=trn_coh, hash_rare_values=True)
-    syn_cat_cnts = calculate_categorical_uni_counts(df=syn_coh, hash_rare_values=True)
-    acc_coh = calculate_coh_univariates(trn_coh, syn_coh, tgt_context_key)
-    plot_store_coherences(
-        trn_num_kdes=trn_num_kdes,
-        syn_num_kdes=syn_num_kdes,
-        trn_cat_cnts=trn_cat_cnts,
-        syn_cat_cnts=syn_cat_cnts,
-        acc_coh=acc_coh,
-        workspace=workspace,
-    )
-    return acc_coh
+    # TODO: sequences per category
+    return acc_cats_per_seq
 
 
 def _report_similarity(

@@ -17,7 +17,6 @@ import pandas as pd
 from plotly import graph_objs as go
 
 from mostlyai.qa._accuracy import (
-    calculate_accuracy,
     plot_univariate,
     prepare_categorical_plot_data_distribution,
     trim_label,
@@ -196,29 +195,6 @@ def plot_univariate_distribution_categorical(
     return trn_line, syn_line
 
 
-def calculate_coh_univariates(
-    trn_coh: pd.DataFrame,
-    syn_coh: pd.DataFrame,
-    tgt_context_key: str,
-) -> pd.DataFrame:
-    """
-    Calculates univariate accuracies for all target columns.
-    """
-
-    columns = [c for c in trn_coh.columns if not c == tgt_context_key]
-    accuracies = pd.DataFrame({"column": columns})
-    with parallel_config("loky", n_jobs=min(cpu_count() - 1, 16)):
-        results = Parallel()(
-            delayed(calculate_accuracy)(
-                trn_bin_cols=trn_coh[[row["column"]]],
-                syn_bin_cols=syn_coh[[row["column"]]],
-            )
-            for _, row in accuracies.iterrows()
-        )
-        accuracies["accuracy"], accuracies["accuracy_max"] = zip(*results)
-    return accuracies
-
-
 def pull_data_for_coherence(
     *,
     df_tgt: pd.DataFrame,
@@ -256,12 +232,12 @@ def calculate_categories_per_sequence(df: pd.DataFrame, context_key: str) -> pd.
     Calculate the number of categories per sequence for all columns except the context key.
     """
     # Example output (pd.DataFrame):
-    # | players_id | year | team | league | G  | AB | R  | H  | HR | RBI | SB | CS | BB | SO |
-    # |------------|------|------|--------|----|----|----|----|----|-----|----|----|----|----|
-    # | aardsda01  | 9    | 8    | 2      | 9  | 3  | 1  | 1  | 1  | 1   | 1  | 1  | 1  | 2  |
-    # | aaronha01  | 23   | 3    | 2      | 18 | 21 | 20 | 23 | 17 | 20  | 15 | 10 | 22 | 19 |
-    # players_id dtype: original, other columns dtype: int64
-    return df.groupby(context_key).nunique().reset_index()
+    # | year | team | league | G  | AB | R  | H  | HR | RBI | SB | CS | BB | SO |
+    # |------|------|--------|----|----|----|----|----|-----|----|----|----|----|
+    # | 9    | 8    | 2      | 9  | 3  | 1  | 1  | 1  | 1   | 1  | 1  | 1  | 2  |
+    # | 23   | 3    | 2      | 18 | 21 | 20 | 23 | 17 | 20  | 15 | 10 | 22 | 19 |
+    # columns dtype: int64
+    return df.groupby(context_key).nunique().reset_index(drop=True)
 
 
 def plot_store_categories_per_sequence(
@@ -270,7 +246,6 @@ def plot_store_categories_per_sequence(
     cats_per_seq_trn_binned_cnts: dict[str, pd.Series],
     cats_per_seq_syn_binned_cnts: dict[str, pd.Series],
     acc_cats_per_seq: pd.DataFrame,
-    tgt_context_key: str,
     workspace: TemporaryWorkspace,
 ) -> None:
     with parallel_config("loky", n_jobs=min(cpu_count() - 1, 16)):
@@ -285,7 +260,6 @@ def plot_store_categories_per_sequence(
                 workspace,
             )
             for _, row in acc_cats_per_seq.iterrows()
-            if row["column"] != tgt_context_key
         )
 
 
@@ -306,7 +280,7 @@ def plot_store_single_categories_per_sequence(
         cats_per_seq_syn_binned_cnt=cats_per_seq_syn_binned_cnt,
         accuracy=accuracy,
     )
-    workspace.store_figure_html(fig, "coherence_categories_per_sequence", col)
+    workspace.store_figure_html(fig, "categories_per_sequence", col)
 
 
 def plot_categories_per_sequence(
@@ -323,8 +297,8 @@ def plot_categories_per_sequence(
         syn_num_kde=cats_per_seq_syn_kde,
         trn_cat_col_cnts=None,
         syn_cat_col_cnts=None,
-        trn_bin_col_cnts=cats_per_seq_trn_binned_cnt[col],
-        syn_bin_col_cnts=cats_per_seq_syn_binned_cnt[col],
+        trn_bin_col_cnts=cats_per_seq_trn_binned_cnt,
+        syn_bin_col_cnts=cats_per_seq_syn_binned_cnt,
         accuracy=accuracy,
     )
 
