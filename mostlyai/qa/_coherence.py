@@ -231,6 +231,16 @@ def calculate_categories_per_sequence(df: pd.DataFrame, context_key: str) -> pd.
     """
     Calculate the number of categories per sequence for all columns except the context key.
     """
+    # replace all null values with '(n/a)'
+    df = df.copy()
+    for col in df.columns:
+        if col == context_key:
+            continue
+        # Add '(n/a)' category if needed and replace nulls
+        if df[col].isna().any():
+            df[col] = df[col].cat.add_categories("(n/a)")
+            df.loc[df[col].isna(), col] = "(n/a)"
+
     # Example output (pd.DataFrame):
     # | year | team | league | G  | AB | R  | H  | HR | RBI | SB | CS | BB | SO |
     # |------|------|--------|----|----|----|----|----|-----|----|----|----|----|
