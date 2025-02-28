@@ -17,6 +17,7 @@ import pandas as pd
 from plotly import graph_objs as go
 
 from mostlyai.qa._accuracy import (
+    calculate_accuracy,
     plot_univariate,
     prepare_categorical_plot_data_distribution,
     trim_label,
@@ -248,6 +249,25 @@ def calculate_categories_per_sequence(df: pd.DataFrame, context_key: str) -> pd.
     # | 23   | 3    | 2      | 18 | 21 | 20 | 23 | 17 | 20  | 15 | 10 | 22 | 19 |
     # columns dtype: int64
     return df.groupby(context_key).nunique().reset_index(drop=True)
+
+
+def calculate_categories_per_sequence_accuracy(
+    cats_per_seq_trn_binned: pd.DataFrame, cats_per_seq_syn_binned: pd.DataFrame
+) -> pd.DataFrame:
+    """
+    Calculate accuracy of categories per sequence.
+    """
+    acc_cats_per_seq = pd.DataFrame({"column": cats_per_seq_trn_binned.columns})
+    with parallel_config("loky", n_jobs=min(cpu_count() - 1, 16)):
+        results = Parallel()(
+            delayed(calculate_accuracy)(
+                trn_bin_cols=cats_per_seq_trn_binned[[row["column"]]],
+                syn_bin_cols=cats_per_seq_syn_binned[[row["column"]]],
+            )
+            for _, row in acc_cats_per_seq.iterrows()
+        )
+        acc_cats_per_seq["accuracy"], acc_cats_per_seq["accuracy_max"] = zip(*results)
+    return acc_cats_per_seq
 
 
 def plot_store_categories_per_sequence(

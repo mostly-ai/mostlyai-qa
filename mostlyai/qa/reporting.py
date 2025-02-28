@@ -39,6 +39,7 @@ from mostlyai.qa._accuracy import (
 )
 from mostlyai.qa._coherence import (
     calculate_categories_per_sequence,
+    calculate_categories_per_sequence_accuracy,
     calculate_sequences_per_category,
     plot_store_categories_per_sequence,
     plot_store_sequences_per_category,
@@ -571,9 +572,9 @@ def _report_coherence(
     cats_per_seq_syn_binned, _ = bin_data(cats_per_seq_syn, bins=bins)
     cats_per_seq_trn_binned_cnts = calculate_categorical_uni_counts(df=cats_per_seq_trn_binned, hash_rare_values=False)
     cats_per_seq_syn_binned_cnts = calculate_categorical_uni_counts(df=cats_per_seq_syn_binned, hash_rare_values=False)
-    acc_cats_per_seq = pd.DataFrame(
-        {"column": cats_per_seq_trn_binned.columns, "accuracy": 0.5}
-    )  # TODO: calculate cats_per_seq accuracy
+    acc_cats_per_seq = calculate_categories_per_sequence_accuracy(
+        cats_per_seq_trn_binned=cats_per_seq_trn_binned, cats_per_seq_syn_binned=cats_per_seq_syn_binned
+    )
     plot_store_categories_per_sequence(
         cats_per_seq_trn_kdes=cats_per_seq_trn_kdes,
         cats_per_seq_syn_kdes=cats_per_seq_syn_kdes,
