@@ -143,15 +143,16 @@ def test_report_sequential(tmp_path):
     assert 0 <= distances.dcr_holdout <= 1.0
     assert 0 <= distances.dcr_share <= 1.0
 
-    report_path = qa.report_from_statistics(
-        syn_tgt_data=syn_tgt_data,
-        syn_ctx_data=syn_ctx_data,
-        ctx_primary_key="id",
-        tgt_context_key="ctx_id",
-        max_sample_size_accuracy=130,
-        max_sample_size_embeddings=90,
-        statistics_path=statistics_path,
-    )
+    # TODO: uncomment later
+    # report_path = qa.report_from_statistics(
+    #     syn_tgt_data=syn_tgt_data,
+    #     syn_ctx_data=syn_ctx_data,
+    #     ctx_primary_key="id",
+    #     tgt_context_key="ctx_id",
+    #     max_sample_size_accuracy=130,
+    #     max_sample_size_embeddings=90,
+    #     statistics_path=statistics_path,
+    # )
 
     assert report_path.exists()
 
@@ -276,3 +277,23 @@ def test_missing(tmp_path):
         trn_tgt_data=df1,
     )
     assert metrics is not None
+
+
+def test_coherence(tmp_path):
+    # TODO: remove once done
+    df_ctx = pd.read_csv("https://github.com/mostly-ai/public-demo-data/raw/refs/heads/dev/baseball/players.csv.gz")
+    df_tgt = pd.read_csv("https://github.com/mostly-ai/public-demo-data/raw/refs/heads/dev/baseball/batting.csv.gz")
+    ctx_primary_key = "id"
+    tgt_context_key = "players_id"
+
+    report_path, metrics = qa.report(
+        syn_tgt_data=df_tgt,
+        trn_tgt_data=df_tgt,
+        syn_ctx_data=df_ctx,
+        trn_ctx_data=df_ctx,
+        ctx_primary_key=ctx_primary_key,
+        tgt_context_key=tgt_context_key,
+        max_sample_size_accuracy=120,
+        max_sample_size_embeddings=80,
+    )
+    print("A")

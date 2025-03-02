@@ -22,6 +22,7 @@ from pandas.core.dtypes.common import is_numeric_dtype, is_datetime64_dtype
 
 from mostlyai.qa import _distances, _similarity, _html_report
 from mostlyai.qa._accuracy import (
+    bin_data,
     binning_data,
     calculate_correlations,
     plot_store_correlation_matrices,
@@ -36,8 +37,21 @@ from mostlyai.qa._accuracy import (
     plot_store_univariates,
     plot_store_bivariates,
 )
+from mostlyai.qa._coherence import (
+    calculate_categories_per_sequence,
+    calculate_categories_per_sequence_accuracy,
+    calculate_sequences_per_category,
+    calculate_sequences_per_category_accuracy,
+    plot_store_categories_per_sequence,
+    plot_store_sequences_per_category,
+    pull_data_for_coherence,
+)
 from mostlyai.qa.metrics import ModelMetrics, Accuracy, Similarity, Distances
-from mostlyai.qa._sampling import calculate_embeddings, pull_data_for_accuracy, pull_data_for_embeddings
+from mostlyai.qa._sampling import (
+    calculate_embeddings,
+    pull_data_for_accuracy,
+    pull_data_for_embeddings,
+)
 from mostlyai.qa._common import (
     determine_data_size,
     ProgressCallback,
@@ -239,6 +253,21 @@ def report(
                 )
             )
 
+        if setup == "1:N":
+            _LOG.info("prepare training data for coherence started")
+            trn_coh = pull_data_for_coherence(df_tgt=trn_tgt_data, tgt_context_key=tgt_context_key)
+            syn_coh = pull_data_for_coherence(df_tgt=syn_tgt_data, tgt_context_key=tgt_context_key)
+
+            _LOG.info("report coherence")
+            acc_cats_per_seq, acc_seq_per_cat = _report_coherence(
+                trn_coh=trn_coh,
+                syn_coh=syn_coh,
+                tgt_context_key=tgt_context_key,
+                workspace=workspace,
+            )
+        else:
+            acc_cats_per_seq, acc_seq_per_cat = None, None
+
         _LOG.info("calculate embeddings for synthetic")
         syn_embeds = calculate_embeddings(
             strings=pull_data_for_embeddings(
@@ -333,6 +362,8 @@ def report(
             metrics=metrics,
             meta=meta,
             acc_uni=acc_uni,
+            acc_cats_per_seq=acc_cats_per_seq,
+            acc_seq_per_cat=acc_seq_per_cat,
             acc_biv=acc_biv,
             corr_trn=corr_trn,
         )
@@ -524,6 +555,60 @@ def _report_accuracy_and_correlations(
     )
 
     return acc_uni, acc_biv, trn_corr
+
+
+def _report_coherence(
+    *,
+    trn_coh: pd.DataFrame,
+    syn_coh: pd.DataFrame,
+    tgt_context_key: str,
+    workspace: TemporaryWorkspace,
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    # categories per sequence
+    cats_per_seq_trn = calculate_categories_per_sequence(df=trn_coh, context_key=tgt_context_key)
+    cats_per_seq_syn = calculate_categories_per_sequence(df=syn_coh, context_key=tgt_context_key)
+    cats_per_seq_trn_kdes = calculate_numeric_uni_kdes(df=cats_per_seq_trn)
+    cats_per_seq_syn_kdes = calculate_numeric_uni_kdes(df=cats_per_seq_syn, trn_kdes=cats_per_seq_trn_kdes)
+    cats_per_seq_trn_binned, bins = bin_data(cats_per_seq_trn, bins=10)
+    cats_per_seq_syn_binned, _ = bin_data(cats_per_seq_syn, bins=bins)
+    cats_per_seq_trn_binned_cnts = calculate_categorical_uni_counts(df=cats_per_seq_trn_binned, hash_rare_values=False)
+    cats_per_seq_syn_binned_cnts = calculate_categorical_uni_counts(df=cats_per_seq_syn_binned, hash_rare_values=False)
+    acc_cats_per_seq = calculate_categories_per_sequence_accuracy(
+        cats_per_seq_trn_binned=cats_per_seq_trn_binned, cats_per_seq_syn_binned=cats_per_seq_syn_binned
+    )
+    plot_store_categories_per_sequence(
+        cats_per_seq_trn_kdes=cats_per_seq_trn_kdes,
+        cats_per_seq_syn_kdes=cats_per_seq_syn_kdes,
+        cats_per_seq_trn_binned_cnts=cats_per_seq_trn_binned_cnts,
+        cats_per_seq_syn_binned_cnts=cats_per_seq_syn_binned_cnts,
+        acc_cats_per_seq=acc_cats_per_seq,
+        workspace=workspace,
+    )
+
+    # sequences per category
+    seq_per_cat_trn_cnts, seq_per_cat_trn_binned_cnts, trn_cnt_sum = calculate_sequences_per_category(
+        df=trn_coh, context_key=tgt_context_key
+    )
+    seq_per_cat_syn_cnts, seq_per_cat_syn_binned_cnts, syn_cnt_sum = calculate_sequences_per_category(
+        df=syn_coh, context_key=tgt_context_key
+    )
+    acc_seq_per_cat = calculate_sequences_per_category_accuracy(
+        seq_per_cat_trn_binned_cnts=seq_per_cat_trn_binned_cnts,
+        seq_per_cat_syn_binned_cnts=seq_per_cat_syn_binned_cnts,
+    )
+    plot_store_sequences_per_category(
+        seq_per_cat_trn_cnts=seq_per_cat_trn_cnts,
+        seq_per_cat_syn_cnts=seq_per_cat_syn_cnts,
+        seq_per_cat_trn_binned_cnts=seq_per_cat_trn_binned_cnts,
+        seq_per_cat_syn_binned_cnts=seq_per_cat_syn_binned_cnts,
+        trn_cnt_sum=trn_cnt_sum,
+        syn_cnt_sum=syn_cnt_sum,
+        acc_seq_per_cat=acc_seq_per_cat,
+        workspace=workspace,
+    )
+
+    # TODO: joint coherence accuracy?
+    return acc_cats_per_seq, acc_seq_per_cat
 
 
 def _report_similarity(
