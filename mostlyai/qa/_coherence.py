@@ -17,6 +17,7 @@ import pandas as pd
 from plotly import graph_objs as go
 
 from mostlyai.qa._accuracy import (
+    bin_data,
     calculate_accuracy,
     plot_univariate,
     prepare_categorical_plot_data_distribution,
@@ -205,6 +206,8 @@ def pull_data_for_coherence(
     """
     Prepare sequential dataset for coherence metrics.
     """
+    df_tgt = df_tgt.copy()
+
     # randomly sample at most max_sequence_length rows per sequence
     df_tgt = df_tgt.sample(frac=1).reset_index(drop=True)
     df_tgt = df_tgt[df_tgt.groupby(tgt_context_key).cumcount() < max_sequence_length].reset_index(drop=True)
@@ -213,18 +216,37 @@ def pull_data_for_coherence(
     # apply harmonize_dtype to all columns except tgt_context_key
     df_tgt = df_tgt.apply(lambda col: harmonize_dtype(col) if col.name != tgt_context_key else col)
 
-    # TODO: discretize columns
+    # harmonize categorical columns
+    num_cols = [c for c in df_tgt.columns if c != tgt_context_key and pd.api.types.is_numeric_dtype(df_tgt[c])]
+    dat_cols = [c for c in df_tgt.columns if c != tgt_context_key and pd.api.types.is_datetime64_any_dtype(df_tgt[c])]
     for col in df_tgt.columns:
-        if col == tgt_context_key:
+        if col == tgt_context_key or col in num_cols + dat_cols:
             continue
         df_tgt[col] = pd.Categorical(df_tgt[col], ordered=True)
 
+    # discretize datetime and numeric columns
+    if num_cols or dat_cols:
+        binned_df, _ = bin_data(df_tgt[num_cols + dat_cols], bins=30)
+        for col in num_cols + dat_cols:
+            df_tgt[col] = binned_df[col]
+
+    # replace all null values with '(n/a)'
+    df_tgt = df_tgt.copy()
+    for col in df_tgt.columns:
+        if col == tgt_context_key:
+            continue
+        # Add '(n/a)' category if needed and replace nulls
+        if df_tgt[col].isna().any():
+            df_tgt[col] = df_tgt[col].cat.add_categories("(n/a)")
+            df_tgt.loc[df_tgt[col].isna(), col] = "(n/a)"
+
+    # TODO: update example output
     # Example output (pd.DataFrame):
     # | players_id | year   | team | league | G    | AB    | R    | H    | HR   | RBI  | SB   | CS   | BB   | SO   |
     # |------------|--------|------|--------|------|-------|------|------|------|------|------|------|------|------|
     # | borowha01  | 1943.0 | NYA  | AL     | 29.0 | 74.0  | 2.0  | 15.0 | 0.0  | 7.0  | 0.0  | 0.0  | 5.0  | 17.0 |
     # | wallaja02  | 1946.0 | PHA  | AL     | 63.0 | 194.0 | 16.0 | 38.0 | 5.0  | 11.0 | 1.0  | 0.0  | 14.0 | 47.0 |
-    # players_id dtype: original, other columns dtype: category
+    # players_id dtype: original, other columns dtype: Categorical
     return df_tgt
 
 
@@ -232,16 +254,6 @@ def calculate_categories_per_sequence(df: pd.DataFrame, context_key: str) -> pd.
     """
     Calculate the number of categories per sequence for all columns except the context key.
     """
-    # replace all null values with '(n/a)'
-    df = df.copy()
-    for col in df.columns:
-        if col == context_key:
-            continue
-        # Add '(n/a)' category if needed and replace nulls
-        if df[col].isna().any():
-            df[col] = df[col].cat.add_categories("(n/a)")
-            df.loc[df[col].isna(), col] = "(n/a)"
-
     # Example output (pd.DataFrame):
     # | year | team | league | G  | AB | R  | H  | HR | RBI | SB | CS | BB | SO |
     # |------|------|--------|----|----|----|----|----|-----|----|----|----|----|
@@ -339,16 +351,6 @@ def calculate_sequences_per_category(
     """
     Calculate the number of sequences per category for all columns except the context key.
     """
-    # replace all null values with '(n/a)'
-    df = df.copy()
-    for col in df.columns:
-        if col == context_key:
-            continue
-        # Add '(n/a)' category if needed and replace nulls
-        if df[col].isna().any():
-            df[col] = df[col].cat.add_categories("(n/a)")
-            df.loc[df[col].isna(), col] = "(n/a)"
-
     sequences_per_category_dict = {
         col: df.groupby(col)[context_key].nunique().rename_axis(None) for col in df.columns if col != context_key
     }
@@ -377,6 +379,17 @@ def calculate_sequences_per_category(
     # ANA    164
     # Name: players_id, dtype: int64
     return sequences_per_category_dict, sequences_per_category_binned_dict, cnt_sum
+
+
+def calculate_sequences_per_category_accuracy(
+    *,
+    seq_per_cat_trn_binned_cnts: pd.DataFrame,
+    seq_per_cat_syn_binned_cnts: pd.DataFrame,
+) -> pd.DataFrame:
+    acc_seq_per_cat = pd.DataFrame(
+        {"column": seq_per_cat_trn_binned_cnts.keys(), "accuracy": 0.5}
+    )  # TODO: calculate seq_per_cat accuracy
+    return acc_seq_per_cat
 
 
 def plot_store_sequences_per_category(

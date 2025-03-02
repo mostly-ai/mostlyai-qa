@@ -41,6 +41,7 @@ from mostlyai.qa._coherence import (
     calculate_categories_per_sequence,
     calculate_categories_per_sequence_accuracy,
     calculate_sequences_per_category,
+    calculate_sequences_per_category_accuracy,
     plot_store_categories_per_sequence,
     plot_store_sequences_per_category,
     pull_data_for_coherence,
@@ -591,9 +592,10 @@ def _report_coherence(
     seq_per_cat_syn_cnts, seq_per_cat_syn_binned_cnts, syn_cnt_sum = calculate_sequences_per_category(
         df=syn_coh, context_key=tgt_context_key
     )
-    acc_seq_per_cat = pd.DataFrame(
-        {"column": seq_per_cat_trn_binned_cnts.keys(), "accuracy": 0.5}
-    )  # TODO: calculate seq_per_cat accuracy
+    acc_seq_per_cat = calculate_sequences_per_category_accuracy(
+        seq_per_cat_trn_binned_cnts=seq_per_cat_trn_binned_cnts,
+        seq_per_cat_syn_binned_cnts=seq_per_cat_syn_binned_cnts,
+    )
     plot_store_sequences_per_category(
         seq_per_cat_trn_cnts=seq_per_cat_trn_cnts,
         seq_per_cat_syn_cnts=seq_per_cat_syn_cnts,
