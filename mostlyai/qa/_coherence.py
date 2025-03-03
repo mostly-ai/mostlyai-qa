@@ -13,14 +13,13 @@
 # limitations under the License.
 
 from joblib import Parallel, cpu_count, delayed, parallel_config
-import numpy as np
 import pandas as pd
 from plotly import graph_objs as go
 
 from mostlyai.qa._accuracy import (
     bin_data,
     calculate_accuracy,
-    calculate_expected_l1_multinomial,
+    calculate_accuracy_cnts,
     plot_univariate,
     prepare_categorical_plot_data_distribution,
     trim_label,
@@ -354,7 +353,7 @@ def calculate_sequences_per_category(
     Calculate the number of sequences per category for all columns except the context key.
     """
     sequences_per_category_dict = {
-        col: df.groupby(col)[context_key].nunique().rename_axis(None) for col in df.columns if col != context_key
+        col: df.groupby(col)[context_key].nunique().rename_axis("index") for col in df.columns if col != context_key
     }
 
     # convert df to have top 9 categories w.r.t. frequency of belonging to sequences + '(other)' for all other categories
@@ -369,7 +368,7 @@ def calculate_sequences_per_category(
             df.loc[not_in_top_categories_mask, col] = "(other)"
             df[col] = df[col].cat.remove_unused_categories()
     sequences_per_category_binned_dict = {
-        col: df.groupby(col)[context_key].nunique().rename_axis(None) for col in df.columns if col != context_key
+        col: df.groupby(col)[context_key].nunique().rename_axis("index") for col in df.columns if col != context_key
     }
 
     # cnt_sum to be used for univariate plot normalization
@@ -391,7 +390,7 @@ def calculate_sequences_per_category_accuracy(
     acc_seq_per_cat = pd.DataFrame({"column": seq_per_cat_trn_binned_cnts.keys()})
     with parallel_config("loky", n_jobs=min(cpu_count() - 1, 16)):
         results = Parallel()(
-            delayed(calculate_accuracy_sequences_per_category)(
+            delayed(calculate_accuracy_cnts)(
                 seq_per_cat_trn_binned_cnts[row["column"]],
                 seq_per_cat_syn_binned_cnts[row["column"]],
             )
@@ -399,31 +398,6 @@ def calculate_sequences_per_category_accuracy(
         )
         acc_seq_per_cat["accuracy"], acc_seq_per_cat["accuracy_max"] = zip(*results)
     return acc_seq_per_cat
-
-
-def calculate_accuracy_sequences_per_category(
-    seq_per_cat_trn_binned_cnts: pd.Series, seq_per_cat_syn_binned_cnts: pd.Series
-) -> tuple[np.float64, np.float64]:
-    # create relative frequency tables for `trn` and `syn`
-    trn_freq = seq_per_cat_trn_binned_cnts / seq_per_cat_trn_binned_cnts.sum()
-    syn_freq = seq_per_cat_syn_binned_cnts / seq_per_cat_syn_binned_cnts.sum()
-    freq = pd.merge(
-        trn_freq.to_frame("tgt").reset_index(),
-        syn_freq.to_frame("syn").reset_index(),
-        how="outer",
-    )
-    freq["tgt"] = freq["tgt"].fillna(0.0)
-    freq["syn"] = freq["syn"].fillna(0.0)
-    # calculate L1 distance between `trn` and `syn`
-    observed_l1 = (freq["tgt"] - freq["syn"]).abs().sum()
-    # calculated expected L1 distance based on `trn`
-    n_trn = seq_per_cat_trn_binned_cnts.sum()
-    n_syn = seq_per_cat_syn_binned_cnts.sum()
-    expected_l1 = calculate_expected_l1_multinomial(freq["tgt"].to_list(), n_trn, n_syn)
-    # convert to accuracy; trim superfluous precision
-    observed_acc = (1 - observed_l1 / 2).round(5)
-    expected_acc = (1 - expected_l1 / 2).round(5)
-    return observed_acc, expected_acc
 
 
 def plot_store_sequences_per_category(

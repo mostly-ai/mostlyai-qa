@@ -196,22 +196,27 @@ def calculate_accuracy(trn_bin_cols: pd.DataFrame, syn_bin_cols: pd.DataFrame) -
     that can be expected due to the sampling noise.
     """
 
-    # create relative frequency tables for `trn` and `syn`
-    trn_freq = trn_bin_cols.value_counts(normalize=True)
-    syn_freq = syn_bin_cols.value_counts(normalize=True)
+    trn_bin_cnts = trn_bin_cols.value_counts()
+    syn_bin_cnts = syn_bin_cols.value_counts()
+    return calculate_accuracy_cnts(trn_bin_cnts, syn_bin_cnts)
+
+
+def calculate_accuracy_cnts(trn_bin_cnts: pd.Series, syn_bin_cnts: pd.Series) -> tuple[np.float64, np.float64]:
+    n_trn = trn_bin_cnts.sum()
+    n_syn = syn_bin_cnts.sum()
+    trn_freq = trn_bin_cnts / n_trn
+    syn_freq = syn_bin_cnts / n_syn
     freq = pd.merge(
         trn_freq.to_frame("tgt").reset_index(),
         syn_freq.to_frame("syn").reset_index(),
         how="outer",
-        on=list(trn_bin_cols.columns),
+        on=list(trn_bin_cnts.index.names),
     )
     freq["tgt"] = freq["tgt"].fillna(0.0)
     freq["syn"] = freq["syn"].fillna(0.0)
     # calculate L1 distance between `trn` and `syn`
     observed_l1 = (freq["tgt"] - freq["syn"]).abs().sum()
     # calculated expected L1 distance based on `trn`
-    n_trn = trn_bin_cols.shape[0]
-    n_syn = syn_bin_cols.shape[0]
     expected_l1 = calculate_expected_l1_multinomial(freq["tgt"].to_list(), n_trn, n_syn)
     # convert to accuracy; trim superfluous precision
     observed_acc = (1 - observed_l1 / 2).round(5)
