@@ -32,7 +32,7 @@ jobs:
       - name: Setup | dependencies
         run: uv sync --frozen --extra cpu
       - name: Run tests
-        run: uv run pytest tests/
+        run: uv run --no-sync pytest tests/
 
       - name: Build mkdocs
-        run: uv run mkdocs build --strict
+        run: uv run --no-sync mkdocs build --strict
