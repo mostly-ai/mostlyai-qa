@@ -203,7 +203,8 @@ def pull_data_for_coherence(
     df_tgt: pd.DataFrame,
     tgt_context_key: str,
     max_sequence_length: int = 100,
-) -> pd.DataFrame:
+    bins: int | dict[str, list] = 30,
+) -> tuple[pd.DataFrame, dict[str, list]]:
     """
     Prepare sequential dataset for coherence metrics.
     """
@@ -213,33 +214,36 @@ def pull_data_for_coherence(
     df_tgt = df_tgt.sample(frac=1).reset_index(drop=True)
     df_tgt = df_tgt[df_tgt.groupby(tgt_context_key).cumcount() < max_sequence_length].reset_index(drop=True)
 
-    # harmonize dtypes
     # apply harmonize_dtype to all columns except tgt_context_key
     df_tgt = df_tgt.apply(lambda col: harmonize_dtype(col) if col.name != tgt_context_key else col)
 
+    # discretize all columns except tgt_context_key
+    binned_df, bins = bin_data(df_tgt[[c for c in df_tgt.columns if c != tgt_context_key]], bins=bins)
+    df_tgt = pd.concat([df_tgt[tgt_context_key], binned_df], axis=1)
+
     # harmonize categorical columns
-    num_cols = [c for c in df_tgt.columns if c != tgt_context_key and pd.api.types.is_numeric_dtype(df_tgt[c])]
-    dat_cols = [c for c in df_tgt.columns if c != tgt_context_key and pd.api.types.is_datetime64_any_dtype(df_tgt[c])]
-    for col in df_tgt.columns:
-        if col == tgt_context_key or col in num_cols + dat_cols:
-            continue
-        df_tgt[col] = pd.Categorical(df_tgt[col], ordered=True)
+    # num_cols = [c for c in df_tgt.columns if c != tgt_context_key and pd.api.types.is_numeric_dtype(df_tgt[c])]
+    # dat_cols = [c for c in df_tgt.columns if c != tgt_context_key and pd.api.types.is_datetime64_any_dtype(df_tgt[c])]
+    # for col in df_tgt.columns:
+    #     if col == tgt_context_key or col in num_cols + dat_cols:
+    #         continue
+    #     df_tgt[col], _ = bin_categorical(df_tgt[col], bins=30)
 
-    # discretize datetime and numeric columns
-    if num_cols or dat_cols:
-        binned_df, _ = bin_data(df_tgt[num_cols + dat_cols], bins=30)
-        for col in num_cols + dat_cols:
-            df_tgt[col] = binned_df[col]
+    # # discretize datetime and numeric columns
+    # if num_cols or dat_cols:
+    #     binned_df, _ = bin_data(df_tgt[num_cols + dat_cols], bins=30)
+    #     for col in num_cols + dat_cols:
+    #         df_tgt[col] = binned_df[col]
 
-    # replace all null values with '(n/a)'
-    df_tgt = df_tgt.copy()
-    for col in df_tgt.columns:
-        if col == tgt_context_key:
-            continue
-        # Add '(n/a)' category if needed and replace nulls
-        if df_tgt[col].isna().any():
-            df_tgt[col] = df_tgt[col].cat.add_categories("(n/a)")
-            df_tgt.loc[df_tgt[col].isna(), col] = "(n/a)"
+    # # replace all null values with '(n/a)'
+    # df_tgt = df_tgt.copy()
+    # for col in df_tgt.columns:
+    #     if col == tgt_context_key:
+    #         continue
+    #     # Add '(n/a)' category if needed and replace nulls
+    #     if df_tgt[col].isna().any():
+    #         df_tgt[col] = df_tgt[col].cat.add_categories("(n/a)")
+    #         df_tgt.loc[df_tgt[col].isna(), col] = "(n/a)"
 
     # TODO: update example output
     # Example output (pd.DataFrame):
@@ -248,7 +252,7 @@ def pull_data_for_coherence(
     # | borowha01  | 1943.0 | NYA  | AL     | 29.0 | 74.0  | 2.0  | 15.0 | 0.0  | 7.0  | 0.0  | 0.0  | 5.0  | 17.0 |
     # | wallaja02  | 1946.0 | PHA  | AL     | 63.0 | 194.0 | 16.0 | 38.0 | 5.0  | 11.0 | 1.0  | 0.0  | 14.0 | 47.0 |
     # players_id dtype: original, other columns dtype: Categorical
-    return df_tgt
+    return df_tgt, bins
 
 
 def calculate_categories_per_sequence(df: pd.DataFrame, context_key: str) -> pd.DataFrame:
@@ -364,7 +368,8 @@ def calculate_sequences_per_category(
         top_categories = sequences_per_category_dict[col].nlargest(9).index.tolist()
         not_in_top_categories_mask = ~df[col].isin(top_categories)
         if not_in_top_categories_mask.any():
-            df[col] = df[col].cat.add_categories("(other)")
+            if "(other)" not in df[col].cat.categories:
+                df[col] = df[col].cat.add_categories("(other)")
             df.loc[not_in_top_categories_mask, col] = "(other)"
             df[col] = df[col].cat.remove_unused_categories()
     sequences_per_category_binned_dict = {

@@ -255,8 +255,8 @@ def report(
 
         if setup == "1:N":
             _LOG.info("prepare training data for coherence started")
-            trn_coh = pull_data_for_coherence(df_tgt=trn_tgt_data, tgt_context_key=tgt_context_key)
-            syn_coh = pull_data_for_coherence(df_tgt=syn_tgt_data, tgt_context_key=tgt_context_key)
+            trn_coh, trn_bins = pull_data_for_coherence(df_tgt=trn_tgt_data, tgt_context_key=tgt_context_key)
+            syn_coh, _ = pull_data_for_coherence(df_tgt=syn_tgt_data, tgt_context_key=tgt_context_key, bins=trn_bins)
 
             _LOG.info("report coherence")
             acc_cats_per_seq, acc_seq_per_cat = _report_coherence(

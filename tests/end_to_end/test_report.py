@@ -280,17 +280,20 @@ def test_missing(tmp_path):
 
 
 def test_coherence(tmp_path):
-    # TODO: remove once done
     df_ctx = pd.read_csv("https://github.com/mostly-ai/public-demo-data/raw/refs/heads/dev/baseball/players.csv.gz")
     df_tgt = pd.read_csv("https://github.com/mostly-ai/public-demo-data/raw/refs/heads/dev/baseball/batting.csv.gz")
+    df_ctx_trn = df_ctx.sample(1000)
+    df_tgt_trn = df_tgt[df_tgt["players_id"].isin(df_ctx_trn["id"])]
+    df_ctx_syn = df_ctx.sample(1000)
+    df_tgt_syn = df_tgt[df_tgt["players_id"].isin(df_ctx_syn["id"])]
     ctx_primary_key = "id"
     tgt_context_key = "players_id"
 
     report_path, metrics = qa.report(
-        syn_tgt_data=df_tgt,
-        trn_tgt_data=df_tgt,
-        syn_ctx_data=df_ctx,
-        trn_ctx_data=df_ctx,
+        syn_tgt_data=df_tgt_syn,
+        trn_tgt_data=df_tgt_trn,
+        syn_ctx_data=df_ctx_syn,
+        trn_ctx_data=df_ctx_trn,
         ctx_primary_key=ctx_primary_key,
         tgt_context_key=tgt_context_key,
         max_sample_size_accuracy=120,
