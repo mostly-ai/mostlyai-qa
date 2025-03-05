@@ -19,6 +19,7 @@ import numpy as np
 import pandas as pd
 
 from mostlyai.qa import _accuracy, _sampling, _similarity, _html_report
+from mostlyai.qa._coherence import pull_data_for_coherence
 from mostlyai.qa._sampling import pull_data_for_embeddings, calculate_embeddings
 from mostlyai.qa._common import (
     ProgressCallback,
@@ -126,6 +127,23 @@ def report_from_statistics(
         )
         progress.update(completed=30, total=100)
 
+        trn_coh_bins = statistics.load_coherence_bins()
+        if trn_coh_bins is not None:
+            _LOG.info("prepare synthetic data for coherence started")
+            syn_coh, _ = pull_data_for_coherence(
+                df_tgt=syn_tgt_data, tgt_context_key=tgt_context_key, bins=trn_coh_bins
+            )
+            _LOG.info("report coherence")
+            acc_cats_per_seq = acc_seq_per_cat = pd.DataFrame({"column": [], "accuracy": [], "accuracy_max": []})
+            # acc_cats_per_seq, acc_seq_per_cat = _report_coherence(
+            #     trn_coh=trn_coh,
+            #     syn_coh=syn_coh,
+            #     tgt_context_key=tgt_context_key,
+            #     workspace=workspace,
+            # )
+        else:
+            acc_cats_per_seq = acc_seq_per_cat = pd.DataFrame({"column": [], "accuracy": [], "accuracy_max": []})
+
         _LOG.info("calculate embeddings for synthetic")
         syn_embeds = calculate_embeddings(
             strings=pull_data_for_embeddings(
@@ -165,6 +183,8 @@ def report_from_statistics(
             acc_uni=acc_uni,
             acc_biv=acc_biv,
             corr_trn=corr_trn,
+            acc_cats_per_seq=acc_cats_per_seq,
+            acc_seq_per_cat=acc_seq_per_cat,
         )
         progress.update(completed=100, total=100)
         return report_path

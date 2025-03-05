@@ -98,6 +98,7 @@ class Statistics:
         self.early_exit_path = self.path / "_EARLY_EXIT"
         self.meta_path = self.path / "meta.json"
         self.bins_dir = self.path / "bins"
+        self.coherence_bins_dir = self.path / "coherence_bins"
         self.correlations_path = self.path / "correlations.parquet"
         self.univariate_accuracies_path = self.path / "univariate_accuracies.parquet"
         self.bivariate_accuracies_path = self.path / "bivariate_accuracies.parquet"
@@ -310,3 +311,18 @@ class Statistics:
         else:
             hol_pca = None
         return trn_pca, hol_pca
+
+    def store_coherence_bins(self, bins: dict[str, list]) -> None:
+        df = pd.Series(bins).to_frame("bins").reset_index().rename(columns={"index": "column"})
+        self.coherence_bins_dir.mkdir(exist_ok=True, parents=True)
+        for i, row in df.iterrows():
+            row_df = pd.DataFrame([row]).explode("bins")
+            row_df.to_parquet(self.coherence_bins_dir / f"{i:05}.parquet")
+
+    def load_coherence_bins(self) -> dict[str, list] | None:
+        if not self.coherence_bins_dir.exists():
+            return None
+        files = sorted(self.coherence_bins_dir.glob("*.parquet"))
+        df = pd.concat([pd.read_parquet(p) for p in files]) if files else pd.DataFrame(columns=["column", "bins"])
+        df = df.groupby("column", sort=False).agg(list).reset_index()
+        return df.set_index("column")["bins"].to_dict()

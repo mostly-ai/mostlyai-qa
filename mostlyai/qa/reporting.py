@@ -255,9 +255,13 @@ def report(
 
         if setup == "1:N":
             _LOG.info("prepare training data for coherence started")
-            trn_coh, trn_bins = pull_data_for_coherence(df_tgt=trn_tgt_data, tgt_context_key=tgt_context_key)
-            syn_coh, _ = pull_data_for_coherence(df_tgt=syn_tgt_data, tgt_context_key=tgt_context_key, bins=trn_bins)
-
+            trn_coh, trn_coh_bins = pull_data_for_coherence(df_tgt=trn_tgt_data, tgt_context_key=tgt_context_key)
+            _LOG.info("prepare synthetic data for coherence started")
+            syn_coh, _ = pull_data_for_coherence(
+                df_tgt=syn_tgt_data, tgt_context_key=tgt_context_key, bins=trn_coh_bins
+            )
+            _LOG.info("store original coherence data bins")
+            statistics.store_coherence_bins(bins=trn_coh_bins)
             _LOG.info("report coherence")
             acc_cats_per_seq, acc_seq_per_cat = _report_coherence(
                 trn_coh=trn_coh,
@@ -266,7 +270,7 @@ def report(
                 workspace=workspace,
             )
         else:
-            acc_cats_per_seq, acc_seq_per_cat = None, None
+            acc_cats_per_seq = acc_seq_per_cat = pd.DataFrame({"column": [], "accuracy": [], "accuracy_max": []})
 
         _LOG.info("calculate embeddings for synthetic")
         syn_embeds = calculate_embeddings(

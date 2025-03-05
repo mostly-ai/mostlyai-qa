@@ -143,16 +143,15 @@ def test_report_sequential(tmp_path):
     assert 0 <= distances.dcr_holdout <= 1.0
     assert 0 <= distances.dcr_share <= 1.0
 
-    # TODO: uncomment later
-    # report_path = qa.report_from_statistics(
-    #     syn_tgt_data=syn_tgt_data,
-    #     syn_ctx_data=syn_ctx_data,
-    #     ctx_primary_key="id",
-    #     tgt_context_key="ctx_id",
-    #     max_sample_size_accuracy=130,
-    #     max_sample_size_embeddings=90,
-    #     statistics_path=statistics_path,
-    # )
+    report_path = qa.report_from_statistics(
+        syn_tgt_data=syn_tgt_data,
+        syn_ctx_data=syn_ctx_data,
+        ctx_primary_key="id",
+        tgt_context_key="ctx_id",
+        max_sample_size_accuracy=130,
+        max_sample_size_embeddings=90,
+        statistics_path=statistics_path,
+    )
 
     assert report_path.exists()
 
