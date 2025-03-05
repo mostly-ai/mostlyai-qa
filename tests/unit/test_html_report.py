@@ -16,6 +16,7 @@ from mostlyai.qa import _accuracy, _html_report, _distances, _similarity
 from mostlyai.qa._common import CTX_COLUMN_PREFIX, TGT_COLUMN_PREFIX
 from mostlyai.qa.reporting import _calculate_metrics
 from mostlyai.qa._sampling import calculate_embeddings, pull_data_for_embeddings
+import pandas as pd
 
 
 def test_generate_store_report(tmp_path, cols, workspace):
@@ -29,6 +30,8 @@ def test_generate_store_report(tmp_path, cols, workspace):
     acc_syn, _ = _accuracy.bin_data(syn, bins)
     acc_uni = _accuracy.calculate_univariates(acc_trn, acc_syn)
     acc_biv = _accuracy.calculate_bivariates(acc_trn, acc_syn)
+    acc_cats_per_seq = pd.DataFrame({"column": acc_uni["column"], "accuracy": 0.5})
+    acc_seq_per_cat = pd.DataFrame({"column": acc_uni["column"], "accuracy": 0.5})
     corr_trn = _accuracy.calculate_correlations(acc_trn)
     syn_embeds = calculate_embeddings(pull_data_for_embeddings(df_tgt=syn))
     trn_embeds = calculate_embeddings(pull_data_for_embeddings(df_tgt=trn))
@@ -55,6 +58,8 @@ def test_generate_store_report(tmp_path, cols, workspace):
         + [workspace.get_unique_figure_path("correlation_matrices")]
         + [workspace.get_unique_figure_path("similarity_pca")]
         + [workspace.get_unique_figure_path("distances_dcr")]
+        + list(workspace.get_figure_paths("categories_per_sequence", acc_cats_per_seq[["column"]]).values())
+        + list(workspace.get_figure_paths("sequences_per_category", acc_seq_per_cat[["column"]]).values())
     )
     for path in plot_paths:
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -88,6 +93,8 @@ def test_generate_store_report(tmp_path, cols, workspace):
         acc_uni=acc_uni,
         acc_biv=acc_biv,
         corr_trn=corr_trn,
+        acc_cats_per_seq=acc_cats_per_seq,
+        acc_seq_per_cat=acc_seq_per_cat,
     )
     assert report_path.exists()
 
