@@ -84,6 +84,7 @@ def report(
     report_credits: str = REPORT_CREDITS,
     max_sample_size_accuracy: int | None = None,
     max_sample_size_embeddings: int | None = None,
+    # TODO: introduce max_sample_size_coherence ?
     statistics_path: str | Path | None = None,
     update_progress: ProgressCallback | None = None,
 ) -> tuple[Path, ModelMetrics | None]:
@@ -267,6 +268,7 @@ def report(
                 trn_coh=trn_coh,
                 syn_coh=syn_coh,
                 tgt_context_key=tgt_context_key,
+                statistics=statistics,
                 workspace=workspace,
             )
         else:
@@ -566,20 +568,44 @@ def _report_coherence(
     trn_coh: pd.DataFrame,
     syn_coh: pd.DataFrame,
     tgt_context_key: str,
+    statistics: Statistics,
     workspace: TemporaryWorkspace,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     # categories per sequence
+    _LOG.info("calculate categories per sequence for training")
     cats_per_seq_trn = calculate_categories_per_sequence(df=trn_coh, context_key=tgt_context_key)
+    _LOG.info("calculate categories per sequence for synthetic")
     cats_per_seq_syn = calculate_categories_per_sequence(df=syn_coh, context_key=tgt_context_key)
+
+    _LOG.info("calculate categories per sequence KDEs for training")
     cats_per_seq_trn_kdes = calculate_numeric_uni_kdes(df=cats_per_seq_trn)
+    _LOG.info("store categories per sequence KDEs for training")
+    statistics.store_categories_per_sequence_kdes(trn_kdes=cats_per_seq_trn_kdes)
+    _LOG.info("calculate categories per sequence KDEs for synthetic")
     cats_per_seq_syn_kdes = calculate_numeric_uni_kdes(df=cats_per_seq_syn, trn_kdes=cats_per_seq_trn_kdes)
+
+    _LOG.info("bin categories per sequence for training")
     cats_per_seq_trn_binned, bins = bin_data(cats_per_seq_trn, bins=10)
+    _LOG.info("store categories per sequence bins for training")
+    statistics.store_categories_per_sequence_bins(bins=bins)
+    _LOG.info("bin categories per sequence for synthetic")
     cats_per_seq_syn_binned, _ = bin_data(cats_per_seq_syn, bins=bins)
+
+    _LOG.info("calculate categories per sequence counts for training")
     cats_per_seq_trn_binned_cnts = calculate_categorical_uni_counts(df=cats_per_seq_trn_binned, hash_rare_values=False)
+    _LOG.info("store categories per sequence counts for training")
+    statistics.store_categories_per_sequence_counts(counts=cats_per_seq_trn_binned_cnts)
+    _LOG.info("calculate categories per sequence counts for synthetic")
     cats_per_seq_syn_binned_cnts = calculate_categorical_uni_counts(df=cats_per_seq_syn_binned, hash_rare_values=False)
+
+    _LOG.info("calculate categories per sequence accuracy")
     acc_cats_per_seq = calculate_categories_per_sequence_accuracy(
         cats_per_seq_trn_binned=cats_per_seq_trn_binned, cats_per_seq_syn_binned=cats_per_seq_syn_binned
     )
+    _LOG.info("store categories per sequence accuracy")
+    statistics.store_categories_per_sequence_accuracy(accuracy=acc_cats_per_seq)
+
+    _LOG.info("plot and store categories per sequence")
     plot_store_categories_per_sequence(
         cats_per_seq_trn_kdes=cats_per_seq_trn_kdes,
         cats_per_seq_syn_kdes=cats_per_seq_syn_kdes,

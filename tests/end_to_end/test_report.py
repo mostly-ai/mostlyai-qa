@@ -297,5 +297,16 @@ def test_coherence(tmp_path):
         tgt_context_key=tgt_context_key,
         max_sample_size_accuracy=120,
         max_sample_size_embeddings=80,
+        statistics_path=tmp_path / "stats",
     )
-    print("A")
+    assert report_path is not None
+    df_ctx_syn = df_ctx.sample(1000)
+    df_tgt_syn = df_tgt[df_tgt["players_id"].isin(df_ctx_syn["id"])]
+    report_path = qa.report_from_statistics(
+        syn_tgt_data=df_tgt_syn,
+        syn_ctx_data=df_ctx_syn,
+        ctx_primary_key=ctx_primary_key,
+        tgt_context_key=tgt_context_key,
+        statistics_path=tmp_path / "stats",
+    )
+    assert report_path is not None

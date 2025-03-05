@@ -99,6 +99,10 @@ class Statistics:
         self.meta_path = self.path / "meta.json"
         self.bins_dir = self.path / "bins"
         self.coherence_bins_dir = self.path / "coherence_bins"
+        self.categories_per_sequence_kdes_dir = self.path / "categories_per_sequence_kdes"
+        self.categories_per_sequence_bins_dir = self.path / "categories_per_sequence_bins"
+        self.categories_per_sequence_counts_dir = self.path / "categories_per_sequence_counts"
+        self.categories_per_sequence_accuracy_path = self.path / "categories_per_sequence_accuracy.parquet"
         self.correlations_path = self.path / "correlations.parquet"
         self.univariate_accuracies_path = self.path / "univariate_accuracies.parquet"
         self.bivariate_accuracies_path = self.path / "bivariate_accuracies.parquet"
@@ -326,3 +330,81 @@ class Statistics:
         df = pd.concat([pd.read_parquet(p) for p in files]) if files else pd.DataFrame(columns=["column", "bins"])
         df = df.groupby("column", sort=False).agg(list).reset_index()
         return df.set_index("column")["bins"].to_dict()
+
+    def store_categories_per_sequence_kdes(self, trn_kdes: dict[str, pd.Series]) -> None:
+        trn_kdes = pd.DataFrame(
+            [(column, list(xy.index), list(xy.values)) for column, xy in trn_kdes.items()],
+            columns=["column", "x", "y"],
+        )
+        self.categories_per_sequence_kdes_dir.mkdir(exist_ok=True, parents=True)
+        for i, row in trn_kdes.iterrows():
+            row_df = pd.DataFrame([row]).explode(["x", "y"])
+            row_df.to_parquet(self.categories_per_sequence_kdes_dir / f"{i:05}.parquet")
+
+    def load_categories_per_sequence_kdes(self) -> dict[str, pd.Series]:
+        files = sorted(self.categories_per_sequence_kdes_dir.glob("*.parquet"))
+        kdes = pd.concat([pd.read_parquet(p) for p in files]) if files else pd.DataFrame(columns=["column", "x", "y"])
+        kdes = kdes.groupby("column", sort=False).agg(list).reset_index()
+        # harmonise older prefix formats to <prefix>:: for compatibility with older versions
+        kdes["column"] = kdes["column"].str.replace(_OLD_COL_PREFIX, _NEW_COL_PREFIX, regex=True)
+        kdes = {
+            row["column"]: pd.Series(
+                row["y"],
+                index=row["x"],
+                name=row["column"],
+            )
+            for _, row in kdes.iterrows()
+        }
+        return kdes
+
+    def store_categories_per_sequence_bins(self, bins: dict[str, list]) -> None:
+        df = pd.Series(bins).to_frame("bins").reset_index().rename(columns={"index": "column"})
+        self.categories_per_sequence_bins_dir.mkdir(exist_ok=True, parents=True)
+        for i, row in df.iterrows():
+            row_df = pd.DataFrame([row]).explode("bins")
+            row_df.to_parquet(self.categories_per_sequence_bins_dir / f"{i:05}.parquet")
+
+    def load_categories_per_sequence_bins(self) -> dict[str, list]:
+        files = sorted(self.categories_per_sequence_bins_dir.glob("*.parquet"))
+        df = pd.concat([pd.read_parquet(p) for p in files]) if files else pd.DataFrame(columns=["column", "bins"])
+        df = df.groupby("column", sort=False).agg(list).reset_index()
+        return df.set_index("column")["bins"].to_dict()
+
+    def store_categories_per_sequence_counts(self, counts: dict[str, pd.Series]) -> None:
+        counts = pd.DataFrame(
+            [(column, list(counts.index), list(counts.values)) for column, counts in counts.items()],
+            columns=["column", "cat", "count"],
+        )
+        self.categories_per_sequence_counts_dir.mkdir(exist_ok=True, parents=True)
+        for i, row in counts.iterrows():
+            row_df = pd.DataFrame([row]).explode(["cat", "count"])
+            row_df.to_parquet(self.categories_per_sequence_counts_dir / f"{i:05}.parquet")
+
+    def load_categories_per_sequence_counts(self) -> dict[str, pd.Series]:
+        files = sorted(self.categories_per_sequence_counts_dir.glob("*.parquet"))
+        counts = (
+            pd.concat([pd.read_parquet(p) for p in files])
+            if files
+            else pd.DataFrame(columns=["column", "cat", "count"])
+        )
+        counts = counts.groupby("column", sort=False).agg(list).reset_index()
+        # harmonise older prefix formats to <prefix>:: for compatibility with older versions
+        counts["column"] = counts["column"].str.replace(_OLD_COL_PREFIX, _NEW_COL_PREFIX, regex=True)
+        counts = {
+            row["column"]: pd.Series(
+                row["count"],
+                index=row["cat"],
+                name=row["column"],
+            )
+            for _, row in counts.iterrows()
+        }
+        return counts
+
+    def store_categories_per_sequence_accuracy(self, accuracy: pd.DataFrame) -> None:
+        accuracy.to_parquet(self.categories_per_sequence_accuracy_path)
+
+    def load_categories_per_sequence_accuracy(self) -> pd.DataFrame:
+        df = pd.read_parquet(self.categories_per_sequence_accuracy_path)
+        # harmonise older prefix formats to <prefix>:: for compatibility with older versions
+        df["column"] = df["column"].str.replace(_OLD_COL_PREFIX, _NEW_COL_PREFIX, regex=True)
+        return df
