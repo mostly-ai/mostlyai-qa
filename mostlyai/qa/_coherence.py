@@ -148,8 +148,8 @@ def plot_categories_per_sequence(
 
 
 def calculate_sequences_per_category(
-    df: pd.DataFrame, context_key: str
-) -> tuple[dict[str, pd.Series], dict[str, pd.Series], int]:
+    df: pd.DataFrame, seq_per_cat_top_9: dict[str, list[str]] | None, context_key: str
+) -> tuple[dict[str, pd.Series], dict[str, pd.Series], dict[str, list[str]], int]:
     """
     Calculate the number of sequences per category for all columns except the context key.
     """
@@ -159,10 +159,12 @@ def calculate_sequences_per_category(
 
     # convert df to have top 9 categories w.r.t. frequency of belonging to sequences + '(other)' for all other categories
     df = df.copy()
+    if seq_per_cat_top_9 is None:
+        seq_per_cat_top_9 = {}
     for col in df.columns:
         if col == context_key:
             continue
-        top_categories = sequences_per_category_dict[col].nlargest(9).index.tolist()
+        top_categories = seq_per_cat_top_9.setdefault(col, sequences_per_category_dict[col].nlargest(9).index.tolist())
         not_in_top_categories_mask = ~df[col].isin(top_categories)
         if not_in_top_categories_mask.any():
             if "(other)" not in df[col].cat.categories:
@@ -181,7 +183,7 @@ def calculate_sequences_per_category(
     # ALT     18
     # ANA    164
     # Name: players_id, dtype: int64
-    return sequences_per_category_dict, sequences_per_category_binned_dict, cnt_sum
+    return sequences_per_category_dict, sequences_per_category_binned_dict, seq_per_cat_top_9, cnt_sum
 
 
 def calculate_sequences_per_category_accuracy(

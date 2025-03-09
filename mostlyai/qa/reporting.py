@@ -635,11 +635,13 @@ def _report_coherence(
     )
 
     # sequences per category
-    seq_per_cat_trn_cnts, seq_per_cat_trn_binned_cnts, trn_cnt_sum = calculate_sequences_per_category(
-        df=trn_coh, context_key=tgt_context_key
+    seq_per_cat_trn_cnts, seq_per_cat_trn_binned_cnts, seq_per_cat_top_9, trn_cnt_sum = (
+        calculate_sequences_per_category(df=trn_coh, context_key=tgt_context_key, seq_per_cat_top_9=None)
     )
-    seq_per_cat_syn_cnts, seq_per_cat_syn_binned_cnts, syn_cnt_sum = calculate_sequences_per_category(
-        df=syn_coh, context_key=tgt_context_key
+    seq_per_cat_syn_cnts, seq_per_cat_syn_binned_cnts, _, syn_cnt_sum = calculate_sequences_per_category(
+        df=syn_coh,
+        context_key=tgt_context_key,
+        seq_per_cat_top_9=seq_per_cat_top_9,
     )
     acc_seq_per_cat = calculate_sequences_per_category_accuracy(
         seq_per_cat_trn_binned_cnts=seq_per_cat_trn_binned_cnts,
@@ -656,7 +658,6 @@ def _report_coherence(
         workspace=workspace,
     )
 
-    # TODO: joint coherence accuracy?
     return acc_cats_per_seq, acc_seq_per_cat
 
 
