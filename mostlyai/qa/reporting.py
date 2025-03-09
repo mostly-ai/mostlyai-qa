@@ -346,6 +346,8 @@ def report(
             sim_cosine_trn_syn=sim_cosine_trn_syn,
             sim_auc_trn_hol=sim_auc_trn_hol,
             sim_auc_trn_syn=sim_auc_trn_syn,
+            acc_cats_per_seq=acc_cats_per_seq,
+            acc_seq_per_cat=acc_seq_per_cat,
         )
         meta = {
             "rows_original": trn_sample_size + hol_sample_size,
@@ -387,6 +389,8 @@ def _calculate_metrics(
     sim_cosine_trn_syn: np.float64 | None = None,
     sim_auc_trn_hol: np.float64 | None = None,
     sim_auc_trn_syn: np.float64 | None = None,
+    acc_cats_per_seq: pd.DataFrame | None = None,
+    acc_seq_per_cat: pd.DataFrame | None = None,
 ) -> ModelMetrics:
     do_accuracy = acc_uni is not None and acc_biv is not None
     do_distances = dcr_trn is not None
@@ -405,11 +409,26 @@ def _calculate_metrics(
             acc_bivariate = acc_bivariate_max = None
         # coherence
         acc_nxt = acc_biv.loc[acc_biv.type == NXT_COLUMN]
+        nxt_col_coherence = nxt_col_coherence_max = None
         if not acc_nxt.empty:
-            acc_coherence = acc_nxt.accuracy.mean()
-            acc_coherence_max = acc_nxt.accuracy_max.mean()
-        else:
-            acc_coherence = acc_coherence_max = None
+            nxt_col_coherence = acc_nxt.accuracy.mean()
+            nxt_col_coherence_max = acc_nxt.accuracy_max.mean()
+        cats_per_seq_coherence = cats_per_seq_coherence_max = None
+        if not acc_cats_per_seq.empty:
+            cats_per_seq_coherence = acc_cats_per_seq.accuracy.mean()
+            cats_per_seq_coherence_max = acc_cats_per_seq.accuracy_max.mean()
+        seq_per_cat_coherence = seq_per_cat_coherence_max = None
+        if not acc_seq_per_cat.empty:
+            seq_per_cat_coherence = acc_seq_per_cat.accuracy.mean()
+            seq_per_cat_coherence_max = acc_seq_per_cat.accuracy_max.mean()
+        coherence_metrics = [
+            m for m in (nxt_col_coherence, cats_per_seq_coherence, seq_per_cat_coherence) if m is not None
+        ]
+        coherence_max_metrics = [
+            m for m in (nxt_col_coherence_max, cats_per_seq_coherence_max, seq_per_cat_coherence_max) if m is not None
+        ]
+        acc_coherence = np.mean(coherence_metrics) if coherence_metrics else None
+        acc_coherence_max = np.mean(coherence_max_metrics) if coherence_max_metrics else None
         # calculate overall
         acc_overall = np.mean([m for m in (acc_univariate, acc_bivariate, acc_coherence) if m is not None])
         acc_overall_max = np.mean(

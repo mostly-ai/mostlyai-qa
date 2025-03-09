@@ -74,6 +74,8 @@ def test_generate_store_report(tmp_path, cols, workspace):
         sim_cosine_trn_syn=sim_cosine_trn_syn,
         sim_auc_trn_hol=sim_auc_trn_hol,
         sim_auc_trn_syn=sim_auc_trn_syn,
+        acc_cats_per_seq=acc_cats_per_seq,
+        acc_seq_per_cat=acc_seq_per_cat,
     )
 
     meta = {
