@@ -562,7 +562,9 @@ def prepare_categorical_plot_data_binned(
 ) -> pd.DataFrame:
     t = trn_bin_col_cnts.to_frame("target_cnt").reset_index(names="category")
     s = syn_bin_col_cnts.to_frame("synthetic_cnt").reset_index(names="category")
-    df = pd.merge(t, s, on="category", how="outer")
+    df = pd.merge(t, s, on="category", how="left")
+    missing_s = s[~s["category"].isin(t["category"])]
+    df = pd.concat([df, missing_s], ignore_index=True)
     df["target_cnt"] = df["target_cnt"].fillna(0.0)
     df["synthetic_cnt"] = df["synthetic_cnt"].fillna(0.0)
     df["avg_cnt"] = (df["target_cnt"] + df["synthetic_cnt"]) / 2

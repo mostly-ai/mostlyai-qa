@@ -14,7 +14,6 @@
 
 from joblib import Parallel, cpu_count, delayed, parallel_config
 import pandas as pd
-from plotly import graph_objs as go
 
 from mostlyai.qa._accuracy import (
     bin_data,
@@ -101,26 +100,7 @@ def plot_store_single_distinct_categories_per_sequence(
     accuracy: float,
     workspace: TemporaryWorkspace,
 ) -> None:
-    fig = plot_distinct_categories_per_sequence(
-        col=col,
-        trn_cats_per_seq_kde=trn_cats_per_seq_kde,
-        syn_cats_per_seq_kde=syn_cats_per_seq_kde,
-        trn_binned_cats_per_seq_cnts=trn_binned_cats_per_seq_cnts,
-        syn_binned_cats_per_seq_cnts=syn_binned_cats_per_seq_cnts,
-        accuracy=accuracy,
-    )
-    workspace.store_figure_html(fig, "distinct_categories_per_sequence", col)
-
-
-def plot_distinct_categories_per_sequence(
-    col: str,
-    trn_cats_per_seq_kde: pd.Series,
-    syn_cats_per_seq_kde: pd.Series,
-    trn_binned_cats_per_seq_cnts: pd.Series,
-    syn_binned_cats_per_seq_cnts: pd.Series,
-    accuracy: float,
-) -> go.Figure:
-    return plot_univariate(
+    fig = plot_univariate(
         col_name=col,
         trn_num_kde=trn_cats_per_seq_kde,
         syn_num_kde=syn_cats_per_seq_kde,
@@ -130,6 +110,7 @@ def plot_distinct_categories_per_sequence(
         syn_bin_col_cnts=syn_binned_cats_per_seq_cnts,
         accuracy=accuracy,
     )
+    workspace.store_figure_html(fig, "distinct_categories_per_sequence", col)
 
 
 def calculate_sequences_per_distinct_category(
