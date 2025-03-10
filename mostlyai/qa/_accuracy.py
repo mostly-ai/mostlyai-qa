@@ -563,8 +563,10 @@ def prepare_categorical_plot_data_binned(
     t = trn_bin_col_cnts.to_frame("target_cnt").reset_index(names="category")
     s = syn_bin_col_cnts.to_frame("synthetic_cnt").reset_index(names="category")
     df = pd.merge(t, s, on="category", how="left")
+    df = df.set_index("category").reindex(t["category"]).reset_index()
     missing_s = s[~s["category"].isin(t["category"])]
-    df = pd.concat([df, missing_s], ignore_index=True)
+    if not missing_s.empty:
+        df = pd.concat([df, missing_s], ignore_index=True)
     df["target_cnt"] = df["target_cnt"].fillna(0.0)
     df["synthetic_cnt"] = df["synthetic_cnt"].fillna(0.0)
     df["avg_cnt"] = (df["target_cnt"] + df["synthetic_cnt"]) / 2
@@ -574,7 +576,7 @@ def prepare_categorical_plot_data_binned(
     if df["category"].dtype.name == "category":
         df["category_code"] = df["category"].cat.codes
     else:
-        df["category_code"] = df["category"]
+        df["category_code"] = pd.Categorical(df["category"], ordered=True, categories=df["category"]).codes
     if sort_by_frequency:
         df = df.sort_values("target_pct", ascending=False).reset_index(drop=True)
     else:
