@@ -258,12 +258,12 @@
   </div>
   {% endif %}
 
-  {% if categories_per_sequence_html_charts | length > 0 %}
+  {% if distinct_categories_per_sequence_html_charts | length > 0 %}
   <div class="p-4">
-    <h2 id="categories_per_sequence" class="anchor charts-section-title">Coherence: Distinct Categories per Sequence</h2>
+    <h2 id="distinct_categories_per_sequence" class="anchor charts-section-title">Coherence: Distinct Categories per Sequence</h2>
     <p class="lead"></p>
     <div class="white-box p-3">
-      {% for cats_per_seq_plots_row in categories_per_sequence_html_charts | batch(3, '&nbsp;') %}
+      {% for cats_per_seq_plots_row in distinct_categories_per_sequence_html_charts | batch(3, '&nbsp;') %}
       <div class="row p-3">
         {% for cats_per_seq_plot in cats_per_seq_plots_row %}
         <div class="col-sm-4">{{ cats_per_seq_plot }}</div>
@@ -274,12 +274,12 @@
   </div>
   {% endif %}
 
-  {% if sequences_per_category_html_charts | length > 0 %}
+  {% if sequences_per_distinct_category_html_charts | length > 0 %}
   <div class="p-4">
-    <h2 id="sequences_per_category" class="anchor charts-section-title">Coherence: Sequences per Distinct Category</h2>
+    <h2 id="sequences_per_distinct_category" class="anchor charts-section-title">Coherence: Sequences per Distinct Category</h2>
     <p class="lead"></p>
     <div class="white-box p-3">
-      {% for seq_per_cat_plots_row in sequences_per_category_html_charts | batch(3, '&nbsp;') %}
+      {% for seq_per_cat_plots_row in sequences_per_distinct_category_html_charts | batch(3, '&nbsp;') %}
       <div class="row p-3">
         {% for seq_per_cat_plot in seq_per_cat_plots_row %}
         <div class="col-sm-4">{{ seq_per_cat_plot }}</div>

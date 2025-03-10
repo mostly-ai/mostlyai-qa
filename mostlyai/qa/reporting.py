@@ -272,7 +272,7 @@ def report(
                 workspace=workspace,
             )
             _LOG.info("report sequences per distinct category")
-            acc_seq_per_cat = _report_coherence_sequences_per_distinct_category(
+            acc_seqs_per_cat = _report_coherence_sequences_per_distinct_category(
                 trn_coh=trn_coh,
                 syn_coh=syn_coh,
                 tgt_context_key=tgt_context_key,
@@ -280,7 +280,7 @@ def report(
                 workspace=workspace,
             )
         else:
-            acc_cats_per_seq = acc_seq_per_cat = pd.DataFrame({"column": [], "accuracy": [], "accuracy_max": []})
+            acc_cats_per_seq = acc_seqs_per_cat = pd.DataFrame({"column": [], "accuracy": [], "accuracy_max": []})
 
         _LOG.info("calculate embeddings for synthetic")
         syn_embeds = calculate_embeddings(
@@ -355,7 +355,7 @@ def report(
             sim_auc_trn_hol=sim_auc_trn_hol,
             sim_auc_trn_syn=sim_auc_trn_syn,
             acc_cats_per_seq=acc_cats_per_seq,
-            acc_seq_per_cat=acc_seq_per_cat,
+            acc_seqs_per_cat=acc_seqs_per_cat,
         )
         meta = {
             "rows_original": trn_sample_size + hol_sample_size,
@@ -379,7 +379,7 @@ def report(
             meta=meta,
             acc_uni=acc_uni,
             acc_cats_per_seq=acc_cats_per_seq,
-            acc_seq_per_cat=acc_seq_per_cat,
+            acc_seqs_per_cat=acc_seqs_per_cat,
             acc_biv=acc_biv,
             corr_trn=corr_trn,
         )
@@ -398,9 +398,10 @@ def _calculate_metrics(
     sim_auc_trn_hol: np.float64 | None = None,
     sim_auc_trn_syn: np.float64 | None = None,
     acc_cats_per_seq: pd.DataFrame | None = None,
-    acc_seq_per_cat: pd.DataFrame | None = None,
+    acc_seqs_per_cat: pd.DataFrame | None = None,
 ) -> ModelMetrics:
     do_accuracy = acc_uni is not None and acc_biv is not None
+
     do_distances = dcr_trn is not None
     do_similarity = sim_cosine_trn_syn is not None
 
@@ -425,15 +426,15 @@ def _calculate_metrics(
         if not acc_cats_per_seq.empty:
             cats_per_seq_coherence = acc_cats_per_seq.accuracy.mean()
             cats_per_seq_coherence_max = acc_cats_per_seq.accuracy_max.mean()
-        seq_per_cat_coherence = seq_per_cat_coherence_max = None
-        if not acc_seq_per_cat.empty:
-            seq_per_cat_coherence = acc_seq_per_cat.accuracy.mean()
-            seq_per_cat_coherence_max = acc_seq_per_cat.accuracy_max.mean()
+        seqs_per_cat_coherence = seqs_per_cat_coherence_max = None
+        if not acc_seqs_per_cat.empty:
+            seqs_per_cat_coherence = acc_seqs_per_cat.accuracy.mean()
+            seqs_per_cat_coherence_max = acc_seqs_per_cat.accuracy_max.mean()
         coherence_metrics = [
-            m for m in (nxt_col_coherence, cats_per_seq_coherence, seq_per_cat_coherence) if m is not None
+            m for m in (nxt_col_coherence, cats_per_seq_coherence, seqs_per_cat_coherence) if m is not None
         ]
         coherence_max_metrics = [
-            m for m in (nxt_col_coherence_max, cats_per_seq_coherence_max, seq_per_cat_coherence_max) if m is not None
+            m for m in (nxt_col_coherence_max, cats_per_seq_coherence_max, seqs_per_cat_coherence_max) if m is not None
         ]
         acc_coherence = np.mean(coherence_metrics) if coherence_metrics else None
         acc_coherence_max = np.mean(coherence_max_metrics) if coherence_max_metrics else None
@@ -616,7 +617,7 @@ def _report_coherence_distinct_categories_per_sequence(
     _LOG.info("calculate KDEs of distinct categories per sequence for training")
     trn_cats_per_seq_kdes = calculate_numeric_uni_kdes(df=trn_cats_per_seq)
     _LOG.info("store KDEs of distinct categories per sequence for training")
-    statistics.store_categories_per_sequence_kdes(trn_kdes=trn_cats_per_seq_kdes)
+    statistics.store_distinct_categories_per_sequence_kdes(trn_kdes=trn_cats_per_seq_kdes)
     _LOG.info("calculate KDEs of distinct categories per sequence for synthetic")
     syn_cats_per_seq_kdes = calculate_numeric_uni_kdes(df=syn_cats_per_seq, trn_kdes=trn_cats_per_seq_kdes)
 
@@ -662,9 +663,12 @@ def _report_coherence_sequences_per_distinct_category(
     trn_seqs_per_cat_cnts, trn_seqs_per_top_cat_cnts, trn_top_cats, trn_n_seqs = (
         calculate_sequences_per_distinct_category(df=trn_coh, context_key=tgt_context_key)
     )
-    _LOG.info("store sequences per distinct category for training")
-    statistics.store_sequences_per_distinct_category(
-        trn_seqs_per_cat_cnts, trn_seqs_per_top_cat_cnts, trn_top_cats, trn_n_seqs
+    _LOG.info("store sequences per distinct category artifacts for training")
+    statistics.store_sequences_per_distinct_category_artifacts(
+        seqs_per_cat_cnts=trn_seqs_per_cat_cnts,
+        seqs_per_top_cat_cnts=trn_seqs_per_top_cat_cnts,
+        top_cats=trn_top_cats,
+        n_seqs=trn_n_seqs,
     )
     _LOG.info("calculate sequences per distinct category for synthetic")
     syn_seqs_per_cat_cnts, syn_seqs_per_top_cat_cnts, _, syn_n_seqs = calculate_sequences_per_distinct_category(

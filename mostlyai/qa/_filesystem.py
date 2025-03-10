@@ -32,8 +32,8 @@ class TemporaryWorkspace(TemporaryDirectory):
     FIGURE_TYPE = Literal[
         "univariate",
         "bivariate",
-        "categories_per_sequence",
-        "sequences_per_category",
+        "distinct_categories_per_sequence",
+        "sequences_per_distinct_category",
         "accuracy_matrix",
         "correlation_matrices",
         "similarity_pca",
@@ -85,7 +85,12 @@ class TemporaryWorkspace(TemporaryDirectory):
         )
 
     def store_figure_html(self, fig: go.Figure, figure_type: FIGURE_TYPE, *cols: str) -> None:
-        if figure_type in ["univariate", "bivariate", "categories_per_sequence", "sequences_per_category"]:
+        if figure_type in [
+            "univariate",
+            "bivariate",
+            "distinct_categories_per_sequence",
+            "sequences_per_distinct_category",
+        ]:
             file = self.get_figure_path(figure_type, *cols)
         else:
             file = self.get_unique_figure_path(figure_type)
@@ -97,19 +102,29 @@ class Statistics:
         self.path = Path(path)
         self.early_exit_path = self.path / "_EARLY_EXIT"
         self.meta_path = self.path / "meta.json"
-        self.bins_dir = self.path / "bins"
-        self.coherence_bins_dir = self.path / "coherence_bins"
-        self.categories_per_sequence_kdes_dir = self.path / "categories_per_sequence_kdes"
-        self.categories_per_sequence_bins_dir = self.path / "categories_per_sequence_bins"
-        self.categories_per_sequence_counts_dir = self.path / "categories_per_sequence_counts"
-        self.categories_per_sequence_accuracy_path = self.path / "categories_per_sequence_accuracy.parquet"
+
+        # correlation
         self.correlations_path = self.path / "correlations.parquet"
+
+        # accuracy
+        self.bins_dir = self.path / "bins"
         self.univariate_accuracies_path = self.path / "univariate_accuracies.parquet"
         self.bivariate_accuracies_path = self.path / "bivariate_accuracies.parquet"
         self.numeric_kdes_uni_dir = self.path / "numeric_kdes_uni"
         self.categorical_counts_uni_dir = self.path / "categorical_counts_uni"
         self.bin_counts_uni_path = self.path / "bin_counts_uni.parquet"
         self.bin_counts_biv_path = self.path / "bin_counts_biv.parquet"
+
+        # coherence
+        self.coherence_bins_dir = self.path / "coherence_bins"
+        self.distinct_categories_per_sequence_bins_dir = self.path / "distinct_categories_per_sequence_bins"
+        self.distinct_categories_per_sequence_kdes_dir = self.path / "distinct_categories_per_sequence_kdes"
+        self.distinct_categories_per_sequence_counts_dir = self.path / "distinct_categories_per_sequence_counts"
+        self.distinct_categories_per_sequence_accuracy_path = (
+            self.path / "distinct_categories_per_sequence_accuracy.parquet"
+        )
+
+        # similarity
         self.pca_model_path = self.path / "pca_model.skops"
         self.trn_pca_path = self.path / "trn_pca.npy"
         self.hol_pca_path = self.path / "hol_pca.npy"
@@ -331,18 +346,18 @@ class Statistics:
         df = df.groupby("column", sort=False).agg(list).reset_index()
         return df.set_index("column")["bins"].to_dict()
 
-    def store_categories_per_sequence_kdes(self, trn_kdes: dict[str, pd.Series]) -> None:
+    def store_distinct_categories_per_sequence_kdes(self, trn_kdes: dict[str, pd.Series]) -> None:
         trn_kdes = pd.DataFrame(
             [(column, list(xy.index), list(xy.values)) for column, xy in trn_kdes.items()],
             columns=["column", "x", "y"],
         )
-        self.categories_per_sequence_kdes_dir.mkdir(exist_ok=True, parents=True)
+        self.distinct_categories_per_sequence_kdes_dir.mkdir(exist_ok=True, parents=True)
         for i, row in trn_kdes.iterrows():
             row_df = pd.DataFrame([row]).explode(["x", "y"])
-            row_df.to_parquet(self.categories_per_sequence_kdes_dir / f"{i:05}.parquet")
+            row_df.to_parquet(self.distinct_categories_per_sequence_kdes_dir / f"{i:05}.parquet")
 
-    def load_categories_per_sequence_kdes(self) -> dict[str, pd.Series]:
-        files = sorted(self.categories_per_sequence_kdes_dir.glob("*.parquet"))
+    def load_distinct_categories_per_sequence_kdes(self) -> dict[str, pd.Series]:
+        files = sorted(self.distinct_categories_per_sequence_kdes_dir.glob("*.parquet"))
         kdes = pd.concat([pd.read_parquet(p) for p in files]) if files else pd.DataFrame(columns=["column", "x", "y"])
         kdes = kdes.groupby("column", sort=False).agg(list).reset_index()
         # harmonise older prefix formats to <prefix>:: for compatibility with older versions
@@ -359,13 +374,13 @@ class Statistics:
 
     def store_distinct_categories_per_sequence_bins(self, bins: dict[str, list]) -> None:
         df = pd.Series(bins).to_frame("bins").reset_index().rename(columns={"index": "column"})
-        self.categories_per_sequence_bins_dir.mkdir(exist_ok=True, parents=True)
+        self.distinct_categories_per_sequence_bins_dir.mkdir(exist_ok=True, parents=True)
         for i, row in df.iterrows():
             row_df = pd.DataFrame([row]).explode("bins")
-            row_df.to_parquet(self.categories_per_sequence_bins_dir / f"{i:05}.parquet")
+            row_df.to_parquet(self.distinct_categories_per_sequence_bins_dir / f"{i:05}.parquet")
 
-    def load_categories_per_sequence_bins(self) -> dict[str, list]:
-        files = sorted(self.categories_per_sequence_bins_dir.glob("*.parquet"))
+    def load_distinct_categories_per_sequence_bins(self) -> dict[str, list]:
+        files = sorted(self.distinct_categories_per_sequence_bins_dir.glob("*.parquet"))
         df = pd.concat([pd.read_parquet(p) for p in files]) if files else pd.DataFrame(columns=["column", "bins"])
         df = df.groupby("column", sort=False).agg(list).reset_index()
         return df.set_index("column")["bins"].to_dict()
@@ -375,13 +390,13 @@ class Statistics:
             [(column, list(counts.index), list(counts.values)) for column, counts in counts.items()],
             columns=["column", "cat", "count"],
         )
-        self.categories_per_sequence_counts_dir.mkdir(exist_ok=True, parents=True)
+        self.distinct_categories_per_sequence_counts_dir.mkdir(exist_ok=True, parents=True)
         for i, row in counts.iterrows():
             row_df = pd.DataFrame([row]).explode(["cat", "count"])
-            row_df.to_parquet(self.categories_per_sequence_counts_dir / f"{i:05}.parquet")
+            row_df.to_parquet(self.distinct_categories_per_sequence_counts_dir / f"{i:05}.parquet")
 
-    def load_categories_per_sequence_counts(self) -> dict[str, pd.Series]:
-        files = sorted(self.categories_per_sequence_counts_dir.glob("*.parquet"))
+    def load_binned_distinct_categories_per_sequence_counts(self) -> dict[str, pd.Series]:
+        files = sorted(self.distinct_categories_per_sequence_counts_dir.glob("*.parquet"))
         counts = (
             pd.concat([pd.read_parquet(p) for p in files])
             if files
@@ -401,10 +416,34 @@ class Statistics:
         return counts
 
     def store_distinct_categories_per_sequence_accuracy(self, accuracy: pd.DataFrame) -> None:
-        accuracy.to_parquet(self.categories_per_sequence_accuracy_path)
+        accuracy.to_parquet(self.distinct_categories_per_sequence_accuracy_path)
 
-    def load_categories_per_sequence_accuracy(self) -> pd.DataFrame:
-        df = pd.read_parquet(self.categories_per_sequence_accuracy_path)
+    def load_distinct_categories_per_sequence_accuracy(self) -> pd.DataFrame:
+        df = pd.read_parquet(self.distinct_categories_per_sequence_accuracy_path)
         # harmonise older prefix formats to <prefix>:: for compatibility with older versions
         df["column"] = df["column"].str.replace(_OLD_COL_PREFIX, _NEW_COL_PREFIX, regex=True)
         return df
+
+    def store_sequences_per_distinct_category_artifacts(
+        self,
+        seqs_per_cat_cnts: dict[str, pd.Series],
+        seqs_per_top_cat_cnts: dict[str, pd.Series],
+        top_cats: dict[str, list[str]],
+        n_seqs: int,
+    ) -> None:
+        # TODO: implement
+        pass
+
+    def load_sequences_per_distinct_category_artifacts(
+        self,
+    ) -> tuple[dict[str, pd.Series], dict[str, pd.Series], dict[str, list[str]], int]:
+        # TODO: implement
+        pass
+
+    def store_sequences_per_distinct_category_accuracy(self, accuracy: pd.DataFrame) -> None:
+        # TODO: implement
+        pass
+
+    def load_sequences_per_distinct_category_accuracy(self) -> pd.DataFrame:
+        # TODO: implement
+        pass
