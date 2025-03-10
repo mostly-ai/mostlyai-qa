@@ -33,9 +33,6 @@ def pull_data_for_coherence(
     max_sequence_length: int = 100,
     bins: int | dict[str, list] = 30,
 ) -> tuple[pd.DataFrame, dict[str, list]]:
-    """
-    Prepare sequential dataset for coherence metrics.
-    """
     df_tgt = df_tgt.copy()
 
     # randomly sample at most max_sequence_length rows per sequence
@@ -52,31 +49,19 @@ def pull_data_for_coherence(
     return df_tgt, bins
 
 
-def calculate_categories_per_sequence(df: pd.DataFrame, context_key: str) -> pd.DataFrame:
-    """
-    Calculate the number of categories per sequence for all columns except the context key.
-    """
-    # Example output (pd.DataFrame):
-    # | year | team | league | G  | AB | R  | H  | HR | RBI | SB | CS | BB | SO |
-    # |------|------|--------|----|----|----|----|----|-----|----|----|----|----|
-    # | 9    | 8    | 2      | 9  | 3  | 1  | 1  | 1  | 1   | 1  | 1  | 1  | 2  |
-    # | 23   | 3    | 2      | 18 | 21 | 20 | 23 | 17 | 20  | 15 | 10 | 22 | 19 |
-    # columns dtype: int64
+def calculate_distinct_categories_per_sequence(df: pd.DataFrame, context_key: str) -> pd.DataFrame:
     return df.groupby(context_key).nunique().reset_index(drop=True)
 
 
-def calculate_categories_per_sequence_accuracy(
-    cats_per_seq_trn_binned: pd.DataFrame, cats_per_seq_syn_binned: pd.DataFrame
+def calculate_distinct_categories_per_sequence_accuracy(
+    trn_binned_cats_per_seq: pd.DataFrame, syn_binned_cats_per_seq: pd.DataFrame
 ) -> pd.DataFrame:
-    """
-    Calculate accuracy of categories per sequence.
-    """
-    acc_cats_per_seq = pd.DataFrame({"column": cats_per_seq_trn_binned.columns})
+    acc_cats_per_seq = pd.DataFrame({"column": trn_binned_cats_per_seq.columns})
     with parallel_config("loky", n_jobs=min(cpu_count() - 1, 16)):
         results = Parallel()(
             delayed(calculate_accuracy)(
-                trn_bin_cols=cats_per_seq_trn_binned[[row["column"]]],
-                syn_bin_cols=cats_per_seq_syn_binned[[row["column"]]],
+                trn_bin_cols=trn_binned_cats_per_seq[[row["column"]]],
+                syn_bin_cols=syn_binned_cats_per_seq[[row["column"]]],
             )
             for _, row in acc_cats_per_seq.iterrows()
         )
@@ -84,22 +69,22 @@ def calculate_categories_per_sequence_accuracy(
     return acc_cats_per_seq
 
 
-def plot_store_categories_per_sequence(
-    cats_per_seq_trn_kdes: dict[str, pd.Series],
-    cats_per_seq_syn_kdes: dict[str, pd.Series],
-    cats_per_seq_trn_binned_cnts: dict[str, pd.Series],
-    cats_per_seq_syn_binned_cnts: dict[str, pd.Series],
+def plot_store_distinct_categories_per_sequence(
+    trn_cats_per_seq_kdes: dict[str, pd.Series],
+    syn_cats_per_seq_kdes: dict[str, pd.Series],
+    trn_binned_cats_per_seq_cnts: dict[str, pd.Series],
+    syn_binned_cats_per_seq_cnts: dict[str, pd.Series],
     acc_cats_per_seq: pd.DataFrame,
     workspace: TemporaryWorkspace,
 ) -> None:
     with parallel_config("loky", n_jobs=min(cpu_count() - 1, 16)):
         Parallel()(
-            delayed(plot_store_single_categories_per_sequence)(
+            delayed(plot_store_single_distinct_categories_per_sequence)(
                 row["column"],
-                cats_per_seq_trn_kdes.get(row["column"]),
-                cats_per_seq_syn_kdes.get(row["column"]),
-                cats_per_seq_trn_binned_cnts.get(row["column"]),
-                cats_per_seq_syn_binned_cnts.get(row["column"]),
+                trn_cats_per_seq_kdes.get(row["column"]),
+                syn_cats_per_seq_kdes.get(row["column"]),
+                trn_binned_cats_per_seq_cnts.get(row["column"]),
+                syn_binned_cats_per_seq_cnts.get(row["column"]),
                 row["accuracy"],
                 workspace,
             )
@@ -107,96 +92,93 @@ def plot_store_categories_per_sequence(
         )
 
 
-def plot_store_single_categories_per_sequence(
+def plot_store_single_distinct_categories_per_sequence(
     col: str,
-    cats_per_seq_trn_kde: pd.Series,
-    cats_per_seq_syn_kde: pd.Series,
-    cats_per_seq_trn_binned_cnt: pd.Series,
-    cats_per_seq_syn_binned_cnt: pd.Series,
+    trn_cats_per_seq_kde: pd.Series,
+    syn_cats_per_seq_kde: pd.Series,
+    trn_binned_cats_per_seq_cnts: pd.Series,
+    syn_binned_cats_per_seq_cnts: pd.Series,
     accuracy: float,
     workspace: TemporaryWorkspace,
 ) -> None:
-    fig = plot_categories_per_sequence(
+    fig = plot_distinct_categories_per_sequence(
         col=col,
-        cats_per_seq_trn_kde=cats_per_seq_trn_kde,
-        cats_per_seq_syn_kde=cats_per_seq_syn_kde,
-        cats_per_seq_trn_binned_cnt=cats_per_seq_trn_binned_cnt,
-        cats_per_seq_syn_binned_cnt=cats_per_seq_syn_binned_cnt,
+        trn_cats_per_seq_kde=trn_cats_per_seq_kde,
+        syn_cats_per_seq_kde=syn_cats_per_seq_kde,
+        trn_binned_cats_per_seq_cnts=trn_binned_cats_per_seq_cnts,
+        syn_binned_cats_per_seq_cnts=syn_binned_cats_per_seq_cnts,
         accuracy=accuracy,
     )
-    workspace.store_figure_html(fig, "categories_per_sequence", col)
+    workspace.store_figure_html(fig, "distinct_categories_per_sequence", col)
 
 
-def plot_categories_per_sequence(
+def plot_distinct_categories_per_sequence(
     col: str,
-    cats_per_seq_trn_kde: pd.Series,
-    cats_per_seq_syn_kde: pd.Series,
-    cats_per_seq_trn_binned_cnt: pd.Series,
-    cats_per_seq_syn_binned_cnt: pd.Series,
+    trn_cats_per_seq_kde: pd.Series,
+    syn_cats_per_seq_kde: pd.Series,
+    trn_binned_cats_per_seq_cnts: pd.Series,
+    syn_binned_cats_per_seq_cnts: pd.Series,
     accuracy: float,
 ) -> go.Figure:
     return plot_univariate(
         col_name=col,
-        trn_num_kde=cats_per_seq_trn_kde,
-        syn_num_kde=cats_per_seq_syn_kde,
+        trn_num_kde=trn_cats_per_seq_kde,
+        syn_num_kde=syn_cats_per_seq_kde,
         trn_cat_col_cnts=None,
         syn_cat_col_cnts=None,
-        trn_bin_col_cnts=cats_per_seq_trn_binned_cnt,
-        syn_bin_col_cnts=cats_per_seq_syn_binned_cnt,
+        trn_bin_col_cnts=trn_binned_cats_per_seq_cnts,
+        syn_bin_col_cnts=syn_binned_cats_per_seq_cnts,
         accuracy=accuracy,
     )
 
 
-def calculate_sequences_per_category(
-    df: pd.DataFrame, seq_per_cat_top_9: dict[str, list[str]] | None, context_key: str
+def calculate_sequences_per_distinct_category(
+    df: pd.DataFrame, context_key: str, top_cats: dict[str, list[str]] | None = None
 ) -> tuple[dict[str, pd.Series], dict[str, pd.Series], dict[str, list[str]], int]:
-    """
-    Calculate the number of sequences per category for all columns except the context key.
-    """
-    sequences_per_category_dict = {
+    # TODO: how to handle rare categories? hash them here?
+    seqs_per_cat = {
         col: df.groupby(col)[context_key].nunique().rename_axis("index") for col in df.columns if col != context_key
     }
 
-    # convert df to have top 9 categories w.r.t. frequency of belonging to sequences + '(other)' for all other categories
+    # transform df to contain:
+    # - top n_top_cats categories w.r.t. frequency of belonging to sequences
+    # - other_cat for all other categories
     df = df.copy()
-    if seq_per_cat_top_9 is None:
-        seq_per_cat_top_9 = {}
+    n_top_cats = 9
+    other_cat = "(other)"
+    if top_cats is None:
+        top_cats = {}
     for col in df.columns:
         if col == context_key:
             continue
-        top_categories = seq_per_cat_top_9.setdefault(col, sequences_per_category_dict[col].nlargest(9).index.tolist())
-        not_in_top_categories_mask = ~df[col].isin(top_categories)
-        if not_in_top_categories_mask.any():
-            if "(other)" not in df[col].cat.categories:
-                df[col] = df[col].cat.add_categories("(other)")
-            df.loc[not_in_top_categories_mask, col] = "(other)"
+        col_top_cats = top_cats.setdefault(col, seqs_per_cat[col].nlargest(n_top_cats).index.tolist())
+        not_in_top_cats_mask = ~df[col].isin(col_top_cats)
+        if not_in_top_cats_mask.any():
+            if other_cat not in df[col].cat.categories:
+                df[col] = df[col].cat.add_categories(other_cat)
+            df.loc[not_in_top_cats_mask, col] = other_cat
             df[col] = df[col].cat.remove_unused_categories()
-    sequences_per_category_binned_dict = {
+    binned_seqs_per_cat = {
         col: df.groupby(col)[context_key].nunique().rename_axis("index") for col in df.columns if col != context_key
     }
 
-    # cnt_sum to be used for univariate plot normalization
-    cnt_sum = df[context_key].nunique()
+    # number of sequences
+    n_seqs = df[context_key].nunique()
 
-    # Example output for "team" (pd.Series):
-    # team
-    # ALT     18
-    # ANA    164
-    # Name: players_id, dtype: int64
-    return sequences_per_category_dict, sequences_per_category_binned_dict, seq_per_cat_top_9, cnt_sum
+    return seqs_per_cat, binned_seqs_per_cat, top_cats, n_seqs
 
 
-def calculate_sequences_per_category_accuracy(
+def calculate_sequences_per_distinct_category_accuracy(
     *,
-    seq_per_cat_trn_binned_cnts: pd.DataFrame,
-    seq_per_cat_syn_binned_cnts: pd.DataFrame,
+    trn_seqs_per_top_cat_cnts: dict[str, pd.Series],
+    syn_seqs_per_top_cat_cnts: dict[str, pd.Series],
 ) -> pd.DataFrame:
-    acc_seq_per_cat = pd.DataFrame({"column": seq_per_cat_trn_binned_cnts.keys()})
+    acc_seq_per_cat = pd.DataFrame({"column": trn_seqs_per_top_cat_cnts.keys()})
     with parallel_config("loky", n_jobs=min(cpu_count() - 1, 16)):
         results = Parallel()(
             delayed(calculate_accuracy_cnts)(
-                seq_per_cat_trn_binned_cnts[row["column"]],
-                seq_per_cat_syn_binned_cnts[row["column"]],
+                trn_seqs_per_top_cat_cnts[row["column"]],
+                syn_seqs_per_top_cat_cnts[row["column"]],
             )
             for _, row in acc_seq_per_cat.iterrows()
         )
@@ -204,41 +186,41 @@ def calculate_sequences_per_category_accuracy(
     return acc_seq_per_cat
 
 
-def plot_store_sequences_per_category(
-    seq_per_cat_trn_cnts: dict[str, pd.Series],
-    seq_per_cat_syn_cnts: dict[str, pd.Series],
-    seq_per_cat_trn_binned_cnts: dict[str, pd.Series],
-    seq_per_cat_syn_binned_cnts: dict[str, pd.Series],
-    trn_cnt_sum: int,
-    syn_cnt_sum: int,
-    acc_seq_per_cat: pd.DataFrame,
+def plot_store_sequences_per_distinct_category(
+    trn_seqs_per_cat_cnts: dict[str, pd.Series],
+    syn_seqs_per_cat_cnts: dict[str, pd.Series],
+    trn_seqs_per_top_cat_cnts: dict[str, pd.Series],
+    syn_seqs_per_top_cat_cnts: dict[str, pd.Series],
+    trn_n_seqs: int,
+    syn_n_seqs: int,
+    acc_seqs_per_cat: pd.DataFrame,
     workspace: TemporaryWorkspace,
 ) -> None:
     with parallel_config("loky", n_jobs=min(cpu_count() - 1, 16)):
         Parallel()(
-            delayed(plot_store_single_sequences_per_category)(
+            delayed(plot_store_single_sequences_per_distinct_category)(
                 row["column"],
-                seq_per_cat_trn_cnts.get(row["column"]),
-                seq_per_cat_syn_cnts.get(row["column"]),
-                seq_per_cat_trn_binned_cnts.get(row["column"]),
-                seq_per_cat_syn_binned_cnts.get(row["column"]),
-                trn_cnt_sum,
-                syn_cnt_sum,
+                trn_seqs_per_cat_cnts.get(row["column"]),
+                syn_seqs_per_cat_cnts.get(row["column"]),
+                trn_seqs_per_top_cat_cnts.get(row["column"]),
+                syn_seqs_per_top_cat_cnts.get(row["column"]),
+                trn_n_seqs,
+                syn_n_seqs,
                 row["accuracy"],
                 workspace,
             )
-            for _, row in acc_seq_per_cat.iterrows()
+            for _, row in acc_seqs_per_cat.iterrows()
         )
 
 
-def plot_store_single_sequences_per_category(
+def plot_store_single_sequences_per_distinct_category(
     col: str,
-    seq_per_cat_trn_cnts: pd.Series,
-    seq_per_cat_syn_cnts: pd.Series,
-    seq_per_cat_trn_binned_cnt: pd.Series,
-    seq_per_cat_syn_binned_cnt: pd.Series,
-    trn_cnt_sum: int,
-    syn_cnt_sum: int,
+    trn_seqs_per_cat_cnts: pd.Series,
+    syn_seqs_per_cat_cnts: pd.Series,
+    trn_seqs_per_top_cat_cnts: pd.Series,
+    syn_seqs_per_top_cat_cnts: pd.Series,
+    trn_n_seqs: int,
+    syn_n_seqs: int,
     accuracy: float,
     workspace: TemporaryWorkspace,
 ) -> None:
@@ -246,12 +228,13 @@ def plot_store_single_sequences_per_category(
         col_name=col,
         trn_num_kde=None,
         syn_num_kde=None,
-        trn_cat_col_cnts=seq_per_cat_trn_cnts,
-        syn_cat_col_cnts=seq_per_cat_syn_cnts,
-        trn_bin_col_cnts=seq_per_cat_trn_binned_cnt,
-        syn_bin_col_cnts=seq_per_cat_syn_binned_cnt,
+        trn_cat_col_cnts=trn_seqs_per_cat_cnts,
+        syn_cat_col_cnts=syn_seqs_per_cat_cnts,
+        trn_bin_col_cnts=trn_seqs_per_top_cat_cnts,
+        syn_bin_col_cnts=syn_seqs_per_top_cat_cnts,
         accuracy=accuracy,
-        trn_cnt_sum=trn_cnt_sum,
-        syn_cnt_sum=syn_cnt_sum,
+        trn_cnt_sum=trn_n_seqs,
+        syn_cnt_sum=syn_n_seqs,
+        categorical_sort_by_frequency=False,
     )
-    workspace.store_figure_html(fig, "sequences_per_category", col)
+    workspace.store_figure_html(fig, "sequences_per_distinct_category", col)

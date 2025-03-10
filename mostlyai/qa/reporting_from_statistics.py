@@ -20,8 +20,10 @@ import pandas as pd
 
 from mostlyai.qa import _accuracy, _sampling, _similarity, _html_report
 from mostlyai.qa._coherence import (
-    calculate_categories_per_sequence,
-    plot_store_categories_per_sequence,
+    calculate_distinct_categories_per_sequence,
+    calculate_sequences_per_distinct_category,
+    plot_store_distinct_categories_per_sequence,
+    plot_store_sequences_per_distinct_category,
     pull_data_for_coherence,
 )
 from mostlyai.qa._sampling import pull_data_for_embeddings, calculate_embeddings
@@ -283,7 +285,7 @@ def _report_coherence(
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     # categories per sequence
     _LOG.info("calculate categories per sequence for synthetic")
-    cats_per_seq_syn = calculate_categories_per_sequence(df=syn_coh, context_key=tgt_context_key)
+    cats_per_seq_syn = calculate_distinct_categories_per_sequence(df=syn_coh, context_key=tgt_context_key)
 
     _LOG.info("load categories per sequence KDEs for training")
     cats_per_seq_trn_kdes = statistics.load_categories_per_sequence_kdes()
@@ -306,39 +308,47 @@ def _report_coherence(
     acc_cats_per_seq = statistics.load_categories_per_sequence_accuracy()
 
     _LOG.info("plot and store categories per sequence")
-    plot_store_categories_per_sequence(
-        cats_per_seq_trn_kdes=cats_per_seq_trn_kdes,
-        cats_per_seq_syn_kdes=cats_per_seq_syn_kdes,
-        cats_per_seq_trn_binned_cnts=cats_per_seq_trn_binned_cnts,
-        cats_per_seq_syn_binned_cnts=cats_per_seq_syn_binned_cnts,
+    plot_store_distinct_categories_per_sequence(
+        trn_cats_per_seq_kdes=cats_per_seq_trn_kdes,
+        syn_cats_per_seq_kdes=cats_per_seq_syn_kdes,
+        trn_binned_cats_per_seq_cnts=cats_per_seq_trn_binned_cnts,
+        syn_binned_cats_per_seq_cnts=cats_per_seq_syn_binned_cnts,
         acc_cats_per_seq=acc_cats_per_seq,
         workspace=workspace,
     )
 
     # sequences per category
-    # seq_per_cat_trn_cnts, seq_per_cat_trn_binned_cnts, trn_cnt_sum = calculate_sequences_per_category(
-    #     df=trn_coh, context_key=tgt_context_key
-    # )
-    # seq_per_cat_syn_cnts, seq_per_cat_syn_binned_cnts, syn_cnt_sum = calculate_sequences_per_category(
-    #     df=syn_coh, context_key=tgt_context_key
-    # )
-    # acc_seq_per_cat = calculate_sequences_per_category_accuracy(
-    #     seq_per_cat_trn_binned_cnts=seq_per_cat_trn_binned_cnts,
-    #     seq_per_cat_syn_binned_cnts=seq_per_cat_syn_binned_cnts,
-    # )
-    # plot_store_sequences_per_category(
-    #     seq_per_cat_trn_cnts=seq_per_cat_trn_cnts,
-    #     seq_per_cat_syn_cnts=seq_per_cat_syn_cnts,
-    #     seq_per_cat_trn_binned_cnts=seq_per_cat_trn_binned_cnts,
-    #     seq_per_cat_syn_binned_cnts=seq_per_cat_syn_binned_cnts,
-    #     trn_cnt_sum=trn_cnt_sum,
-    #     syn_cnt_sum=syn_cnt_sum,
-    #     acc_seq_per_cat=acc_seq_per_cat,
-    #     workspace=workspace,
-    # )
+    _LOG.info("load sequences per distinct category counts for training")
+    seq_per_cat_trn_cnts = statistics.load_sequences_per_distinct_category_counts()
+    _LOG.info("load sequences per distinct category counts (binned) for training")
+    seq_per_cat_trn_binned_cnts = statistics.load_sequences_per_distinct_category_counts_binned()
+    _LOG.info("load top categories for sequences per distinct category for training")
+    seq_per_cat_top_9 = statistics.load_sequences_per_distinct_category_top_9()
+    _LOG.info("load cnt sum for training")
+    trn_cnt_sum = statistics.load_cnt_sum()
+    _LOG.info("load sequences per category accuracy for training")
+    acc_seq_per_cat = statistics.load_sequences_per_distinct_category_accuracy()
 
-    # TODO: joint coherence accuracy?
-    return acc_cats_per_seq, pd.DataFrame({"column": [], "accuracy": [], "accuracy_max": []})  # TODO: , acc_seq_per_cat
+    _LOG.info("calculate sequences per distinct category for synthetic")
+    seq_per_cat_syn_cnts, seq_per_cat_syn_binned_cnts, _, syn_cnt_sum = calculate_sequences_per_distinct_category(
+        df=syn_coh,
+        context_key=tgt_context_key,
+        seq_per_cat_top_9=seq_per_cat_top_9,
+    )
+
+    _LOG.info("plot and store sequences per distinct category")
+    plot_store_sequences_per_distinct_category(
+        trn_seqs_per_cat_cnts=seq_per_cat_trn_cnts,
+        syn_seqs_per_cat_cnts=seq_per_cat_syn_cnts,
+        trn_seqs_per_top_cat_cnts=seq_per_cat_trn_binned_cnts,
+        syn_seqs_per_top_cat_cnts=seq_per_cat_syn_binned_cnts,
+        trn_cnt_sum=trn_cnt_sum,
+        syn_cnt_sum=syn_cnt_sum,
+        acc_seq_per_cat=acc_seq_per_cat,
+        workspace=workspace,
+    )
+
+    return acc_cats_per_seq, acc_seq_per_cat
 
 
 def _report_similarity_from_statistics(

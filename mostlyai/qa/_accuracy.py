@@ -441,6 +441,8 @@ def plot_univariate(
     accuracy: float | None,
     trn_cnt_sum: int | None = None,
     syn_cnt_sum: int | None = None,
+    numeric_sort_by_frequency: bool = False,
+    categorical_sort_by_frequency: bool = True,
 ) -> go.Figure:
     # either numerical/datetime KDEs or categorical counts must be provided
 
@@ -490,7 +492,7 @@ def plot_univariate(
         trn_line2, syn_line2 = plot_univariate_binned(
             trn_bin_col_cnts,
             syn_bin_col_cnts,
-            sort_by_frequency=False,
+            sort_by_frequency=numeric_sort_by_frequency,
             trn_cnt_sum=trn_cnt_sum,
             syn_cnt_sum=syn_cnt_sum,
         )
@@ -504,7 +506,7 @@ def plot_univariate(
         trn_line2, syn_line2 = plot_univariate_binned(
             trn_bin_col_cnts,
             syn_bin_col_cnts,
-            sort_by_frequency=True,
+            sort_by_frequency=categorical_sort_by_frequency,
             trn_cnt_sum=trn_cnt_sum,
             syn_cnt_sum=syn_cnt_sum,
         )

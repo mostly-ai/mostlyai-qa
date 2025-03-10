@@ -357,7 +357,7 @@ class Statistics:
         }
         return kdes
 
-    def store_categories_per_sequence_bins(self, bins: dict[str, list]) -> None:
+    def store_distinct_categories_per_sequence_bins(self, bins: dict[str, list]) -> None:
         df = pd.Series(bins).to_frame("bins").reset_index().rename(columns={"index": "column"})
         self.categories_per_sequence_bins_dir.mkdir(exist_ok=True, parents=True)
         for i, row in df.iterrows():
@@ -370,7 +370,7 @@ class Statistics:
         df = df.groupby("column", sort=False).agg(list).reset_index()
         return df.set_index("column")["bins"].to_dict()
 
-    def store_categories_per_sequence_counts(self, counts: dict[str, pd.Series]) -> None:
+    def store_binned_distinct_categories_per_sequence_counts(self, counts: dict[str, pd.Series]) -> None:
         counts = pd.DataFrame(
             [(column, list(counts.index), list(counts.values)) for column, counts in counts.items()],
             columns=["column", "cat", "count"],
@@ -400,7 +400,7 @@ class Statistics:
         }
         return counts
 
-    def store_categories_per_sequence_accuracy(self, accuracy: pd.DataFrame) -> None:
+    def store_distinct_categories_per_sequence_accuracy(self, accuracy: pd.DataFrame) -> None:
         accuracy.to_parquet(self.categories_per_sequence_accuracy_path)
 
     def load_categories_per_sequence_accuracy(self) -> pd.DataFrame:
