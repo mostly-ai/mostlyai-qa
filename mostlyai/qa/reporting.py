@@ -254,7 +254,8 @@ def report(
                 )
             )
 
-        if setup == "1:N":
+        do_coherence = setup == "1:N"
+        if do_coherence:
             _LOG.info("prepare training data for coherence started")
             trn_coh, trn_coh_bins = pull_data_for_coherence(df_tgt=trn_tgt_data, tgt_context_key=tgt_context_key)
             _LOG.info("prepare synthetic data for coherence started")

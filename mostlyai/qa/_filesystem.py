@@ -123,6 +123,15 @@ class Statistics:
         self.distinct_categories_per_sequence_accuracy_path = (
             self.path / "distinct_categories_per_sequence_accuracy.parquet"
         )
+        self.sequences_per_distinct_category_counts_dir = self.path / "sequences_per_distinct_category_counts"
+        self.sequences_per_distinct_category_top_category_counts_dir = (
+            self.path / "sequences_per_distinct_category_top_category_counts"
+        )
+        self.sequences_per_distinct_category_top_cats_dir = self.path / "sequences_per_distinct_category_top_cats"
+        self.sequences_per_distinct_category_n_seqs_path = self.path / "sequences_per_distinct_category_n_seqs.parquet"
+        self.sequences_per_distinct_category_accuracy_path = (
+            self.path / "sequences_per_distinct_category_accuracy.parquet"
+        )
 
         # similarity
         self.pca_model_path = self.path / "pca_model.skops"
@@ -431,19 +440,77 @@ class Statistics:
         top_cats: dict[str, list[str]],
         n_seqs: int,
     ) -> None:
-        # TODO: implement
-        pass
+        # store seqs_per_cat_cnts
+        seqs_per_cat_cnts = pd.DataFrame(
+            [
+                (column, list(cat_counts.index), list(cat_counts.values))
+                for column, cat_counts in seqs_per_cat_cnts.items()
+            ],
+            columns=["column", "cat", "count"],
+        )
+        self.sequences_per_distinct_category_counts_dir.mkdir(exist_ok=True, parents=True)
+        for i, row in seqs_per_cat_cnts.iterrows():
+            row_df = pd.DataFrame([row]).explode(["cat", "count"])
+            row_df.to_parquet(self.sequences_per_distinct_category_counts_dir / f"{i:05}.parquet")
+
+        # store seqs_per_top_cat_cnts
+        seqs_per_top_cat_cnts = pd.DataFrame(
+            [
+                (column, list(cat_counts.index), list(cat_counts.values))
+                for column, cat_counts in seqs_per_top_cat_cnts.items()
+            ],
+            columns=["column", "cat", "count"],
+        )
+        self.sequences_per_distinct_category_top_category_counts_dir.mkdir(exist_ok=True, parents=True)
+        for i, row in seqs_per_top_cat_cnts.iterrows():
+            row_df = pd.DataFrame([row]).explode(["cat", "count"])
+            row_df.to_parquet(self.sequences_per_distinct_category_top_category_counts_dir / f"{i:05}.parquet")
+
+        # store top_cats
+        top_cats = pd.Series(top_cats).to_frame("top_cats").reset_index().rename(columns={"index": "column"})
+        self.sequences_per_distinct_category_top_cats_dir.mkdir(exist_ok=True, parents=True)
+        for i, row in top_cats.iterrows():
+            row_df = pd.DataFrame([row]).explode("top_cats")
+            row_df.to_parquet(self.sequences_per_distinct_category_top_cats_dir / f"{i:05}.parquet")
+
+        # store n_seqs
+        pd.Series({"n_seqs": n_seqs}).to_frame("n_seqs").to_parquet(self.sequences_per_distinct_category_n_seqs_path)
 
     def load_sequences_per_distinct_category_artifacts(
         self,
     ) -> tuple[dict[str, pd.Series], dict[str, pd.Series], dict[str, list[str]], int]:
-        # TODO: implement
-        pass
+        # load seqs_per_cat_cnts
+        seqs_per_cat_cnts = pd.read_parquet(self.sequences_per_distinct_category_counts_dir)
+        seqs_per_cat_cnts = seqs_per_cat_cnts.groupby("column", sort=False).agg(list).reset_index()
+        seqs_per_cat_cnts = {
+            row["column"]: pd.Series(row["count"], index=row["cat"], name=row["column"])
+            for _, row in seqs_per_cat_cnts.iterrows()
+        }
+
+        # load seqs_per_top_cat_cnts
+        seqs_per_top_cat_cnts = pd.read_parquet(self.sequences_per_distinct_category_top_category_counts_dir)
+        seqs_per_top_cat_cnts = seqs_per_top_cat_cnts.groupby("column", sort=False).agg(list).reset_index()
+        seqs_per_top_cat_cnts = {
+            row["column"]: pd.Series(row["count"], index=row["cat"], name=row["column"])
+            for _, row in seqs_per_top_cat_cnts.iterrows()
+        }
+
+        # load top_cats
+        top_cats = pd.read_parquet(self.sequences_per_distinct_category_top_cats_dir)
+        top_cats = top_cats.groupby("column", sort=False).agg(list).reset_index()
+        top_cats = {row["column"]: row["top_cats"] for _, row in top_cats.iterrows()}
+
+        # load n_seqs
+        n_seqs = pd.read_parquet(self.sequences_per_distinct_category_n_seqs_path)
+        n_seqs = n_seqs["n_seqs"].iloc[0]
+
+        return seqs_per_cat_cnts, seqs_per_top_cat_cnts, top_cats, n_seqs
 
     def store_sequences_per_distinct_category_accuracy(self, accuracy: pd.DataFrame) -> None:
-        # TODO: implement
-        pass
+        accuracy.to_parquet(self.sequences_per_distinct_category_accuracy_path)
 
     def load_sequences_per_distinct_category_accuracy(self) -> pd.DataFrame:
-        # TODO: implement
-        pass
+        df = pd.read_parquet(self.sequences_per_distinct_category_accuracy_path)
+        # harmonise older prefix formats to <prefix>:: for compatibility with older versions
+        df["column"] = df["column"].str.replace(_OLD_COL_PREFIX, _NEW_COL_PREFIX, regex=True)
+        return df
