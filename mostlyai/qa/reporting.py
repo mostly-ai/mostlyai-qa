@@ -264,16 +264,16 @@ def report(
             )
             _LOG.info("store bins used for training data for coherence")
             statistics.store_coherence_bins(bins=trn_coh_bins)
-            _LOG.info("report distinct categories per sequence")
-            acc_cats_per_seq = _report_coherence_distinct_categories_per_sequence(
+            _LOG.info("report sequences per distinct category")
+            acc_seqs_per_cat = _report_coherence_sequences_per_distinct_category(
                 trn_coh=trn_coh,
                 syn_coh=syn_coh,
                 tgt_context_key=tgt_context_key,
                 statistics=statistics,
                 workspace=workspace,
             )
-            _LOG.info("report sequences per distinct category")
-            acc_seqs_per_cat = _report_coherence_sequences_per_distinct_category(
+            _LOG.info("report distinct categories per sequence")
+            acc_cats_per_seq = _report_coherence_distinct_categories_per_sequence(
                 trn_coh=trn_coh,
                 syn_coh=syn_coh,
                 tgt_context_key=tgt_context_key,

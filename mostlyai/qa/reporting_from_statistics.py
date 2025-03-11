@@ -140,15 +140,15 @@ def report_from_statistics(
             syn_coh, _ = pull_data_for_coherence(
                 df_tgt=syn_tgt_data, tgt_context_key=tgt_context_key, bins=trn_coh_bins
             )
-            _LOG.info("report distinct categories per sequence")
-            acc_cats_per_seq = _report_coherence_distinct_categories_per_sequence(
+            _LOG.info("report sequences per distinct category")
+            acc_seqs_per_cat = _report_coherence_sequences_per_distinct_category(
                 syn_coh=syn_coh,
                 tgt_context_key=tgt_context_key,
                 statistics=statistics,
                 workspace=workspace,
             )
-            _LOG.info("report sequences per distinct category")
-            acc_seqs_per_cat = _report_coherence_sequences_per_distinct_category(
+            _LOG.info("report distinct categories per sequence")
+            acc_cats_per_seq = _report_coherence_distinct_categories_per_sequence(
                 syn_coh=syn_coh,
                 tgt_context_key=tgt_context_key,
                 statistics=statistics,
