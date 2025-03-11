@@ -81,7 +81,7 @@ def store_report(
     """
 
     # summarize accuracies by column for overview table
-    accuracy_table_by_column = summarize_accuracies_by_column(acc_uni, acc_biv)
+    accuracy_table_by_column = summarize_accuracies_by_column(acc_uni, acc_biv, acc_cats_per_seq, acc_seqs_per_cat)
     accuracy_table_by_column = accuracy_table_by_column.sort_values("univariate", ascending=False)
 
     acc_uni = filter_uni_acc_for_plotting(acc_uni)
@@ -129,7 +129,9 @@ def store_report(
     report_path.write_text(html)
 
 
-def summarize_accuracies_by_column(acc_uni: pd.DataFrame, acc_biv: pd.DataFrame) -> pd.DataFrame:
+def summarize_accuracies_by_column(
+    acc_uni: pd.DataFrame, acc_biv: pd.DataFrame, acc_cats_per_seq: pd.DataFrame, acc_seqs_per_cat: pd.DataFrame
+) -> pd.DataFrame:
     """
     Calculates DataFrame that stores per-column univariate, bivariate and coherence accuracies.
     """
@@ -151,18 +153,17 @@ def summarize_accuracies_by_column(acc_uni: pd.DataFrame, acc_biv: pd.DataFrame)
     tbl_acc = tbl_acc_uni.merge(tbl_acc_biv, how="left")
 
     acc_nxt = acc_biv.loc[acc_biv.type == "nxt"]
-    if not acc_nxt.empty:
+    if not all((acc_nxt.empty, acc_cats_per_seq.empty, acc_seqs_per_cat.empty)):
+        acc_nxt = acc_nxt.groupby("col1").mean(["accuracy", "accuracy_max"]).reset_index(names="column")
+        acc_nxt = acc_nxt[acc_nxt["column"].str.startswith("tgt")]
+        acc_cats_per_seq = acc_cats_per_seq.assign(column="tgt::" + acc_cats_per_seq["column"])
+        acc_seqs_per_cat = acc_seqs_per_cat.assign(column="tgt::" + acc_seqs_per_cat["column"])
         tbl_acc_coherence = (
-            acc_nxt.groupby("col1")
+            pd.concat([a for a in [acc_nxt, acc_cats_per_seq, acc_seqs_per_cat] if not a.empty])
+            .groupby("column")
             .mean(["accuracy", "accuracy_max"])
+            .rename(columns={"accuracy": "coherence", "accuracy_max": "coherence_max"})
             .reset_index()
-            .rename(
-                columns={
-                    "col1": "column",
-                    "accuracy": "coherence",
-                    "accuracy_max": "coherence_max",
-                }
-            )
         )
         tbl_acc = tbl_acc.merge(tbl_acc_coherence, how="left")
 
