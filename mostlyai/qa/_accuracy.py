@@ -545,7 +545,9 @@ def prepare_categorical_plot_data_binned(
     if df["category"].dtype.name == "category":
         df["category_code"] = df["category"].cat.codes
     else:
-        df["category_code"] = df["category"]
+        cat_order = list(t["category"])
+        cat_order.extend([syn_cat for syn_cat in s["category"] if syn_cat not in cat_order])
+        df["category_code"] = df["category"].map({cat: i for i, cat in enumerate(cat_order)})
     if sort_by_frequency:
         df = df.sort_values("target_pct", ascending=False).reset_index(drop=True)
     else:
