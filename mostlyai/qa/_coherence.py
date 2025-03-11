@@ -16,38 +16,11 @@ from joblib import Parallel, cpu_count, delayed, parallel_config
 import pandas as pd
 
 from mostlyai.qa._accuracy import (
-    bin_data,
     calculate_accuracy,
     calculate_accuracy_cnts,
     plot_univariate,
 )
 from mostlyai.qa._filesystem import TemporaryWorkspace
-from mostlyai.qa._sampling import harmonize_dtype
-
-
-def pull_data_for_coherence(
-    *,
-    df_tgt: pd.DataFrame,
-    tgt_context_key: str,
-    max_sequence_length: int = 100,
-    bins: int | dict[str, list] = 30,
-) -> tuple[pd.DataFrame, dict[str, list]]:
-    df_tgt = df_tgt.copy()
-
-    # randomly sample at most max_sequence_length rows per sequence
-    df_tgt = df_tgt.sample(frac=1).reset_index(drop=True)
-    df_tgt = df_tgt[df_tgt.groupby(tgt_context_key).cumcount() < max_sequence_length].reset_index(drop=True)
-
-    # apply harmonize_dtype to all columns except tgt_context_key
-    df_tgt = df_tgt.apply(lambda col: harmonize_dtype(col) if col.name != tgt_context_key else col)
-
-    # discretize all columns except tgt_context_key
-    binned_df, bins = bin_data(
-        df_tgt[[c for c in df_tgt.columns if c != tgt_context_key]], bins=bins, non_categorical_label_style="long"
-    )
-    df_tgt = pd.concat([df_tgt[tgt_context_key], binned_df], axis=1)
-
-    return df_tgt, bins
 
 
 def calculate_distinct_categories_per_sequence(df: pd.DataFrame, context_key: str) -> pd.DataFrame:
@@ -118,7 +91,6 @@ def plot_store_single_distinct_categories_per_sequence(
 def calculate_sequences_per_distinct_category(
     df: pd.DataFrame, context_key: str, top_cats: dict[str, list[str]] | None = None
 ) -> tuple[dict[str, pd.Series], dict[str, pd.Series], dict[str, list[str]], int]:
-    # TODO: how to handle rare categories? hash them here?
     seqs_per_cat = {
         col: df.groupby(col)[context_key].nunique().rename_axis("index") for col in df.columns if col != context_key
     }

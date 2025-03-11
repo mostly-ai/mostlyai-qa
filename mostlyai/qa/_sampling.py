@@ -33,6 +33,7 @@ import numpy as np
 import pandas as pd
 import pyarrow as pa
 
+from mostlyai.qa._accuracy import bin_data
 from mostlyai.qa._common import (
     CTX_COLUMN_PREFIX,
     TGT_COLUMN_PREFIX,
@@ -167,6 +168,31 @@ def sample_two_consecutive_rows(
     second_rows.drop(columns=["__IDX"], inplace=True)
 
     return first_rows, second_rows
+
+
+def pull_data_for_coherence(
+    *,
+    df_tgt: pd.DataFrame,
+    tgt_context_key: str,
+    max_sequence_length: int = 100,
+    bins: int | dict[str, list] = 30,
+) -> tuple[pd.DataFrame, dict[str, list]]:
+    df_tgt = df_tgt.copy()
+
+    # randomly sample at most max_sequence_length rows per sequence
+    df_tgt = df_tgt.sample(frac=1).reset_index(drop=True)
+    df_tgt = df_tgt[df_tgt.groupby(tgt_context_key).cumcount() < max_sequence_length].reset_index(drop=True)
+
+    # apply harmonize_dtype to all columns except tgt_context_key
+    df_tgt = df_tgt.apply(lambda col: harmonize_dtype(col) if col.name != tgt_context_key else col)
+
+    # discretize all columns except tgt_context_key
+    binned_df, bins = bin_data(
+        df_tgt[[c for c in df_tgt.columns if c != tgt_context_key]], bins=bins, non_categorical_label_style="long"
+    )
+    df_tgt = pd.concat([df_tgt[tgt_context_key], binned_df], axis=1)
+
+    return df_tgt, bins
 
 
 def pull_data_for_embeddings(

@@ -24,9 +24,8 @@ from mostlyai.qa._coherence import (
     calculate_sequences_per_distinct_category,
     plot_store_distinct_categories_per_sequence,
     plot_store_sequences_per_distinct_category,
-    pull_data_for_coherence,
 )
-from mostlyai.qa._sampling import pull_data_for_embeddings, calculate_embeddings
+from mostlyai.qa._sampling import pull_data_for_embeddings, calculate_embeddings, pull_data_for_coherence
 from mostlyai.qa._common import (
     ProgressCallback,
     PrerequisiteNotMetError,

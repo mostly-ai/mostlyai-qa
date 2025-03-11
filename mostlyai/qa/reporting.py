@@ -44,12 +44,12 @@ from mostlyai.qa._coherence import (
     calculate_sequences_per_distinct_category_accuracy,
     plot_store_distinct_categories_per_sequence,
     plot_store_sequences_per_distinct_category,
-    pull_data_for_coherence,
 )
 from mostlyai.qa.metrics import ModelMetrics, Accuracy, Similarity, Distances
 from mostlyai.qa._sampling import (
     calculate_embeddings,
     pull_data_for_accuracy,
+    pull_data_for_coherence,
     pull_data_for_embeddings,
 )
 from mostlyai.qa._common import (

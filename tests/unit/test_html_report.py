@@ -30,8 +30,8 @@ def test_generate_store_report(tmp_path, cols, workspace):
     acc_syn, _ = _accuracy.bin_data(syn, bins)
     acc_uni = _accuracy.calculate_univariates(acc_trn, acc_syn)
     acc_biv = _accuracy.calculate_bivariates(acc_trn, acc_syn)
-    acc_cats_per_seq = pd.DataFrame({"column": acc_uni["column"], "accuracy": 0.5})
-    acc_seq_per_cat = pd.DataFrame({"column": acc_uni["column"], "accuracy": 0.5})
+    acc_cats_per_seq = pd.DataFrame({"column": acc_uni["column"], "accuracy": 0.5, "accuracy_max": 0.5})
+    acc_seqs_per_cat = pd.DataFrame({"column": acc_uni["column"], "accuracy": 0.5, "accuracy_max": 0.5})
     corr_trn = _accuracy.calculate_correlations(acc_trn)
     syn_embeds = calculate_embeddings(pull_data_for_embeddings(df_tgt=syn))
     trn_embeds = calculate_embeddings(pull_data_for_embeddings(df_tgt=trn))
@@ -58,8 +58,8 @@ def test_generate_store_report(tmp_path, cols, workspace):
         + [workspace.get_unique_figure_path("correlation_matrices")]
         + [workspace.get_unique_figure_path("similarity_pca")]
         + [workspace.get_unique_figure_path("distances_dcr")]
-        + list(workspace.get_figure_paths("categories_per_sequence", acc_cats_per_seq[["column"]]).values())
-        + list(workspace.get_figure_paths("sequences_per_category", acc_seq_per_cat[["column"]]).values())
+        + list(workspace.get_figure_paths("distinct_categories_per_sequence", acc_cats_per_seq[["column"]]).values())
+        + list(workspace.get_figure_paths("sequences_per_distinct_category", acc_seqs_per_cat[["column"]]).values())
     )
     for path in plot_paths:
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -75,7 +75,7 @@ def test_generate_store_report(tmp_path, cols, workspace):
         sim_auc_trn_hol=sim_auc_trn_hol,
         sim_auc_trn_syn=sim_auc_trn_syn,
         acc_cats_per_seq=acc_cats_per_seq,
-        acc_seq_per_cat=acc_seq_per_cat,
+        acc_seqs_per_cat=acc_seqs_per_cat,
     )
 
     meta = {
@@ -96,7 +96,7 @@ def test_generate_store_report(tmp_path, cols, workspace):
         acc_biv=acc_biv,
         corr_trn=corr_trn,
         acc_cats_per_seq=acc_cats_per_seq,
-        acc_seq_per_cat=acc_seq_per_cat,
+        acc_seqs_per_cat=acc_seqs_per_cat,
     )
     assert report_path.exists()
 
@@ -112,7 +112,9 @@ def test_summarize_accuracies_by_column(tmp_path, cols):
     syn, _ = _accuracy.bin_data(syn, bins)
     uni_acc = _accuracy.calculate_univariates(trn, syn)
     biv_acc = _accuracy.calculate_bivariates(trn, syn)
-    tbl_acc = _html_report.summarize_accuracies_by_column(uni_acc, biv_acc)
+    acc_cats_per_seq = pd.DataFrame({"column": uni_acc["column"], "accuracy": 0.5, "accuracy_max": 0.5})
+    acc_seqs_per_cat = pd.DataFrame({"column": uni_acc["column"], "accuracy": 0.5, "accuracy_max": 0.5})
+    tbl_acc = _html_report.summarize_accuracies_by_column(uni_acc, biv_acc, acc_cats_per_seq, acc_seqs_per_cat)
     assert (tbl_acc["univariate"] >= 0.5).all()
     assert (tbl_acc["bivariate"] >= 0.5).all()
     assert (tbl_acc["coherence"] >= 0.5).all()
