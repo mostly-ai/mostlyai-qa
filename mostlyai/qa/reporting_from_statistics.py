@@ -160,6 +160,7 @@ def report_from_statistics(
             )
         else:
             acc_cats_per_seq = acc_seqs_per_cat = pd.DataFrame({"column": [], "accuracy": [], "accuracy_max": []})
+        progress.update(completed=40, total=100)
 
         _LOG.info("calculate embeddings for synthetic")
         syn_embeds = calculate_embeddings(
@@ -171,8 +172,8 @@ def report_from_statistics(
                 max_sample_size=max_sample_size_embeddings,
             ),
             progress=progress,
-            progress_from=30,
-            progress_to=50,
+            progress_from=40,
+            progress_to=60,
         )
 
         _LOG.info("report similarity")
@@ -181,7 +182,7 @@ def report_from_statistics(
             workspace=workspace,
             statistics=statistics,
         )
-        progress.update(completed=50, total=100)
+        progress.update(completed=70, total=100)
 
         meta |= {
             "rows_synthetic": syn.shape[0],
