@@ -42,7 +42,9 @@ def pull_data_for_coherence(
     df_tgt = df_tgt.apply(lambda col: harmonize_dtype(col) if col.name != tgt_context_key else col)
 
     # discretize all columns except tgt_context_key
-    binned_df, bins = bin_data(df_tgt[[c for c in df_tgt.columns if c != tgt_context_key]], bins=bins)
+    binned_df, bins = bin_data(
+        df_tgt[[c for c in df_tgt.columns if c != tgt_context_key]], bins=bins, non_categorical_label_style="long"
+    )
     df_tgt = pd.concat([df_tgt[tgt_context_key], binned_df], axis=1)
 
     return df_tgt, bins
@@ -217,5 +219,6 @@ def plot_store_single_sequences_per_distinct_category(
         syn_cnt=syn_n_seqs,
         accuracy=accuracy,
         sort_categorical_binned_by_frequency=False,
+        max_label_length=15,
     )
     workspace.store_figure_html(fig, "sequences_per_distinct_category", col)

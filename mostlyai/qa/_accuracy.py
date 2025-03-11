@@ -16,7 +16,7 @@ import functools
 import hashlib
 import logging
 import math
-from typing import Any
+from typing import Any, Literal
 from collections.abc import Callable, Iterable
 
 import fastcluster
@@ -442,6 +442,7 @@ def plot_univariate(
     syn_cnt: int | None = None,
     accuracy: float | None = None,
     sort_categorical_binned_by_frequency: bool = True,
+    max_label_length: int = 10,
 ) -> go.Figure:
     # either numerical/datetime KDEs or categorical counts must be provided
 
@@ -500,7 +501,7 @@ def plot_univariate(
     else:
         fig.layout.yaxis.update(tickformat=".0%")
         trn_line1, syn_line1 = plot_univariate_distribution_categorical(
-            trn_cat_col_cnts, syn_cat_col_cnts, trn_cnt, syn_cnt
+            trn_cat_col_cnts, syn_cat_col_cnts, trn_cnt, syn_cnt, max_label_length=max_label_length
         )
         trn_line2, syn_line2 = plot_univariate_binned(
             trn_bin_col_cnts,
@@ -586,11 +587,12 @@ def plot_univariate_distribution_categorical(
     syn_cat_col_cnts: pd.Series,
     trn_cnt: int | None = None,
     syn_cnt: int | None = None,
+    max_label_length: int = 10,
 ) -> tuple[go.Scatter, go.Scatter]:
     # prepare data
     df = prepare_categorical_plot_data_distribution(trn_cat_col_cnts, syn_cat_col_cnts, trn_cnt, syn_cnt)
     # trim labels
-    df["category"] = trim_labels(df["category"], max_length=10)
+    df["category"] = trim_labels(df["category"], max_length=max_label_length)
     # prepare plots
     trn_line = go.Scatter(
         mode="lines",
@@ -973,7 +975,9 @@ def binning_data(
     return trn_bin, syn_bin
 
 
-def bin_data(df: pd.DataFrame, bins: int | dict[str, list]) -> tuple[pd.DataFrame, dict[str, list]]:
+def bin_data(
+    df: pd.DataFrame, bins: int | dict[str, list], non_categorical_label_style: Literal["short", "long"] = "short"
+) -> tuple[pd.DataFrame, dict[str, list]]:
     """
     Splits data into bins.
     Binning algorithm depends on column type. Categorical binning creates 'n' bins corresponding to the highest
@@ -994,20 +998,20 @@ def bin_data(df: pd.DataFrame, bins: int | dict[str, list]) -> tuple[pd.DataFram
     cat_cols = [c for c in df.columns if c not in num_cols + dat_cols]
     if isinstance(bins, int):
         for col in num_cols:
-            cols[col], bins_dct[col] = bin_numeric(df[col], bins)
+            cols[col], bins_dct[col] = bin_numeric(df[col], bins, label_style=non_categorical_label_style)
         for col in dat_cols:
-            cols[col], bins_dct[col] = bin_datetime(df[col], bins)
+            cols[col], bins_dct[col] = bin_datetime(df[col], bins, label_style=non_categorical_label_style)
         for col in cat_cols:
             cols[col], bins_dct[col] = bin_categorical(df[col], bins)
     else:  # bins is a dict
         for col in num_cols:
             if col in bins:
-                cols[col], _ = bin_numeric(df[col], bins[col])
+                cols[col], _ = bin_numeric(df[col], bins[col], label_style=non_categorical_label_style)
             else:
                 _LOG.warning(f"'{col}' is missing in bins")
         for col in dat_cols:
             if col in bins:
-                cols[col], _ = bin_datetime(df[col], bins[col])
+                cols[col], _ = bin_datetime(df[col], bins[col], label_style=non_categorical_label_style)
             else:
                 _LOG.warning(f"'{col}' is missing in bins")
         for col in cat_cols:
@@ -1019,7 +1023,9 @@ def bin_data(df: pd.DataFrame, bins: int | dict[str, list]) -> tuple[pd.DataFram
     return pd.DataFrame(cols), bins_dct
 
 
-def bin_numeric(col: pd.Series, bins: int | list[str]) -> tuple[pd.Categorical, list]:
+def bin_numeric(
+    col: pd.Series, bins: int | list[str], label_style: Literal["short", "long"] = "short"
+) -> tuple[pd.Categorical, list]:
     def _clip(col, bins):
         if isinstance(bins, list):
             # use precomputed bin boundaries
@@ -1063,10 +1069,12 @@ def bin_numeric(col: pd.Series, bins: int | list[str]) -> tuple[pd.Categorical, 
     def _adjust_breaks(breaks):
         return breaks[:-1] + [breaks[-1] + 1]
 
-    return bin_non_categorical(col, bins, _clip, _define_labels, _adjust_breaks)
+    return bin_non_categorical(col, bins, _clip, _define_labels, _adjust_breaks, label_style=label_style)
 
 
-def bin_datetime(col: pd.Series, bins: int | list[str]) -> tuple[pd.Categorical, list]:
+def bin_datetime(
+    col: pd.Series, bins: int | list[str], label_style: Literal["short", "long"] = "short"
+) -> tuple[pd.Categorical, list]:
     def _clip(col, bins):
         if isinstance(bins, list):
             # use precomputed bin boundaries
@@ -1109,7 +1117,7 @@ def bin_datetime(col: pd.Series, bins: int | list[str]) -> tuple[pd.Categorical,
     def _adjust_breaks(breaks):
         return breaks[:-1] + [max(breaks[-1] + np.timedelta64(1, "D"), breaks[-1])]
 
-    return bin_non_categorical(col, bins, _clip, _define_labels, _adjust_breaks)
+    return bin_non_categorical(col, bins, _clip, _define_labels, _adjust_breaks, label_style=label_style)
 
 
 def bin_non_categorical(
@@ -1118,6 +1126,7 @@ def bin_non_categorical(
     clip_and_breaks: Callable,
     create_labels: Callable,
     adjust_breaks: Callable,
+    label_style: Literal["short", "long"] = "short",
 ) -> tuple[pd.Categorical, list]:
     col = col.fillna(np.nan).infer_objects(copy=False)
 
@@ -1136,7 +1145,10 @@ def bin_non_categorical(
         )
         labels = [str(b) for b in breaks[:-1]]
 
-    new_labels_map = {label: f"⪰ {label}" for label in labels}
+    if label_style == "short":
+        new_labels_map = {label: f"⪰ {label}" for label in labels}
+    else:
+        new_labels_map = {label: f"⪰ {label} ≺ {next_label}" for label, next_label in zip(labels, labels[1:] + ["∞"])}
 
     bin_col = pd.cut(col, bins=adjust_breaks(breaks), labels=labels, right=False)
     bin_col = bin_col.cat.rename_categories(new_labels_map)
