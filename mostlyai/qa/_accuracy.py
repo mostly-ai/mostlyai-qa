@@ -510,21 +510,16 @@ def prepare_categorical_plot_data_distribution(
     syn_col_cnts_idx = syn_col_cnts.index.to_series().astype("string").fillna(NA_BIN).replace("", EMPTY_BIN)
     trn_col_cnts = trn_col_cnts.set_axis(trn_col_cnts_idx)
     syn_col_cnts = syn_col_cnts.set_axis(syn_col_cnts_idx)
-    t = trn_col_cnts.to_frame("target_cnt").reset_index()
-    s = syn_col_cnts.to_frame("synthetic_cnt").reset_index()
-    df = pd.merge(t, s, on="index", how="outer")
+    t = trn_col_cnts.to_frame("target_cnt").reset_index(names="category")
+    s = syn_col_cnts.to_frame("synthetic_cnt").reset_index(names="category")
+    df = pd.merge(t, s, on="category", how="outer")
     df["target_cnt"] = df["target_cnt"].fillna(0.0)
     df["synthetic_cnt"] = df["synthetic_cnt"].fillna(0.0)
     df["avg_cnt"] = (df["target_cnt"] + df["synthetic_cnt"]) / 2
     df = df[df["avg_cnt"] > 0]
     df["target_pct"] = df["target_cnt"] / df["target_cnt"].sum()
     df["synthetic_pct"] = df["synthetic_cnt"] / df["synthetic_cnt"].sum()
-    df = df.rename(columns={"index": "category"})
-    if df["category"].dtype.name == "category":
-        df["category_code"] = df["category"].cat.codes
-    else:
-        df["category_code"] = df["category"]
-    df = df.sort_values("category_code", ascending=True).reset_index(drop=True)
+    df = df.sort_values("avg_cnt", ascending=False).reset_index(drop=True)
     return df
 
 
@@ -542,16 +537,13 @@ def prepare_categorical_plot_data_binned(
     df = df[df["avg_cnt"] > 0]
     df["target_pct"] = df["target_cnt"] / df["target_cnt"].sum()
     df["synthetic_pct"] = df["synthetic_cnt"] / df["synthetic_cnt"].sum()
-    if df["category"].dtype.name == "category":
-        df["category_code"] = df["category"].cat.codes
-    else:
-        cat_order = list(t["category"])
-        cat_order.extend([syn_cat for syn_cat in s["category"] if syn_cat not in cat_order])
-        df["category_code"] = df["category"].map({cat: i for i, cat in enumerate(cat_order)})
+    cat_order = list(t["category"])
+    cat_order.extend([syn_cat for syn_cat in s["category"] if syn_cat not in cat_order])
+    df["category_order"] = df["category"].map({cat: i for i, cat in enumerate(cat_order)})
     if sort_by_frequency:
         df = df.sort_values("target_pct", ascending=False).reset_index(drop=True)
     else:
-        df = df.sort_values("category_code", ascending=True).reset_index(drop=True)
+        df = df.sort_values("category_order", ascending=True).reset_index(drop=True)
     return df
 
 
@@ -560,7 +552,6 @@ def plot_univariate_distribution_categorical(
 ) -> tuple[go.Scatter, go.Scatter]:
     # prepare data
     df = prepare_categorical_plot_data_distribution(trn_cat_col_cnts, syn_cat_col_cnts)
-    df = df.sort_values("avg_cnt", ascending=False)
     # trim labels
     df["category"] = trim_labels(df["category"], max_length=10)
     # prepare plots
