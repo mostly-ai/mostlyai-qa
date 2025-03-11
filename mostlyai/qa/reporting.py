@@ -288,6 +288,7 @@ def report(
             )
         else:
             acc_cats_per_seq = acc_seqs_per_cat = pd.DataFrame({"column": [], "accuracy": [], "accuracy_max": []})
+        progress.update(completed=25, total=100)
 
         _LOG.info("calculate embeddings for synthetic")
         syn_embeds = calculate_embeddings(
@@ -299,8 +300,8 @@ def report(
                 max_sample_size=max_sample_size_embeddings_final,
             ),
             progress=progress,
-            progress_from=20,
-            progress_to=40,
+            progress_from=25,
+            progress_to=45,
         )
         _LOG.info("calculate embeddings for training")
         trn_embeds = calculate_embeddings(
@@ -312,8 +313,8 @@ def report(
                 max_sample_size=max_sample_size_embeddings_final,
             ),
             progress=progress,
-            progress_from=40,
-            progress_to=60,
+            progress_from=45,
+            progress_to=65,
         )
         if hol_tgt_data is not None:
             _LOG.info("calculate embeddings for holdout")
@@ -326,12 +327,12 @@ def report(
                     max_sample_size=max_sample_size_embeddings_final,
                 ),
                 progress=progress,
-                progress_from=60,
-                progress_to=80,
+                progress_from=65,
+                progress_to=85,
             )
         else:
             hol_embeds = None
-        progress.update(completed=80, total=100)
+        progress.update(completed=85, total=100)
 
         _LOG.info("report similarity")
         sim_cosine_trn_hol, sim_cosine_trn_syn, sim_auc_trn_hol, sim_auc_trn_syn = _report_similarity(
@@ -341,7 +342,7 @@ def report(
             workspace=workspace,
             statistics=statistics,
         )
-        progress.update(completed=90, total=100)
+        progress.update(completed=95, total=100)
 
         _LOG.info("report distances")
         dcr_trn, dcr_hol = _report_distances(
