@@ -24,9 +24,6 @@ import pandas as pd
 from plotly import graph_objs as go
 from sklearn.decomposition import PCA
 
-_OLD_COL_PREFIX = r"^(tgt|ctx|nxt)(\.|⁝)"
-_NEW_COL_PREFIX = r"\1::"
-
 
 class TemporaryWorkspace(TemporaryDirectory):
     FIGURE_TYPE = Literal[
@@ -170,8 +167,6 @@ class Statistics:
 
     def load_bins(self) -> dict[str, list]:
         df = self._load_df_from_row_files(self.bins_dir, ["column", "bins"], "column")
-        # harmonise older prefix formats to <prefix>:: for compatibility with older versions
-        df["column"] = df["column"].str.replace(_OLD_COL_PREFIX, _NEW_COL_PREFIX, regex=True)
         return df.set_index("column")["bins"].to_dict()
 
     def store_correlations(self, trn_corr: pd.DataFrame) -> None:
@@ -179,9 +174,6 @@ class Statistics:
 
     def load_correlations(self) -> pd.DataFrame:
         df = pd.read_parquet(self.correlations_path)
-        # harmonise older prefix formats to <prefix>:: for compatibility with older versions
-        df.index = df.index.str.replace(_OLD_COL_PREFIX, _NEW_COL_PREFIX, regex=True)
-        df.columns = df.columns.str.replace(_OLD_COL_PREFIX, _NEW_COL_PREFIX, regex=True)
         return df
 
     def store_univariate_accuracies(self, univariates: pd.DataFrame) -> None:
@@ -189,8 +181,6 @@ class Statistics:
 
     def load_univariate_accuracies(self) -> pd.DataFrame:
         df = pd.read_parquet(self.univariate_accuracies_path)
-        # harmonise older prefix formats to <prefix>:: for compatibility with older versions
-        df["column"] = df["column"].str.replace(_OLD_COL_PREFIX, _NEW_COL_PREFIX, regex=True)
         return df
 
     def store_bivariate_accuracies(self, bivariates: pd.DataFrame) -> None:
@@ -198,9 +188,6 @@ class Statistics:
 
     def load_bivariate_accuracies(self) -> pd.DataFrame:
         df = pd.read_parquet(self.bivariate_accuracies_path)
-        # harmonise older prefix formats to <prefix>:: for compatibility with older versions
-        df["col1"] = df["col1"].str.replace(_OLD_COL_PREFIX, _NEW_COL_PREFIX, regex=True)
-        df["col2"] = df["col2"].str.replace(_OLD_COL_PREFIX, _NEW_COL_PREFIX, regex=True)
         return df
 
     def store_numeric_uni_kdes(self, trn_kdes: dict[str, pd.Series]) -> None:
@@ -212,8 +199,6 @@ class Statistics:
 
     def load_numeric_uni_kdes(self) -> dict[str, pd.Series]:
         trn_kdes = self._load_df_from_row_files(self.numeric_kdes_uni_dir, ["column", "x", "y"], "column")
-        # harmonise older prefix formats to <prefix>:: for compatibility with older versions
-        trn_kdes["column"] = trn_kdes["column"].str.replace(_OLD_COL_PREFIX, _NEW_COL_PREFIX, regex=True)
         trn_kdes = {
             row["column"]: pd.Series(
                 row["y"],
@@ -235,8 +220,6 @@ class Statistics:
         trn_cnts_uni = self._load_df_from_row_files(
             self.categorical_counts_uni_dir, ["column", "cat", "count"], "column"
         )
-        # harmonise older prefix formats to <prefix>:: for compatibility with older versions
-        trn_cnts_uni["column"] = trn_cnts_uni["column"].str.replace(_OLD_COL_PREFIX, _NEW_COL_PREFIX, regex=True)
         trn_cnts_uni = {
             row["column"]: pd.Series(
                 row["count"],
@@ -274,8 +257,6 @@ class Statistics:
     ) -> tuple[dict[str, pd.Series], dict[tuple[str, str], pd.Series]]:
         # load univariate bin counts
         trn_cnts_uni = pd.read_parquet(self.bin_counts_uni_path)
-        # harmonise older prefix formats to <prefix>:: for compatibility with older versions
-        trn_cnts_uni["column"] = trn_cnts_uni["column"].str.replace(_OLD_COL_PREFIX, _NEW_COL_PREFIX, regex=True)
         trn_cnts_uni = {
             row["column"]: pd.Series(
                 row["count"],
@@ -297,9 +278,6 @@ class Statistics:
             return pd.MultiIndex.from_frame(pd.concat([col1_idx, col2_idx], axis=1))
 
         trn_cnts_biv = pd.read_parquet(self.bin_counts_biv_path)
-        # harmonise older prefix formats to <prefix>:: for compatibility with older versions
-        trn_cnts_biv["col1"] = trn_cnts_biv["col1"].str.replace(_OLD_COL_PREFIX, _NEW_COL_PREFIX, regex=True)
-        trn_cnts_biv["col2"] = trn_cnts_biv["col2"].str.replace(_OLD_COL_PREFIX, _NEW_COL_PREFIX, regex=True)
         trn_cnts_biv = {
             (row["col1"], row["col2"]): pd.Series(
                 row["count"],
@@ -341,8 +319,6 @@ class Statistics:
         if not self.coherence_bins_dir.exists():
             return None
         df = self._load_df_from_row_files(self.coherence_bins_dir, ["column", "bins"], "column")
-        # harmonise older prefix formats to <prefix>:: for compatibility with older versions
-        df["column"] = df["column"].str.replace(_OLD_COL_PREFIX, _NEW_COL_PREFIX, regex=True)
         return df.set_index("column")["bins"].to_dict()
 
     def store_distinct_categories_per_sequence_kdes(self, trn_kdes: dict[str, pd.Series]) -> None:
@@ -356,8 +332,6 @@ class Statistics:
         kdes = self._load_df_from_row_files(
             self.distinct_categories_per_sequence_kdes_dir, ["column", "x", "y"], "column"
         )
-        # harmonise older prefix formats to <prefix>:: for compatibility with older versions
-        kdes["column"] = kdes["column"].str.replace(_OLD_COL_PREFIX, _NEW_COL_PREFIX, regex=True)
         kdes = {
             row["column"]: pd.Series(
                 row["y"],
@@ -374,8 +348,6 @@ class Statistics:
 
     def load_distinct_categories_per_sequence_bins(self) -> dict[str, list]:
         df = self._load_df_from_row_files(self.distinct_categories_per_sequence_bins_dir, ["column", "bins"], "column")
-        # harmonise older prefix formats to <prefix>:: for compatibility with older versions
-        df["column"] = df["column"].str.replace(_OLD_COL_PREFIX, _NEW_COL_PREFIX, regex=True)
         return df.set_index("column")["bins"].to_dict()
 
     def store_binned_distinct_categories_per_sequence_counts(self, counts: dict[str, pd.Series]) -> None:
@@ -389,8 +361,6 @@ class Statistics:
         counts = self._load_df_from_row_files(
             self.distinct_categories_per_sequence_counts_dir, ["column", "cat", "count"], "column"
         )
-        # harmonise older prefix formats to <prefix>:: for compatibility with older versions
-        counts["column"] = counts["column"].str.replace(_OLD_COL_PREFIX, _NEW_COL_PREFIX, regex=True)
         counts = {
             row["column"]: pd.Series(
                 row["count"],
@@ -406,8 +376,6 @@ class Statistics:
 
     def load_distinct_categories_per_sequence_accuracy(self) -> pd.DataFrame:
         df = pd.read_parquet(self.distinct_categories_per_sequence_accuracy_path)
-        # harmonise older prefix formats to <prefix>:: for compatibility with older versions
-        df["column"] = df["column"].str.replace(_OLD_COL_PREFIX, _NEW_COL_PREFIX, regex=True)
         return df
 
     def store_sequences_per_distinct_category_artifacts(
@@ -455,10 +423,6 @@ class Statistics:
         seqs_per_cat_cnts = self._load_df_from_row_files(
             self.sequences_per_distinct_category_counts_dir, ["column", "cat", "count"], "column"
         )
-        # harmonise older prefix formats to <prefix>:: for compatibility with older versions
-        seqs_per_cat_cnts["column"] = seqs_per_cat_cnts["column"].str.replace(
-            _OLD_COL_PREFIX, _NEW_COL_PREFIX, regex=True
-        )
         seqs_per_cat_cnts = {
             row["column"]: pd.Series(
                 row["count"],
@@ -471,10 +435,6 @@ class Statistics:
         # load seqs_per_top_cat_cnts
         seqs_per_top_cat_cnts = self._load_df_from_row_files(
             self.sequences_per_distinct_category_top_category_counts_dir, ["column", "cat", "count"], "column"
-        )
-        # harmonise older prefix formats to <prefix>:: for compatibility with older versions
-        seqs_per_top_cat_cnts["column"] = seqs_per_top_cat_cnts["column"].str.replace(
-            _OLD_COL_PREFIX, _NEW_COL_PREFIX, regex=True
         )
         seqs_per_top_cat_cnts = {
             row["column"]: pd.Series(
@@ -489,8 +449,6 @@ class Statistics:
         top_cats = self._load_df_from_row_files(
             self.sequences_per_distinct_category_top_cats_dir, ["column", "top_cats"], "column"
         )
-        # harmonise older prefix formats to <prefix>:: for compatibility with older versions
-        top_cats["column"] = top_cats["column"].str.replace(_OLD_COL_PREFIX, _NEW_COL_PREFIX, regex=True)
         top_cats = top_cats.set_index("column")["top_cats"].to_dict()
 
         # load n_seqs
@@ -504,6 +462,4 @@ class Statistics:
 
     def load_sequences_per_distinct_category_accuracy(self) -> pd.DataFrame:
         df = pd.read_parquet(self.sequences_per_distinct_category_accuracy_path)
-        # harmonise older prefix formats to <prefix>:: for compatibility with older versions
-        df["column"] = df["column"].str.replace(_OLD_COL_PREFIX, _NEW_COL_PREFIX, regex=True)
         return df
