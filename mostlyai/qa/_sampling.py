@@ -188,14 +188,22 @@ def pull_data_for_coherence(
     df_tgt = df_tgt.sample(frac=1).reset_index(drop=True)
     df_tgt = df_tgt[df_tgt.groupby(tgt_context_key).cumcount() < max_sequence_length].reset_index(drop=True)
 
+    # split into key and non-key columns
+    non_key_cols = [c for c in df_tgt.columns if c != tgt_context_key]
+    keys = df_tgt[tgt_context_key]
+    df_tgt = df_tgt[non_key_cols]
+
     # apply harmonize_dtype to all columns except tgt_context_key
-    df_tgt = df_tgt.apply(lambda col: harmonize_dtype(col) if col.name != tgt_context_key else col)
+    df_tgt = df_tgt.apply(harmonize_dtype)
+
+    # sample tokens from text-like columns except tgt_context_key
+    df_tgt = sample_text_tokens(df_tgt)
 
     # discretize all columns except tgt_context_key
-    binned_df, bins = bin_data(
-        df_tgt[[c for c in df_tgt.columns if c != tgt_context_key]], bins=bins, non_categorical_label_style=">= X < Y"
-    )
-    df_tgt = pd.concat([df_tgt[tgt_context_key], binned_df], axis=1)
+    df_tgt, bins = bin_data(df_tgt, bins=bins, non_categorical_label_style=">= X < Y")
+
+    # merge keys with binned data
+    df_tgt = pd.concat([keys, df_tgt], axis=1)
 
     return df_tgt, bins
 
