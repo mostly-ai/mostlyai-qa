@@ -138,6 +138,12 @@ class Statistics:
         self.trn_pca_path = self.path / "trn_pca.npy"
         self.hol_pca_path = self.path / "hol_pca.npy"
 
+    def _store_file_per_row(self, df: pd.DataFrame, path: Path, explode_cols: list[str]) -> None:
+        path.mkdir(exist_ok=True, parents=True)
+        for i, row in df.iterrows():
+            row_df = pd.DataFrame([row]).explode(explode_cols)
+            row_df.to_parquet(path / f"{i:05}.parquet")
+
     def mark_early_exit(self) -> None:
         self.early_exit_path.touch()
 
@@ -154,10 +160,7 @@ class Statistics:
 
     def store_bins(self, bins: dict[str, list]) -> None:
         df = pd.Series(bins).to_frame("bins").reset_index().rename(columns={"index": "column"})
-        self.bins_dir.mkdir(exist_ok=True, parents=True)
-        for i, row in df.iterrows():
-            row_df = pd.DataFrame([row]).explode("bins")
-            row_df.to_parquet(self.bins_dir / f"{i:05}.parquet")
+        self._store_file_per_row(df, self.bins_dir, ["bins"])
 
     def load_bins(self) -> dict[str, list]:
         files = sorted(self.bins_dir.glob("*.parquet"))
@@ -201,10 +204,7 @@ class Statistics:
             [(column, list(xy.index), list(xy.values)) for column, xy in trn_kdes.items()],
             columns=["column", "x", "y"],
         )
-        self.numeric_kdes_uni_dir.mkdir(exist_ok=True, parents=True)
-        for i, row in trn_kdes.iterrows():
-            row_df = pd.DataFrame([row]).explode(["x", "y"])
-            row_df.to_parquet(self.numeric_kdes_uni_dir / f"{i:05}.parquet")
+        self._store_file_per_row(trn_kdes, self.numeric_kdes_uni_dir, ["x", "y"])
 
     def load_numeric_uni_kdes(self) -> dict[str, pd.Series]:
         files = sorted(self.numeric_kdes_uni_dir.glob("*.parquet"))
@@ -229,10 +229,7 @@ class Statistics:
             [(column, list(cat_counts.index), list(cat_counts.values)) for column, cat_counts in trn_cnts_uni.items()],
             columns=["column", "cat", "count"],
         )
-        self.categorical_counts_uni_dir.mkdir(exist_ok=True, parents=True)
-        for i, row in trn_cnts_uni.iterrows():
-            row_df = pd.DataFrame([row]).explode(["cat", "count"])
-            row_df.to_parquet(self.categorical_counts_uni_dir / f"{i:05}.parquet")
+        self._store_file_per_row(trn_cnts_uni, self.categorical_counts_uni_dir, ["cat", "count"])
 
     def load_categorical_uni_counts(self) -> dict[str, pd.Series]:
         files = sorted(self.categorical_counts_uni_dir.glob("*.parquet"))
@@ -342,10 +339,7 @@ class Statistics:
 
     def store_coherence_bins(self, bins: dict[str, list]) -> None:
         df = pd.Series(bins).to_frame("bins").reset_index().rename(columns={"index": "column"})
-        self.coherence_bins_dir.mkdir(exist_ok=True, parents=True)
-        for i, row in df.iterrows():
-            row_df = pd.DataFrame([row]).explode("bins")
-            row_df.to_parquet(self.coherence_bins_dir / f"{i:05}.parquet")
+        self._store_file_per_row(df, self.coherence_bins_dir, ["bins"])
 
     def load_coherence_bins(self) -> dict[str, list] | None:
         if not self.coherence_bins_dir.exists():
@@ -360,10 +354,7 @@ class Statistics:
             [(column, list(xy.index), list(xy.values)) for column, xy in trn_kdes.items()],
             columns=["column", "x", "y"],
         )
-        self.distinct_categories_per_sequence_kdes_dir.mkdir(exist_ok=True, parents=True)
-        for i, row in trn_kdes.iterrows():
-            row_df = pd.DataFrame([row]).explode(["x", "y"])
-            row_df.to_parquet(self.distinct_categories_per_sequence_kdes_dir / f"{i:05}.parquet")
+        self._store_file_per_row(trn_kdes, self.distinct_categories_per_sequence_kdes_dir, ["x", "y"])
 
     def load_distinct_categories_per_sequence_kdes(self) -> dict[str, pd.Series]:
         files = sorted(self.distinct_categories_per_sequence_kdes_dir.glob("*.parquet"))
@@ -383,10 +374,7 @@ class Statistics:
 
     def store_distinct_categories_per_sequence_bins(self, bins: dict[str, list]) -> None:
         df = pd.Series(bins).to_frame("bins").reset_index().rename(columns={"index": "column"})
-        self.distinct_categories_per_sequence_bins_dir.mkdir(exist_ok=True, parents=True)
-        for i, row in df.iterrows():
-            row_df = pd.DataFrame([row]).explode("bins")
-            row_df.to_parquet(self.distinct_categories_per_sequence_bins_dir / f"{i:05}.parquet")
+        self._store_file_per_row(df, self.distinct_categories_per_sequence_bins_dir, ["bins"])
 
     def load_distinct_categories_per_sequence_bins(self) -> dict[str, list]:
         files = sorted(self.distinct_categories_per_sequence_bins_dir.glob("*.parquet"))
@@ -399,10 +387,7 @@ class Statistics:
             [(column, list(counts.index), list(counts.values)) for column, counts in counts.items()],
             columns=["column", "cat", "count"],
         )
-        self.distinct_categories_per_sequence_counts_dir.mkdir(exist_ok=True, parents=True)
-        for i, row in counts.iterrows():
-            row_df = pd.DataFrame([row]).explode(["cat", "count"])
-            row_df.to_parquet(self.distinct_categories_per_sequence_counts_dir / f"{i:05}.parquet")
+        self._store_file_per_row(counts, self.distinct_categories_per_sequence_counts_dir, ["cat", "count"])
 
     def load_binned_distinct_categories_per_sequence_counts(self) -> dict[str, pd.Series]:
         files = sorted(self.distinct_categories_per_sequence_counts_dir.glob("*.parquet"))
@@ -441,37 +426,32 @@ class Statistics:
         n_seqs: int,
     ) -> None:
         # store seqs_per_cat_cnts
-        seqs_per_cat_cnts = pd.DataFrame(
+        seqs_per_cat_cnts_df = pd.DataFrame(
             [
                 (column, list(cat_counts.index), list(cat_counts.values))
                 for column, cat_counts in seqs_per_cat_cnts.items()
             ],
             columns=["column", "cat", "count"],
         )
-        self.sequences_per_distinct_category_counts_dir.mkdir(exist_ok=True, parents=True)
-        for i, row in seqs_per_cat_cnts.iterrows():
-            row_df = pd.DataFrame([row]).explode(["cat", "count"])
-            row_df.to_parquet(self.sequences_per_distinct_category_counts_dir / f"{i:05}.parquet")
+        self._store_file_per_row(
+            seqs_per_cat_cnts_df, self.sequences_per_distinct_category_counts_dir, ["cat", "count"]
+        )
 
         # store seqs_per_top_cat_cnts
-        seqs_per_top_cat_cnts = pd.DataFrame(
+        seqs_per_top_cat_cnts_df = pd.DataFrame(
             [
                 (column, list(cat_counts.index), list(cat_counts.values))
                 for column, cat_counts in seqs_per_top_cat_cnts.items()
             ],
             columns=["column", "cat", "count"],
         )
-        self.sequences_per_distinct_category_top_category_counts_dir.mkdir(exist_ok=True, parents=True)
-        for i, row in seqs_per_top_cat_cnts.iterrows():
-            row_df = pd.DataFrame([row]).explode(["cat", "count"])
-            row_df.to_parquet(self.sequences_per_distinct_category_top_category_counts_dir / f"{i:05}.parquet")
+        self._store_file_per_row(
+            seqs_per_top_cat_cnts_df, self.sequences_per_distinct_category_top_category_counts_dir, ["cat", "count"]
+        )
 
         # store top_cats
-        top_cats = pd.Series(top_cats).to_frame("top_cats").reset_index().rename(columns={"index": "column"})
-        self.sequences_per_distinct_category_top_cats_dir.mkdir(exist_ok=True, parents=True)
-        for i, row in top_cats.iterrows():
-            row_df = pd.DataFrame([row]).explode("top_cats")
-            row_df.to_parquet(self.sequences_per_distinct_category_top_cats_dir / f"{i:05}.parquet")
+        top_cats_df = pd.Series(top_cats).to_frame("top_cats").reset_index().rename(columns={"index": "column"})
+        self._store_file_per_row(top_cats_df, self.sequences_per_distinct_category_top_cats_dir, ["top_cats"])
 
         # store n_seqs
         pd.Series({"n_seqs": n_seqs}).to_frame("n_seqs").to_parquet(self.sequences_per_distinct_category_n_seqs_path)
