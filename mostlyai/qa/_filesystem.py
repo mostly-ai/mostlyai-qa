@@ -144,10 +144,10 @@ class Statistics:
             row_df = pd.DataFrame([row]).explode(explode_cols)
             row_df.to_parquet(path / f"{i:05}.parquet")
 
-    def _load_df_from_file_per_row(self, path: Path, explode_cols: list[str]) -> pd.DataFrame:
+    def _load_df_from_row_files(self, path: Path, cols: list[str], groupby_col: str) -> pd.DataFrame:
         files = sorted(path.glob("*.parquet"))
-        df = pd.concat([pd.read_parquet(p) for p in files]) if files else pd.DataFrame(columns=explode_cols)
-        df = df.groupby(explode_cols, sort=False).agg(list).reset_index()
+        df = pd.concat([pd.read_parquet(p) for p in files]) if files else pd.DataFrame(columns=cols)
+        df = df.groupby(groupby_col, sort=False).agg(list).reset_index()
         return df
 
     def mark_early_exit(self) -> None:
@@ -169,7 +169,7 @@ class Statistics:
         self._store_file_per_row(df, self.bins_dir, ["bins"])
 
     def load_bins(self) -> dict[str, list]:
-        df = self._load_df_from_file_per_row(self.bins_dir, ["bins"])
+        df = self._load_df_from_row_files(self.bins_dir, ["column", "bins"], "column")
         # harmonise older prefix formats to <prefix>:: for compatibility with older versions
         df["column"] = df["column"].str.replace(_OLD_COL_PREFIX, _NEW_COL_PREFIX, regex=True)
         return df.set_index("column")["bins"].to_dict()
@@ -211,7 +211,7 @@ class Statistics:
         self._store_file_per_row(trn_kdes, self.numeric_kdes_uni_dir, ["x", "y"])
 
     def load_numeric_uni_kdes(self) -> dict[str, pd.Series]:
-        trn_kdes = self._load_df_from_file_per_row(self.numeric_kdes_uni_dir, ["x", "y"])
+        trn_kdes = self._load_df_from_row_files(self.numeric_kdes_uni_dir, ["column", "x", "y"], "column")
         # harmonise older prefix formats to <prefix>:: for compatibility with older versions
         trn_kdes["column"] = trn_kdes["column"].str.replace(_OLD_COL_PREFIX, _NEW_COL_PREFIX, regex=True)
         trn_kdes = {
@@ -232,7 +232,9 @@ class Statistics:
         self._store_file_per_row(trn_cnts_uni, self.categorical_counts_uni_dir, ["cat", "count"])
 
     def load_categorical_uni_counts(self) -> dict[str, pd.Series]:
-        trn_cnts_uni = self._load_df_from_file_per_row(self.categorical_counts_uni_dir, ["cat", "count"])
+        trn_cnts_uni = self._load_df_from_row_files(
+            self.categorical_counts_uni_dir, ["column", "cat", "count"], "column"
+        )
         # harmonise older prefix formats to <prefix>:: for compatibility with older versions
         trn_cnts_uni["column"] = trn_cnts_uni["column"].str.replace(_OLD_COL_PREFIX, _NEW_COL_PREFIX, regex=True)
         trn_cnts_uni = {
@@ -338,7 +340,7 @@ class Statistics:
     def load_coherence_bins(self) -> dict[str, list] | None:
         if not self.coherence_bins_dir.exists():
             return None
-        df = self._load_df_from_file_per_row(self.coherence_bins_dir, ["bins"])
+        df = self._load_df_from_row_files(self.coherence_bins_dir, ["column", "bins"], "column")
         # harmonise older prefix formats to <prefix>:: for compatibility with older versions
         df["column"] = df["column"].str.replace(_OLD_COL_PREFIX, _NEW_COL_PREFIX, regex=True)
         return df.set_index("column")["bins"].to_dict()
@@ -351,7 +353,9 @@ class Statistics:
         self._store_file_per_row(trn_kdes, self.distinct_categories_per_sequence_kdes_dir, ["x", "y"])
 
     def load_distinct_categories_per_sequence_kdes(self) -> dict[str, pd.Series]:
-        kdes = self._load_df_from_file_per_row(self.distinct_categories_per_sequence_kdes_dir, ["x", "y"])
+        kdes = self._load_df_from_row_files(
+            self.distinct_categories_per_sequence_kdes_dir, ["column", "x", "y"], "column"
+        )
         # harmonise older prefix formats to <prefix>:: for compatibility with older versions
         kdes["column"] = kdes["column"].str.replace(_OLD_COL_PREFIX, _NEW_COL_PREFIX, regex=True)
         kdes = {
@@ -369,7 +373,7 @@ class Statistics:
         self._store_file_per_row(df, self.distinct_categories_per_sequence_bins_dir, ["bins"])
 
     def load_distinct_categories_per_sequence_bins(self) -> dict[str, list]:
-        df = self._load_df_from_file_per_row(self.distinct_categories_per_sequence_bins_dir, ["bins"])
+        df = self._load_df_from_row_files(self.distinct_categories_per_sequence_bins_dir, ["column", "bins"], "column")
         # harmonise older prefix formats to <prefix>:: for compatibility with older versions
         df["column"] = df["column"].str.replace(_OLD_COL_PREFIX, _NEW_COL_PREFIX, regex=True)
         return df.set_index("column")["bins"].to_dict()
@@ -382,7 +386,9 @@ class Statistics:
         self._store_file_per_row(counts, self.distinct_categories_per_sequence_counts_dir, ["cat", "count"])
 
     def load_binned_distinct_categories_per_sequence_counts(self) -> dict[str, pd.Series]:
-        counts = self._load_df_from_file_per_row(self.distinct_categories_per_sequence_counts_dir, ["cat", "count"])
+        counts = self._load_df_from_row_files(
+            self.distinct_categories_per_sequence_counts_dir, ["column", "cat", "count"], "column"
+        )
         # harmonise older prefix formats to <prefix>:: for compatibility with older versions
         counts["column"] = counts["column"].str.replace(_OLD_COL_PREFIX, _NEW_COL_PREFIX, regex=True)
         counts = {
@@ -446,27 +452,46 @@ class Statistics:
         self,
     ) -> tuple[dict[str, pd.Series], dict[str, pd.Series], dict[str, list[str]], int]:
         # load seqs_per_cat_cnts
-        seqs_per_cat_cnts = self._load_df_from_file_per_row(
-            self.sequences_per_distinct_category_counts_dir, ["cat", "count"]
+        seqs_per_cat_cnts = self._load_df_from_row_files(
+            self.sequences_per_distinct_category_counts_dir, ["column", "cat", "count"], "column"
         )
         # harmonise older prefix formats to <prefix>:: for compatibility with older versions
         seqs_per_cat_cnts["column"] = seqs_per_cat_cnts["column"].str.replace(
             _OLD_COL_PREFIX, _NEW_COL_PREFIX, regex=True
         )
+        seqs_per_cat_cnts = {
+            row["column"]: pd.Series(
+                row["count"],
+                index=row["cat"],
+                name=row["column"],
+            )
+            for _, row in seqs_per_cat_cnts.iterrows()
+        }
 
         # load seqs_per_top_cat_cnts
-        seqs_per_top_cat_cnts = self._load_df_from_file_per_row(
-            self.sequences_per_distinct_category_top_category_counts_dir, ["cat", "count"]
+        seqs_per_top_cat_cnts = self._load_df_from_row_files(
+            self.sequences_per_distinct_category_top_category_counts_dir, ["column", "cat", "count"], "column"
         )
         # harmonise older prefix formats to <prefix>:: for compatibility with older versions
         seqs_per_top_cat_cnts["column"] = seqs_per_top_cat_cnts["column"].str.replace(
             _OLD_COL_PREFIX, _NEW_COL_PREFIX, regex=True
         )
+        seqs_per_top_cat_cnts = {
+            row["column"]: pd.Series(
+                row["count"],
+                index=row["cat"],
+                name=row["column"],
+            )
+            for _, row in seqs_per_top_cat_cnts.iterrows()
+        }
 
         # load top_cats
-        top_cats = self._load_df_from_file_per_row(self.sequences_per_distinct_category_top_cats_dir, ["top_cats"])
+        top_cats = self._load_df_from_row_files(
+            self.sequences_per_distinct_category_top_cats_dir, ["column", "top_cats"], "column"
+        )
         # harmonise older prefix formats to <prefix>:: for compatibility with older versions
         top_cats["column"] = top_cats["column"].str.replace(_OLD_COL_PREFIX, _NEW_COL_PREFIX, regex=True)
+        top_cats = top_cats.set_index("column")["top_cats"].to_dict()
 
         # load n_seqs
         n_seqs = pd.read_parquet(self.sequences_per_distinct_category_n_seqs_path)
