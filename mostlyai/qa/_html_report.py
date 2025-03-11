@@ -20,6 +20,7 @@ from typing import Literal
 import pandas as pd
 from jinja2 import Environment, FileSystemLoader
 from mostlyai.qa._accuracy import trim_label, filter_uni_acc_for_plotting, filter_biv_acc_for_plotting
+from mostlyai.qa._common import TGT_COLUMN_PREFIX
 from mostlyai.qa._filesystem import TemporaryWorkspace
 from mostlyai.qa.assets import (
     HTML_ASSETS_PATH,
@@ -155,9 +156,9 @@ def summarize_accuracies_by_column(
     acc_nxt = acc_biv.loc[acc_biv.type == "nxt"]
     if not all((acc_nxt.empty, acc_cats_per_seq.empty, acc_seqs_per_cat.empty)):
         acc_nxt = acc_nxt.groupby("col1").mean(["accuracy", "accuracy_max"]).reset_index(names="column")
-        acc_nxt = acc_nxt[acc_nxt["column"].str.startswith("tgt")]
-        acc_cats_per_seq = acc_cats_per_seq.assign(column="tgt::" + acc_cats_per_seq["column"])
-        acc_seqs_per_cat = acc_seqs_per_cat.assign(column="tgt::" + acc_seqs_per_cat["column"])
+        acc_nxt = acc_nxt[acc_nxt["column"].str.startswith(TGT_COLUMN_PREFIX)]
+        acc_cats_per_seq = acc_cats_per_seq.assign(column=TGT_COLUMN_PREFIX + acc_cats_per_seq["column"])
+        acc_seqs_per_cat = acc_seqs_per_cat.assign(column=TGT_COLUMN_PREFIX + acc_seqs_per_cat["column"])
         tbl_acc_coherence = (
             pd.concat([a for a in [acc_nxt, acc_cats_per_seq, acc_seqs_per_cat] if not a.empty])
             .groupby("column")
