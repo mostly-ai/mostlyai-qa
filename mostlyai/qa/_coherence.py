@@ -213,9 +213,9 @@ def plot_store_single_sequences_per_distinct_category(
         syn_cat_col_cnts=syn_seqs_per_cat_cnts,
         trn_bin_col_cnts=trn_seqs_per_top_cat_cnts,
         syn_bin_col_cnts=syn_seqs_per_top_cat_cnts,
+        trn_cnt=trn_n_seqs,
+        syn_cnt=syn_n_seqs,
         accuracy=accuracy,
-        trn_cnt_sum=trn_n_seqs,
-        syn_cnt_sum=syn_n_seqs,
-        categorical_sort_by_frequency=False,
+        sort_categorical_binned_by_frequency=False,
     )
     workspace.store_figure_html(fig, "sequences_per_distinct_category", col)
