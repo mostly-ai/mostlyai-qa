@@ -188,7 +188,7 @@ def pull_data_for_coherence(
 
     # discretize all columns except tgt_context_key
     binned_df, bins = bin_data(
-        df_tgt[[c for c in df_tgt.columns if c != tgt_context_key]], bins=bins, non_categorical_label_style="long"
+        df_tgt[[c for c in df_tgt.columns if c != tgt_context_key]], bins=bins, non_categorical_label_style=">= X < Y"
     )
     df_tgt = pd.concat([df_tgt[tgt_context_key], binned_df], axis=1)
 
