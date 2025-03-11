@@ -390,91 +390,75 @@ def report(
 
 def _calculate_metrics(
     *,
-    acc_uni: pd.DataFrame | None = None,
-    acc_biv: pd.DataFrame | None = None,
-    dcr_trn: np.ndarray | None = None,
-    dcr_hol: np.ndarray | None = None,
-    sim_cosine_trn_hol: np.float64 | None = None,
-    sim_cosine_trn_syn: np.float64 | None = None,
-    sim_auc_trn_hol: np.float64 | None = None,
-    sim_auc_trn_syn: np.float64 | None = None,
-    acc_cats_per_seq: pd.DataFrame | None = None,
-    acc_seqs_per_cat: pd.DataFrame | None = None,
+    acc_uni: pd.DataFrame,
+    acc_biv: pd.DataFrame,
+    dcr_trn: np.ndarray,
+    dcr_hol: np.ndarray,
+    sim_cosine_trn_hol: np.float64,
+    sim_cosine_trn_syn: np.float64,
+    sim_auc_trn_hol: np.float64,
+    sim_auc_trn_syn: np.float64,
+    acc_cats_per_seq: pd.DataFrame,
+    acc_seqs_per_cat: pd.DataFrame,
 ) -> ModelMetrics:
-    do_accuracy = acc_uni is not None and acc_biv is not None
-
-    do_distances = dcr_trn is not None
-    do_similarity = sim_cosine_trn_syn is not None
-
-    if do_accuracy:
-        # univariates
-        acc_univariate = acc_uni.accuracy.mean()
-        acc_univariate_max = acc_uni.accuracy_max.mean()
-        # bivariates
-        acc_tgt_ctx = acc_biv.loc[acc_biv.type != NXT_COLUMN]
-        if not acc_tgt_ctx.empty:
-            acc_bivariate = acc_tgt_ctx.accuracy.mean()
-            acc_bivariate_max = acc_tgt_ctx.accuracy_max.mean()
-        else:
-            acc_bivariate = acc_bivariate_max = None
-        # coherence
-        acc_nxt = acc_biv.loc[acc_biv.type == NXT_COLUMN]
-        nxt_col_coherence = nxt_col_coherence_max = None
-        if not acc_nxt.empty:
-            nxt_col_coherence = acc_nxt.accuracy.mean()
-            nxt_col_coherence_max = acc_nxt.accuracy_max.mean()
-        cats_per_seq_coherence = cats_per_seq_coherence_max = None
-        if not acc_cats_per_seq.empty:
-            cats_per_seq_coherence = acc_cats_per_seq.accuracy.mean()
-            cats_per_seq_coherence_max = acc_cats_per_seq.accuracy_max.mean()
-        seqs_per_cat_coherence = seqs_per_cat_coherence_max = None
-        if not acc_seqs_per_cat.empty:
-            seqs_per_cat_coherence = acc_seqs_per_cat.accuracy.mean()
-            seqs_per_cat_coherence_max = acc_seqs_per_cat.accuracy_max.mean()
-        coherence_metrics = [
-            m for m in (nxt_col_coherence, cats_per_seq_coherence, seqs_per_cat_coherence) if m is not None
-        ]
-        coherence_max_metrics = [
-            m for m in (nxt_col_coherence_max, cats_per_seq_coherence_max, seqs_per_cat_coherence_max) if m is not None
-        ]
-        acc_coherence = np.mean(coherence_metrics) if coherence_metrics else None
-        acc_coherence_max = np.mean(coherence_max_metrics) if coherence_max_metrics else None
-        # calculate overall
-        acc_overall = np.mean([m for m in (acc_univariate, acc_bivariate, acc_coherence) if m is not None])
-        acc_overall_max = np.mean(
-            [m for m in (acc_univariate_max, acc_bivariate_max, acc_coherence_max) if m is not None]
-        )
-        accuracy = Accuracy(
-            overall=acc_overall,
-            univariate=acc_univariate,
-            bivariate=acc_bivariate,
-            coherence=acc_coherence,
-            overall_max=acc_overall_max,
-            univariate_max=acc_univariate_max,
-            bivariate_max=acc_bivariate_max,
-            coherence_max=acc_coherence_max,
-        )
+    # univariates
+    acc_univariate = acc_uni.accuracy.mean()
+    acc_univariate_max = acc_uni.accuracy_max.mean()
+    # bivariates
+    acc_tgt_ctx = acc_biv.loc[acc_biv.type != NXT_COLUMN]
+    if not acc_tgt_ctx.empty:
+        acc_bivariate = acc_tgt_ctx.accuracy.mean()
+        acc_bivariate_max = acc_tgt_ctx.accuracy_max.mean()
     else:
-        accuracy = Accuracy()
-    if do_similarity:
-        similarity = Similarity(
-            cosine_similarity_training_synthetic=sim_cosine_trn_syn,
-            cosine_similarity_training_holdout=sim_cosine_trn_hol if sim_cosine_trn_hol is not None else None,
-            discriminator_auc_training_synthetic=sim_auc_trn_syn,
-            discriminator_auc_training_holdout=sim_auc_trn_hol if sim_auc_trn_hol is not None else None,
-        )
-    else:
-        similarity = Similarity()
-    if do_distances:
-        distances = Distances(
-            ims_training=(dcr_trn <= 1e-6).mean(),
-            ims_holdout=(dcr_hol <= 1e-6).mean() if dcr_hol is not None else None,
-            dcr_training=dcr_trn.mean(),
-            dcr_holdout=dcr_hol.mean() if dcr_hol is not None else None,
-            dcr_share=np.mean(dcr_trn < dcr_hol) + np.mean(dcr_trn == dcr_hol) / 2 if dcr_hol is not None else None,
-        )
-    else:
-        distances = Distances()
+        acc_bivariate = acc_bivariate_max = None
+    # coherence
+    acc_nxt = acc_biv.loc[acc_biv.type == NXT_COLUMN]
+    nxt_col_coherence = nxt_col_coherence_max = None
+    if not acc_nxt.empty:
+        nxt_col_coherence = acc_nxt.accuracy.mean()
+        nxt_col_coherence_max = acc_nxt.accuracy_max.mean()
+    cats_per_seq_coherence = cats_per_seq_coherence_max = None
+    if not acc_cats_per_seq.empty:
+        cats_per_seq_coherence = acc_cats_per_seq.accuracy.mean()
+        cats_per_seq_coherence_max = acc_cats_per_seq.accuracy_max.mean()
+    seqs_per_cat_coherence = seqs_per_cat_coherence_max = None
+    if not acc_seqs_per_cat.empty:
+        seqs_per_cat_coherence = acc_seqs_per_cat.accuracy.mean()
+        seqs_per_cat_coherence_max = acc_seqs_per_cat.accuracy_max.mean()
+    coherence_metrics = [
+        m for m in (nxt_col_coherence, cats_per_seq_coherence, seqs_per_cat_coherence) if m is not None
+    ]
+    coherence_max_metrics = [
+        m for m in (nxt_col_coherence_max, cats_per_seq_coherence_max, seqs_per_cat_coherence_max) if m is not None
+    ]
+    acc_coherence = np.mean(coherence_metrics) if coherence_metrics else None
+    acc_coherence_max = np.mean(coherence_max_metrics) if coherence_max_metrics else None
+    # calculate overall accuracy
+    acc_overall = np.mean([m for m in (acc_univariate, acc_bivariate, acc_coherence) if m is not None])
+    acc_overall_max = np.mean([m for m in (acc_univariate_max, acc_bivariate_max, acc_coherence_max) if m is not None])
+    accuracy = Accuracy(
+        overall=acc_overall,
+        univariate=acc_univariate,
+        bivariate=acc_bivariate,
+        coherence=acc_coherence,
+        overall_max=acc_overall_max,
+        univariate_max=acc_univariate_max,
+        bivariate_max=acc_bivariate_max,
+        coherence_max=acc_coherence_max,
+    )
+    similarity = Similarity(
+        cosine_similarity_training_synthetic=sim_cosine_trn_syn,
+        cosine_similarity_training_holdout=sim_cosine_trn_hol if sim_cosine_trn_hol is not None else None,
+        discriminator_auc_training_synthetic=sim_auc_trn_syn,
+        discriminator_auc_training_holdout=sim_auc_trn_hol if sim_auc_trn_hol is not None else None,
+    )
+    distances = Distances(
+        ims_training=(dcr_trn <= 1e-6).mean(),
+        ims_holdout=(dcr_hol <= 1e-6).mean() if dcr_hol is not None else None,
+        dcr_training=dcr_trn.mean(),
+        dcr_holdout=dcr_hol.mean() if dcr_hol is not None else None,
+        dcr_share=np.mean(dcr_trn < dcr_hol) + np.mean(dcr_trn == dcr_hol) / 2 if dcr_hol is not None else None,
+    )
     return ModelMetrics(
         accuracy=accuracy,
         similarity=similarity,
