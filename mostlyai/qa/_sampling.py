@@ -174,10 +174,15 @@ def pull_data_for_coherence(
     *,
     df_tgt: pd.DataFrame,
     tgt_context_key: str,
-    max_sequence_length: int = 100,
     bins: int | dict[str, list] = 30,
+    max_sequence_length: int = 100,
+    max_sample_size: int | None = None,
 ) -> tuple[pd.DataFrame, dict[str, list]]:
     df_tgt = df_tgt.copy()
+
+    # limit sample size to at most max_sample_size sequences
+    keys = df_tgt[tgt_context_key].drop_duplicates().sample(frac=1).head(max_sample_size)
+    df_tgt = df_tgt[df_tgt[tgt_context_key].isin(keys)].reset_index(drop=True)
 
     # randomly sample at most max_sequence_length rows per sequence
     df_tgt = df_tgt.sample(frac=1).reset_index(drop=True)

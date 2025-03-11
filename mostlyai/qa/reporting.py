@@ -84,7 +84,7 @@ def report(
     report_credits: str = REPORT_CREDITS,
     max_sample_size_accuracy: int | None = None,
     max_sample_size_embeddings: int | None = None,
-    # TODO: introduce max_sample_size_coherence ?
+    max_sample_size_coherence: int | None = None,
     statistics_path: str | Path | None = None,
     update_progress: ProgressCallback | None = None,
 ) -> tuple[Path, ModelMetrics | None]:
@@ -101,7 +101,7 @@ def report(
 
     Customize the report with the `report_title`, `report_subtitle` and `report_credits`.
 
-    Limit the compute time used by setting `max_sample_size_accuracy` and `max_sample_size_embeddings`.
+    Limit the compute time used by setting `max_sample_size_accuracy`, `max_sample_size_coherence` and `max_sample_size_embeddings`.
 
     Args:
         syn_tgt_data: The synthetic (target) data.
@@ -117,6 +117,7 @@ def report(
         report_subtitle: The subtitle of the report.
         report_credits: The credits of the report.
         max_sample_size_accuracy: The maximum sample size for accuracy calculations.
+        max_sample_size_coherence: The maximum sample size for coherence calculations.
         max_sample_size_embeddings: The maximum sample size for embedding calculations (similarity & distances)
         statistics_path: The path of where to store the statistics to be used by `report_from_statistics`
         update_progress: The progress callback.
@@ -257,10 +258,15 @@ def report(
         do_coherence = setup == "1:N"
         if do_coherence:
             _LOG.info("prepare training data for coherence started")
-            trn_coh, trn_coh_bins = pull_data_for_coherence(df_tgt=trn_tgt_data, tgt_context_key=tgt_context_key)
+            trn_coh, trn_coh_bins = pull_data_for_coherence(
+                df_tgt=trn_tgt_data, tgt_context_key=tgt_context_key, max_sample_size=max_sample_size_coherence
+            )
             _LOG.info("prepare synthetic data for coherence started")
             syn_coh, _ = pull_data_for_coherence(
-                df_tgt=syn_tgt_data, tgt_context_key=tgt_context_key, bins=trn_coh_bins
+                df_tgt=syn_tgt_data,
+                tgt_context_key=tgt_context_key,
+                bins=trn_coh_bins,
+                max_sample_size=max_sample_size_coherence,
             )
             _LOG.info("store bins used for training data for coherence")
             statistics.store_coherence_bins(bins=trn_coh_bins)

@@ -116,6 +116,7 @@ def test_report_sequential(tmp_path):
         statistics_path=statistics_path,
         max_sample_size_accuracy=120,
         max_sample_size_embeddings=80,
+        max_sample_size_coherence=30,
     )
 
     assert report_path.exists()
@@ -150,6 +151,7 @@ def test_report_sequential(tmp_path):
         tgt_context_key="ctx_id",
         max_sample_size_accuracy=130,
         max_sample_size_embeddings=90,
+        max_sample_size_coherence=30,
         statistics_path=statistics_path,
     )
 
@@ -297,6 +299,7 @@ def test_coherence(tmp_path):
         tgt_context_key=tgt_context_key,
         max_sample_size_accuracy=120,
         max_sample_size_embeddings=80,
+        max_sample_size_coherence=30,
         statistics_path=tmp_path / "stats",
     )
     assert report_path is not None
@@ -308,6 +311,9 @@ def test_coherence(tmp_path):
         syn_ctx_data=df_ctx_syn,
         ctx_primary_key=ctx_primary_key,
         tgt_context_key=tgt_context_key,
+        max_sample_size_accuracy=120,
+        max_sample_size_embeddings=80,
+        max_sample_size_coherence=30,
         statistics_path=tmp_path / "stats",
     )
     assert report_path is not None

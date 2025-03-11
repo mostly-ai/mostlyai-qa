@@ -52,6 +52,7 @@ def report_from_statistics(
     report_subtitle: str = "",
     report_credits: str = REPORT_CREDITS,
     max_sample_size_accuracy: int | None = None,
+    max_sample_size_coherence: int | None = None,
     max_sample_size_embeddings: int | None = None,
     update_progress: ProgressCallback | None = None,
 ) -> Path:
@@ -69,6 +70,7 @@ def report_from_statistics(
         report_subtitle: The subtitle of the report.
         report_credits: The credits of the report.
         max_sample_size_accuracy: The maximum sample size for accuracy calculations.
+        max_sample_size_coherence: The maximum sample size for coherence calculations.
         max_sample_size_embeddings: The maximum sample size for embedding calculations (similarity & distances)
         update_progress: The progress callback.
 
@@ -137,7 +139,10 @@ def report_from_statistics(
         if do_coherence:
             _LOG.info("prepare synthetic data for coherence started")
             syn_coh, _ = pull_data_for_coherence(
-                df_tgt=syn_tgt_data, tgt_context_key=tgt_context_key, bins=trn_coh_bins
+                df_tgt=syn_tgt_data,
+                tgt_context_key=tgt_context_key,
+                bins=trn_coh_bins,
+                max_sample_size=max_sample_size_coherence,
             )
             _LOG.info("report sequences per distinct category")
             acc_seqs_per_cat = _report_coherence_sequences_per_distinct_category(
