@@ -152,7 +152,7 @@ def sample_two_consecutive_rows(
     seq_lens = df.groupby(col_by).size()
 
     # make random draw from [0, seq_len-1]
-    sel_idx = (seq_lens - 1) * np.random.random(len(seq_lens)).astype("int")
+    sel_idx = ((seq_lens - 1) * np.random.random(len(seq_lens))).astype("int")
     sel_idx_df = pd.Series(sel_idx).to_frame("__IDX").reset_index()
 
     # filter to randomly selected indices
