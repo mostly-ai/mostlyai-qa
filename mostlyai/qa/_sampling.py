@@ -200,7 +200,7 @@ def pull_data_for_coherence(
     df_tgt = sample_text_tokens(df_tgt)
 
     # discretize all columns except tgt_context_key
-    df_tgt, bins = bin_data(df_tgt, bins=bins, non_categorical_label_style=">= X < Y")
+    df_tgt, bins = bin_data(df_tgt, bins=bins, non_categorical_label_style="bounded")
 
     # merge keys with binned data
     df_tgt = pd.concat([keys, df_tgt], axis=1)
