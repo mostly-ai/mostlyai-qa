@@ -170,11 +170,9 @@ class Statistics:
 
     def load_bins(self) -> dict[str, list]:
         df = self._load_df_from_row_files(self.bins_dir, ["column", "bins"], "column")
-        df = df.set_index("column")["bins"].to_dict()
-        df = self._upgrade_old_prefixes(df, "column")
         # harmonise older prefix formats to <prefix>:: for compatibility with older versions
         df["column"] = df["column"].str.replace(_OLD_COL_PREFIX, _NEW_COL_PREFIX, regex=True)
-        return df
+        return df.set_index("column")["bins"].to_dict()
 
     def store_correlations(self, trn_corr: pd.DataFrame) -> None:
         trn_corr.to_parquet(self.correlations_path)
