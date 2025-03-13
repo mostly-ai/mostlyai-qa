@@ -235,6 +235,8 @@ class Statistics:
         trn_cnts_uni = self._load_df_from_row_files(
             self.categorical_counts_uni_dir, ["column", "cat", "count"], "column"
         )
+        # harmonise older prefix formats to <prefix>:: for compatibility with older versions
+        trn_cnts_uni["column"] = trn_cnts_uni["column"].str.replace(_OLD_COL_PREFIX, _NEW_COL_PREFIX, regex=True)
         trn_cnts_uni = {
             row["column"]: pd.Series(
                 row["count"],
@@ -243,8 +245,6 @@ class Statistics:
             )
             for _, row in trn_cnts_uni.iterrows()
         }
-        # harmonise older prefix formats to <prefix>:: for compatibility with older versions
-        trn_cnts_uni["column"] = trn_cnts_uni["column"].str.replace(_OLD_COL_PREFIX, _NEW_COL_PREFIX, regex=True)
         return trn_cnts_uni
 
     def store_bin_counts(
@@ -274,6 +274,8 @@ class Statistics:
     ) -> tuple[dict[str, pd.Series], dict[tuple[str, str], pd.Series]]:
         # load univariate bin counts
         trn_cnts_uni = pd.read_parquet(self.bin_counts_uni_path)
+        # harmonise older prefix formats to <prefix>:: for compatibility with older versions
+        trn_cnts_uni["column"] = trn_cnts_uni["column"].str.replace(_OLD_COL_PREFIX, _NEW_COL_PREFIX, regex=True)
         trn_cnts_uni = {
             row["column"]: pd.Series(
                 row["count"],
@@ -282,8 +284,6 @@ class Statistics:
             )
             for _, row in trn_cnts_uni.iterrows()
         }
-        # harmonise older prefix formats to <prefix>:: for compatibility with older versions
-        trn_cnts_uni["column"] = trn_cnts_uni["column"].str.replace(_OLD_COL_PREFIX, _NEW_COL_PREFIX, regex=True)
 
         # load bivariate bin counts
         def biv_multi_index(bin, col1, col2):
