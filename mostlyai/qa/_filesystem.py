@@ -212,6 +212,8 @@ class Statistics:
 
     def load_numeric_uni_kdes(self) -> dict[str, pd.Series]:
         trn_kdes = self._load_df_from_row_files(self.numeric_kdes_uni_dir, ["column", "x", "y"], "column")
+        # harmonise older prefix formats to <prefix>:: for compatibility with older versions
+        trn_kdes["column"] = trn_kdes["column"].str.replace(_OLD_COL_PREFIX, _NEW_COL_PREFIX, regex=True)
         trn_kdes = {
             row["column"]: pd.Series(
                 row["y"],
@@ -220,8 +222,6 @@ class Statistics:
             )
             for _, row in trn_kdes.iterrows()
         }
-        # harmonise older prefix formats to <prefix>:: for compatibility with older versions
-        trn_kdes["column"] = trn_kdes["column"].str.replace(_OLD_COL_PREFIX, _NEW_COL_PREFIX, regex=True)
         return trn_kdes
 
     def store_categorical_uni_counts(self, trn_cnts_uni: dict[str, pd.Series]) -> None:
