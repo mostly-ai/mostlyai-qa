@@ -340,8 +340,14 @@ def test_plot_univariate_distribution_numeric():
 
 
 def test_sample_two_consecutive_rows():
-    df = pd.DataFrame({"id": [1, 1, 1, 1, 2, 2, 2, 3, 3, 4], "x": [1, 2, 3, 5, 1, 2, 3, 1, 2, 1]})
+    df = pd.DataFrame(
+        {
+            "id": [1] * 1000 + [2] * 500 + [3] * 2 + [4] * 1,
+            "x": list(range(1000)) + list(range(500)) + list(range(2)) + list(range(1)),
+        }
+    )
     first_rows, second_rows = sample_two_consecutive_rows(df=df, col_by="id")
+    assert not (first_rows["x"] == 0).all()
     assert len(first_rows) == 4
     assert len(second_rows) == 3
     assert (first_rows["x"][0:2] == second_rows["x"][0:2] - 1).all()
