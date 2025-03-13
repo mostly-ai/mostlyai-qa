@@ -976,7 +976,9 @@ def binning_data(
 
 
 def bin_data(
-    df: pd.DataFrame, bins: int | dict[str, list], non_categorical_label_style: Literal[">= X < Y", ">= X"] = ">= X"
+    df: pd.DataFrame,
+    bins: int | dict[str, list],
+    non_categorical_label_style: Literal["bounded", "unbounded"] = "unbounded",
 ) -> tuple[pd.DataFrame, dict[str, list]]:
     """
     Splits data into bins.
@@ -1024,7 +1026,7 @@ def bin_data(
 
 
 def bin_numeric(
-    col: pd.Series, bins: int | list[str], label_style: Literal[">= X < Y", ">= X"] = ">= X"
+    col: pd.Series, bins: int | list[str], label_style: Literal["bounded", "unbounded"] = "unbounded"
 ) -> tuple[pd.Categorical, list]:
     def _clip(col, bins):
         if isinstance(bins, list):
@@ -1073,7 +1075,7 @@ def bin_numeric(
 
 
 def bin_datetime(
-    col: pd.Series, bins: int | list[str], label_style: Literal[">= X < Y", ">= X"] = ">= X"
+    col: pd.Series, bins: int | list[str], label_style: Literal["bounded", "unbounded"] = "unbounded"
 ) -> tuple[pd.Categorical, list]:
     def _clip(col, bins):
         if isinstance(bins, list):
@@ -1126,7 +1128,7 @@ def bin_non_categorical(
     clip_and_breaks: Callable,
     create_labels: Callable,
     adjust_breaks: Callable,
-    label_style: Literal[">= X < Y", ">= X"] = ">= X",
+    label_style: Literal["bounded", "unbounded"] = "unbounded",
 ) -> tuple[pd.Categorical, list]:
     col = col.fillna(np.nan).infer_objects(copy=False)
 
@@ -1145,9 +1147,9 @@ def bin_non_categorical(
         )
         labels = [str(b) for b in breaks[:-1]]
 
-    if label_style == ">= X":
+    if label_style == "unbounded":
         new_labels_map = {label: f"⪰ {label}" for label in labels}
-    else:  # label_style == ">= X < Y"
+    else:  # label_style == "bounded"
         new_labels_map = {label: f"⪰ {label} ≺ {next_label}" for label, next_label in zip(labels, labels[1:] + ["∞"])}
 
     bin_col = pd.cut(col, bins=adjust_breaks(breaks), labels=labels, right=False)
