@@ -393,10 +393,11 @@
         <table class='table' style="text-align: left">
           <thead>
             <tr>
-              <td style="width: 33%"> </td>
-              <td style="width: 33%">Synthetic vs. Training Data</td>
+              <td style="width: 25%"> </td>
+              <td style="width: 25%">Synthetic vs. Training Data</td>
               {% if metrics.distances.ims_holdout is not none %}
-              <td style="width: 33%"><small class="muted-text">(Synthetic vs. Holdout Data)</small></td>
+              <td style="width: 25%"><small style="color: #666666;">Synthetic vs. Holdout Data</small></td>
+              <td style="width: 25%"><small style="color: #999999;">Training vs. Holdout Data</small></td>
               {% endif %}
             </tr>
           </thead>
@@ -405,14 +406,16 @@
               <td>Identical Matches</td>
               <td>{{ "{:.1%}".format(metrics.distances.ims_training) }}</td>
               {% if metrics.distances.ims_holdout is not none %}
-              <td><small class="muted-text">({{ "{:.1%}".format(metrics.distances.ims_holdout) }})</small></td>
+              <td><small style="color: #666666;">{{ "{:.1%}".format(metrics.distances.ims_holdout) }}</small></td>
+              <td><small style="color: #999999;">{{ "{:.1%}".format(metrics.distances.ims_trn_hol) if metrics.distances.ims_trn_hol is not none else "N/A" }}</small></td>
               {% endif %}
             </tr>
             <tr>
               <td>Average Distances</td>
               <td>{{ "{:.3f}".format(metrics.distances.dcr_training) }}</td>
               {% if metrics.distances.dcr_holdout is not none %}
-              <td><small class="muted-text">({{ "{:.3f}".format(metrics.distances.dcr_holdout) }})</small></td>
+              <td><small style="color: #666666;">{{ "{:.3f}".format(metrics.distances.dcr_holdout) }}</small></td>
+              <td><small style="color: #999999;">{{ "{:.3f}".format(metrics.distances.dcr_trn_hol) if metrics.distances.dcr_trn_hol is not none else "N/A" }}</small></td>
               {% endif %}
             </tr>
           </tbody>
@@ -432,9 +435,8 @@
       <div class="explainer-body">
         Synthetic data shall be as close to the original training samples, as it is close to original holdout samples, which serve us as a reference.
         This can be asserted empirically by measuring distances between synthetic samples to their closest original samples, whereas training and holdout sets are sampled to be of equal size.
-        For the visualization above, the distances of synthetic samples to the training samples are displayed in green, and the distances of synthetic samples to the holdout samples (if available) displayed in gray.
-        A green line that is significantly left of the gray line implies that synthetic samples are closer to the training samples than to the holdout samples, indicating that the data has overfitted to the training data.
-        A green line that overlays with the gray line validates that the trained model indeed represents the general rules, that can be found in training just as well as in holdout samples.
+        A green line that is significantly left of the dark gray line implies that synthetic samples are closer to the training samples than to the holdout samples, indicating that the data has overfitted to the training data.
+        A green line that overlays with the dark gray line validates that the trained model indeed represents the general rules, that can be found in training just as well as in holdout samples.
       </div>
     </div>
   </div>
