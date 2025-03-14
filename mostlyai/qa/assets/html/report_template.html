@@ -418,6 +418,14 @@
               <td><small style="color: #999999;">{{ "{:.3f}".format(metrics.distances.dcr_trn_hol) if metrics.distances.dcr_trn_hol is not none else "N/A" }}</small></td>
               {% endif %}
             </tr>
+            {% if metrics.distances.dcr_share is not none %}
+            <tr>
+              <td>DCR Share</td>
+              <td>{{ "{:.1%}".format(metrics.distances.dcr_share) }}</td>
+              <td></td>
+              <td></td>
+            </tr>
+            {% endif %}
           </tbody>
         </table>
         <br />
@@ -437,6 +445,7 @@
         This can be asserted empirically by measuring distances between synthetic samples to their closest original samples, whereas training and holdout sets are sampled to be of equal size.
         A green line that is significantly left of the dark gray line implies that synthetic samples are closer to the training samples than to the holdout samples, indicating that the data has overfitted to the training data.
         A green line that overlays with the dark gray line validates that the trained model indeed represents the general rules, that can be found in training just as well as in holdout samples.
+        The DCR share indicates the proportion of synthetic samples that are closer to a training sample than to a holdout sample, and ideally, this value should not significantly exceed 50%, as a higher value could indicate overfitting.
       </div>
     </div>
   </div>
