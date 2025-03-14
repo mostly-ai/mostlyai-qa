@@ -20,6 +20,7 @@ from typing import Literal
 import pandas as pd
 from jinja2 import Environment, FileSystemLoader
 from mostlyai.qa._accuracy import trim_label, filter_uni_acc_for_plotting, filter_biv_acc_for_plotting
+from mostlyai.qa._common import TGT_COLUMN_PREFIX
 from mostlyai.qa._filesystem import TemporaryWorkspace
 from mostlyai.qa.assets import (
     HTML_ASSETS_PATH,
@@ -35,6 +36,20 @@ _LOG = logging.getLogger(__name__)
 def get_uni_htmls(acc_uni: pd.DataFrame, workspace: TemporaryWorkspace) -> list[str]:
     paths_uni = workspace.get_figure_paths("univariate", acc_uni[["column"]]).values()
     return [f.read_text() for f in paths_uni]
+
+
+def get_cats_per_seq_htmls(acc_cats_per_seq: pd.DataFrame, workspace: TemporaryWorkspace) -> list[str]:
+    paths_cats_per_seq = workspace.get_figure_paths(
+        "distinct_categories_per_sequence", acc_cats_per_seq[["column"]]
+    ).values()
+    return [f.read_text() for f in paths_cats_per_seq]
+
+
+def get_seqs_per_cat_htmls(acc_seqs_per_cat: pd.DataFrame, workspace: TemporaryWorkspace) -> list[str]:
+    paths_seqs_per_cat = workspace.get_figure_paths(
+        "sequences_per_distinct_category", acc_seqs_per_cat[["column"]]
+    ).values()
+    return [f.read_text() for f in paths_seqs_per_cat]
 
 
 def get_biv_htmls(acc_biv: pd.DataFrame, workspace: TemporaryWorkspace) -> tuple[list[str], list[str], list[str]]:
@@ -58,6 +73,8 @@ def store_report(
     meta: dict,
     acc_uni: pd.DataFrame,
     acc_biv: pd.DataFrame,
+    acc_cats_per_seq: pd.DataFrame,
+    acc_seqs_per_cat: pd.DataFrame,
     corr_trn: pd.DataFrame,
 ):
     """
@@ -65,11 +82,13 @@ def store_report(
     """
 
     # summarize accuracies by column for overview table
-    accuracy_table_by_column = summarize_accuracies_by_column(acc_uni, acc_biv)
+    accuracy_table_by_column = summarize_accuracies_by_column(acc_uni, acc_biv, acc_cats_per_seq, acc_seqs_per_cat)
     accuracy_table_by_column = accuracy_table_by_column.sort_values("univariate", ascending=False)
 
     acc_uni = filter_uni_acc_for_plotting(acc_uni)
     html_uni = get_uni_htmls(acc_uni=acc_uni, workspace=workspace)
+    html_cats_per_seq = get_cats_per_seq_htmls(acc_cats_per_seq=acc_cats_per_seq, workspace=workspace)
+    html_seqs_per_cat = get_seqs_per_cat_htmls(acc_seqs_per_cat=acc_seqs_per_cat, workspace=workspace)
     acc_biv = filter_biv_acc_for_plotting(acc_biv, corr_trn)
     html_biv_ctx, html_biv_tgt, html_biv_nxt = get_biv_htmls(acc_biv=acc_biv, workspace=workspace)
 
@@ -102,6 +121,8 @@ def store_report(
         similarity_pca_html_chart=similarity_pca_html_chart,
         distances_dcr_html_chart=distances_dcr_html_chart,
         univariate_html_charts=html_uni,
+        distinct_categories_per_sequence_html_charts=html_cats_per_seq,
+        sequences_per_distinct_category_html_charts=html_seqs_per_cat,
         bivariate_html_charts_tgt=html_biv_tgt,
         bivariate_html_charts_ctx=html_biv_ctx,
         bivariate_html_charts_nxt=html_biv_nxt,
@@ -109,7 +130,9 @@ def store_report(
     report_path.write_text(html)
 
 
-def summarize_accuracies_by_column(acc_uni: pd.DataFrame, acc_biv: pd.DataFrame) -> pd.DataFrame:
+def summarize_accuracies_by_column(
+    acc_uni: pd.DataFrame, acc_biv: pd.DataFrame, acc_cats_per_seq: pd.DataFrame, acc_seqs_per_cat: pd.DataFrame
+) -> pd.DataFrame:
     """
     Calculates DataFrame that stores per-column univariate, bivariate and coherence accuracies.
     """
@@ -131,18 +154,17 @@ def summarize_accuracies_by_column(acc_uni: pd.DataFrame, acc_biv: pd.DataFrame)
     tbl_acc = tbl_acc_uni.merge(tbl_acc_biv, how="left")
 
     acc_nxt = acc_biv.loc[acc_biv.type == "nxt"]
-    if not acc_nxt.empty:
+    if not all((acc_nxt.empty, acc_cats_per_seq.empty, acc_seqs_per_cat.empty)):
+        acc_nxt = acc_nxt.groupby("col1").mean(["accuracy", "accuracy_max"]).reset_index(names="column")
+        acc_nxt = acc_nxt[acc_nxt["column"].str.startswith(TGT_COLUMN_PREFIX)]
+        acc_cats_per_seq = acc_cats_per_seq.assign(column=TGT_COLUMN_PREFIX + acc_cats_per_seq["column"])
+        acc_seqs_per_cat = acc_seqs_per_cat.assign(column=TGT_COLUMN_PREFIX + acc_seqs_per_cat["column"])
         tbl_acc_coherence = (
-            acc_nxt.groupby("col1")
+            pd.concat([a for a in [acc_nxt, acc_cats_per_seq, acc_seqs_per_cat] if not a.empty])
+            .groupby("column")
             .mean(["accuracy", "accuracy_max"])
+            .rename(columns={"accuracy": "coherence", "accuracy_max": "coherence_max"})
             .reset_index()
-            .rename(
-                columns={
-                    "col1": "column",
-                    "accuracy": "coherence",
-                    "accuracy_max": "coherence_max",
-                }
-            )
         )
         tbl_acc = tbl_acc.merge(tbl_acc_coherence, how="left")
 

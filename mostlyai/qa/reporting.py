@@ -22,6 +22,7 @@ from pandas.core.dtypes.common import is_numeric_dtype, is_datetime64_dtype
 
 from mostlyai.qa import _distances, _similarity, _html_report
 from mostlyai.qa._accuracy import (
+    bin_data,
     binning_data,
     calculate_correlations,
     plot_store_correlation_matrices,
@@ -36,8 +37,21 @@ from mostlyai.qa._accuracy import (
     plot_store_univariates,
     plot_store_bivariates,
 )
+from mostlyai.qa._coherence import (
+    calculate_distinct_categories_per_sequence,
+    calculate_distinct_categories_per_sequence_accuracy,
+    calculate_sequences_per_distinct_category,
+    calculate_sequences_per_distinct_category_accuracy,
+    plot_store_distinct_categories_per_sequence,
+    plot_store_sequences_per_distinct_category,
+)
 from mostlyai.qa.metrics import ModelMetrics, Accuracy, Similarity, Distances
-from mostlyai.qa._sampling import calculate_embeddings, pull_data_for_accuracy, pull_data_for_embeddings
+from mostlyai.qa._sampling import (
+    calculate_embeddings,
+    pull_data_for_accuracy,
+    pull_data_for_coherence,
+    pull_data_for_embeddings,
+)
 from mostlyai.qa._common import (
     determine_data_size,
     ProgressCallback,
@@ -70,6 +84,7 @@ def report(
     report_credits: str = REPORT_CREDITS,
     max_sample_size_accuracy: int | None = None,
     max_sample_size_embeddings: int | None = None,
+    max_sample_size_coherence: int | None = None,
     statistics_path: str | Path | None = None,
     update_progress: ProgressCallback | None = None,
 ) -> tuple[Path, ModelMetrics | None]:
@@ -86,7 +101,7 @@ def report(
 
     Customize the report with the `report_title`, `report_subtitle` and `report_credits`.
 
-    Limit the compute time used by setting `max_sample_size_accuracy` and `max_sample_size_embeddings`.
+    Limit the compute time used by setting `max_sample_size_accuracy`, `max_sample_size_coherence` and `max_sample_size_embeddings`.
 
     Args:
         syn_tgt_data: The synthetic (target) data.
@@ -102,6 +117,7 @@ def report(
         report_subtitle: The subtitle of the report.
         report_credits: The credits of the report.
         max_sample_size_accuracy: The maximum sample size for accuracy calculations.
+        max_sample_size_coherence: The maximum sample size for coherence calculations.
         max_sample_size_embeddings: The maximum sample size for embedding calculations (similarity & distances)
         statistics_path: The path of where to store the statistics to be used by `report_from_statistics`
         update_progress: The progress callback.
@@ -239,6 +255,41 @@ def report(
                 )
             )
 
+        do_coherence = setup == "1:N"
+        if do_coherence:
+            _LOG.info("prepare training data for coherence started")
+            trn_coh, trn_coh_bins = pull_data_for_coherence(
+                df_tgt=trn_tgt_data, tgt_context_key=tgt_context_key, max_sample_size=max_sample_size_coherence
+            )
+            _LOG.info("prepare synthetic data for coherence started")
+            syn_coh, _ = pull_data_for_coherence(
+                df_tgt=syn_tgt_data,
+                tgt_context_key=tgt_context_key,
+                bins=trn_coh_bins,
+                max_sample_size=max_sample_size_coherence,
+            )
+            _LOG.info("store bins used for training data for coherence")
+            statistics.store_coherence_bins(bins=trn_coh_bins)
+            _LOG.info("report sequences per distinct category")
+            acc_seqs_per_cat = _report_coherence_sequences_per_distinct_category(
+                trn_coh=trn_coh,
+                syn_coh=syn_coh,
+                tgt_context_key=tgt_context_key,
+                statistics=statistics,
+                workspace=workspace,
+            )
+            _LOG.info("report distinct categories per sequence")
+            acc_cats_per_seq = _report_coherence_distinct_categories_per_sequence(
+                trn_coh=trn_coh,
+                syn_coh=syn_coh,
+                tgt_context_key=tgt_context_key,
+                statistics=statistics,
+                workspace=workspace,
+            )
+        else:
+            acc_cats_per_seq = acc_seqs_per_cat = pd.DataFrame({"column": [], "accuracy": [], "accuracy_max": []})
+        progress.update(completed=25, total=100)
+
         _LOG.info("calculate embeddings for synthetic")
         syn_embeds = calculate_embeddings(
             strings=pull_data_for_embeddings(
@@ -249,8 +300,8 @@ def report(
                 max_sample_size=max_sample_size_embeddings_final,
             ),
             progress=progress,
-            progress_from=20,
-            progress_to=40,
+            progress_from=25,
+            progress_to=45,
         )
         _LOG.info("calculate embeddings for training")
         trn_embeds = calculate_embeddings(
@@ -262,8 +313,8 @@ def report(
                 max_sample_size=max_sample_size_embeddings_final,
             ),
             progress=progress,
-            progress_from=40,
-            progress_to=60,
+            progress_from=45,
+            progress_to=65,
         )
         if hol_tgt_data is not None:
             _LOG.info("calculate embeddings for holdout")
@@ -276,12 +327,12 @@ def report(
                     max_sample_size=max_sample_size_embeddings_final,
                 ),
                 progress=progress,
-                progress_from=60,
-                progress_to=80,
+                progress_from=65,
+                progress_to=85,
             )
         else:
             hol_embeds = None
-        progress.update(completed=80, total=100)
+        progress.update(completed=85, total=100)
 
         _LOG.info("report similarity")
         sim_cosine_trn_hol, sim_cosine_trn_syn, sim_auc_trn_hol, sim_auc_trn_syn = _report_similarity(
@@ -291,7 +342,7 @@ def report(
             workspace=workspace,
             statistics=statistics,
         )
-        progress.update(completed=90, total=100)
+        progress.update(completed=95, total=100)
 
         _LOG.info("report distances")
         dcr_trn, dcr_hol = _report_distances(
@@ -311,6 +362,8 @@ def report(
             sim_cosine_trn_syn=sim_cosine_trn_syn,
             sim_auc_trn_hol=sim_auc_trn_hol,
             sim_auc_trn_syn=sim_auc_trn_syn,
+            acc_cats_per_seq=acc_cats_per_seq,
+            acc_seqs_per_cat=acc_seqs_per_cat,
         )
         meta = {
             "rows_original": trn_sample_size + hol_sample_size,
@@ -333,6 +386,8 @@ def report(
             metrics=metrics,
             meta=meta,
             acc_uni=acc_uni,
+            acc_cats_per_seq=acc_cats_per_seq,
+            acc_seqs_per_cat=acc_seqs_per_cat,
             acc_biv=acc_biv,
             corr_trn=corr_trn,
         )
@@ -342,73 +397,75 @@ def report(
 
 def _calculate_metrics(
     *,
-    acc_uni: pd.DataFrame | None = None,
-    acc_biv: pd.DataFrame | None = None,
-    dcr_trn: np.ndarray | None = None,
-    dcr_hol: np.ndarray | None = None,
-    sim_cosine_trn_hol: np.float64 | None = None,
-    sim_cosine_trn_syn: np.float64 | None = None,
-    sim_auc_trn_hol: np.float64 | None = None,
-    sim_auc_trn_syn: np.float64 | None = None,
+    acc_uni: pd.DataFrame,
+    acc_biv: pd.DataFrame,
+    dcr_trn: np.ndarray,
+    dcr_hol: np.ndarray,
+    sim_cosine_trn_hol: np.float64,
+    sim_cosine_trn_syn: np.float64,
+    sim_auc_trn_hol: np.float64,
+    sim_auc_trn_syn: np.float64,
+    acc_cats_per_seq: pd.DataFrame,
+    acc_seqs_per_cat: pd.DataFrame,
 ) -> ModelMetrics:
-    do_accuracy = acc_uni is not None and acc_biv is not None
-    do_distances = dcr_trn is not None
-    do_similarity = sim_cosine_trn_syn is not None
-
-    if do_accuracy:
-        # univariates
-        acc_univariate = acc_uni.accuracy.mean()
-        acc_univariate_max = acc_uni.accuracy_max.mean()
-        # bivariates
-        acc_tgt_ctx = acc_biv.loc[acc_biv.type != NXT_COLUMN]
-        if not acc_tgt_ctx.empty:
-            acc_bivariate = acc_tgt_ctx.accuracy.mean()
-            acc_bivariate_max = acc_tgt_ctx.accuracy_max.mean()
-        else:
-            acc_bivariate = acc_bivariate_max = None
-        # coherence
-        acc_nxt = acc_biv.loc[acc_biv.type == NXT_COLUMN]
-        if not acc_nxt.empty:
-            acc_coherence = acc_nxt.accuracy.mean()
-            acc_coherence_max = acc_nxt.accuracy_max.mean()
-        else:
-            acc_coherence = acc_coherence_max = None
-        # calculate overall
-        acc_overall = np.mean([m for m in (acc_univariate, acc_bivariate, acc_coherence) if m is not None])
-        acc_overall_max = np.mean(
-            [m for m in (acc_univariate_max, acc_bivariate_max, acc_coherence_max) if m is not None]
-        )
-        accuracy = Accuracy(
-            overall=acc_overall,
-            univariate=acc_univariate,
-            bivariate=acc_bivariate,
-            coherence=acc_coherence,
-            overall_max=acc_overall_max,
-            univariate_max=acc_univariate_max,
-            bivariate_max=acc_bivariate_max,
-            coherence_max=acc_coherence_max,
-        )
+    # univariates
+    acc_univariate = acc_uni.accuracy.mean()
+    acc_univariate_max = acc_uni.accuracy_max.mean()
+    # bivariates
+    acc_tgt_ctx = acc_biv.loc[acc_biv.type != NXT_COLUMN]
+    if not acc_tgt_ctx.empty:
+        acc_bivariate = acc_tgt_ctx.accuracy.mean()
+        acc_bivariate_max = acc_tgt_ctx.accuracy_max.mean()
     else:
-        accuracy = Accuracy()
-    if do_similarity:
-        similarity = Similarity(
-            cosine_similarity_training_synthetic=sim_cosine_trn_syn,
-            cosine_similarity_training_holdout=sim_cosine_trn_hol if sim_cosine_trn_hol is not None else None,
-            discriminator_auc_training_synthetic=sim_auc_trn_syn,
-            discriminator_auc_training_holdout=sim_auc_trn_hol if sim_auc_trn_hol is not None else None,
-        )
-    else:
-        similarity = Similarity()
-    if do_distances:
-        distances = Distances(
-            ims_training=(dcr_trn <= 1e-6).mean(),
-            ims_holdout=(dcr_hol <= 1e-6).mean() if dcr_hol is not None else None,
-            dcr_training=dcr_trn.mean(),
-            dcr_holdout=dcr_hol.mean() if dcr_hol is not None else None,
-            dcr_share=np.mean(dcr_trn < dcr_hol) + np.mean(dcr_trn == dcr_hol) / 2 if dcr_hol is not None else None,
-        )
-    else:
-        distances = Distances()
+        acc_bivariate = acc_bivariate_max = None
+    # coherence
+    acc_nxt = acc_biv.loc[acc_biv.type == NXT_COLUMN]
+    nxt_col_coherence = nxt_col_coherence_max = None
+    if not acc_nxt.empty:
+        nxt_col_coherence = acc_nxt.accuracy.mean()
+        nxt_col_coherence_max = acc_nxt.accuracy_max.mean()
+    cats_per_seq_coherence = cats_per_seq_coherence_max = None
+    if not acc_cats_per_seq.empty:
+        cats_per_seq_coherence = acc_cats_per_seq.accuracy.mean()
+        cats_per_seq_coherence_max = acc_cats_per_seq.accuracy_max.mean()
+    seqs_per_cat_coherence = seqs_per_cat_coherence_max = None
+    if not acc_seqs_per_cat.empty:
+        seqs_per_cat_coherence = acc_seqs_per_cat.accuracy.mean()
+        seqs_per_cat_coherence_max = acc_seqs_per_cat.accuracy_max.mean()
+    coherence_metrics = [
+        m for m in (nxt_col_coherence, cats_per_seq_coherence, seqs_per_cat_coherence) if m is not None
+    ]
+    coherence_max_metrics = [
+        m for m in (nxt_col_coherence_max, cats_per_seq_coherence_max, seqs_per_cat_coherence_max) if m is not None
+    ]
+    acc_coherence = np.mean(coherence_metrics) if coherence_metrics else None
+    acc_coherence_max = np.mean(coherence_max_metrics) if coherence_max_metrics else None
+    # calculate overall accuracy
+    acc_overall = np.mean([m for m in (acc_univariate, acc_bivariate, acc_coherence) if m is not None])
+    acc_overall_max = np.mean([m for m in (acc_univariate_max, acc_bivariate_max, acc_coherence_max) if m is not None])
+    accuracy = Accuracy(
+        overall=acc_overall,
+        univariate=acc_univariate,
+        bivariate=acc_bivariate,
+        coherence=acc_coherence,
+        overall_max=acc_overall_max,
+        univariate_max=acc_univariate_max,
+        bivariate_max=acc_bivariate_max,
+        coherence_max=acc_coherence_max,
+    )
+    similarity = Similarity(
+        cosine_similarity_training_synthetic=sim_cosine_trn_syn,
+        cosine_similarity_training_holdout=sim_cosine_trn_hol if sim_cosine_trn_hol is not None else None,
+        discriminator_auc_training_synthetic=sim_auc_trn_syn,
+        discriminator_auc_training_holdout=sim_auc_trn_hol if sim_auc_trn_hol is not None else None,
+    )
+    distances = Distances(
+        ims_training=(dcr_trn <= 1e-6).mean(),
+        ims_holdout=(dcr_hol <= 1e-6).mean() if dcr_hol is not None else None,
+        dcr_training=dcr_trn.mean(),
+        dcr_holdout=dcr_hol.mean() if dcr_hol is not None else None,
+        dcr_share=np.mean(dcr_trn < dcr_hol) + np.mean(dcr_trn == dcr_hol) / 2 if dcr_hol is not None else None,
+    )
     return ModelMetrics(
         accuracy=accuracy,
         similarity=similarity,
@@ -524,6 +581,117 @@ def _report_accuracy_and_correlations(
     )
 
     return acc_uni, acc_biv, trn_corr
+
+
+def _report_coherence_distinct_categories_per_sequence(
+    *,
+    trn_coh: pd.DataFrame,
+    syn_coh: pd.DataFrame,
+    tgt_context_key: str,
+    statistics: Statistics,
+    workspace: TemporaryWorkspace,
+) -> pd.DataFrame:
+    # calculate distinct categories per sequence
+    _LOG.info("calculate distinct categories per sequence for training")
+    trn_cats_per_seq = calculate_distinct_categories_per_sequence(df=trn_coh, context_key=tgt_context_key)
+    _LOG.info("calculate distinct categories per sequence for synthetic")
+    syn_cats_per_seq = calculate_distinct_categories_per_sequence(df=syn_coh, context_key=tgt_context_key)
+
+    # bin distinct categories per sequence
+    _LOG.info("bin distinct categories per sequence for training")
+    trn_binned_cats_per_seq, bins = bin_data(trn_cats_per_seq, bins=10)
+    _LOG.info("store distinct categories per sequence bins for training")
+    statistics.store_distinct_categories_per_sequence_bins(bins=bins)
+    _LOG.info("bin distinct categories per sequence for synthetic")
+    syn_binned_cats_per_seq, _ = bin_data(syn_cats_per_seq, bins=bins)
+
+    # prepare KDEs for distribution (left) plots
+    _LOG.info("calculate KDEs of distinct categories per sequence for training")
+    trn_cats_per_seq_kdes = calculate_numeric_uni_kdes(df=trn_cats_per_seq)
+    _LOG.info("store KDEs of distinct categories per sequence for training")
+    statistics.store_distinct_categories_per_sequence_kdes(trn_kdes=trn_cats_per_seq_kdes)
+    _LOG.info("calculate KDEs of distinct categories per sequence for synthetic")
+    syn_cats_per_seq_kdes = calculate_numeric_uni_kdes(df=syn_cats_per_seq, trn_kdes=trn_cats_per_seq_kdes)
+
+    # prepare counts for binned (right) plots
+    _LOG.info("calculate counts of binned distinct categories per sequence for training")
+    trn_binned_cats_per_seq_cnts = calculate_categorical_uni_counts(df=trn_binned_cats_per_seq, hash_rare_values=False)
+    _LOG.info("store counts of binned distinct categories per sequence for training")
+    statistics.store_binned_distinct_categories_per_sequence_counts(counts=trn_binned_cats_per_seq_cnts)
+    _LOG.info("calculate counts of binned distinct categories per sequence for synthetic")
+    syn_binned_cats_per_seq_cnts = calculate_categorical_uni_counts(df=syn_binned_cats_per_seq, hash_rare_values=False)
+
+    # calculate per-column accuracy
+    _LOG.info("calculate distinct categories per sequence accuracy")
+    acc_cats_per_seq = calculate_distinct_categories_per_sequence_accuracy(
+        trn_binned_cats_per_seq=trn_binned_cats_per_seq, syn_binned_cats_per_seq=syn_binned_cats_per_seq
+    )
+    _LOG.info("store distinct categories per sequence accuracy")
+    statistics.store_distinct_categories_per_sequence_accuracy(accuracy=acc_cats_per_seq)
+
+    # make plots
+    _LOG.info("make and store distinct categories per sequence plots")
+    plot_store_distinct_categories_per_sequence(
+        trn_cats_per_seq_kdes=trn_cats_per_seq_kdes,
+        syn_cats_per_seq_kdes=syn_cats_per_seq_kdes,
+        trn_binned_cats_per_seq_cnts=trn_binned_cats_per_seq_cnts,
+        syn_binned_cats_per_seq_cnts=syn_binned_cats_per_seq_cnts,
+        acc_cats_per_seq=acc_cats_per_seq,
+        workspace=workspace,
+    )
+    return acc_cats_per_seq
+
+
+def _report_coherence_sequences_per_distinct_category(
+    *,
+    trn_coh: pd.DataFrame,
+    syn_coh: pd.DataFrame,
+    tgt_context_key: str,
+    statistics: Statistics,
+    workspace: TemporaryWorkspace,
+) -> pd.DataFrame:
+    # calculate sequences per distinct category
+    _LOG.info("calculate sequences per distinct category for training")
+    trn_seqs_per_cat_cnts, trn_seqs_per_top_cat_cnts, trn_top_cats, trn_n_seqs = (
+        calculate_sequences_per_distinct_category(df=trn_coh, context_key=tgt_context_key)
+    )
+    _LOG.info("store sequences per distinct category artifacts for training")
+    statistics.store_sequences_per_distinct_category_artifacts(
+        seqs_per_cat_cnts=trn_seqs_per_cat_cnts,
+        seqs_per_top_cat_cnts=trn_seqs_per_top_cat_cnts,
+        top_cats=trn_top_cats,
+        n_seqs=trn_n_seqs,
+    )
+    _LOG.info("calculate sequences per distinct category for synthetic")
+    syn_seqs_per_cat_cnts, syn_seqs_per_top_cat_cnts, _, syn_n_seqs = calculate_sequences_per_distinct_category(
+        df=syn_coh,
+        context_key=tgt_context_key,
+        top_cats=trn_top_cats,
+    )
+
+    # calculate per-column accuracy
+    _LOG.info("calculate sequences per distinct category accuracy")
+    acc_seqs_per_cat = calculate_sequences_per_distinct_category_accuracy(
+        trn_seqs_per_top_cat_cnts=trn_seqs_per_top_cat_cnts,
+        syn_seqs_per_top_cat_cnts=syn_seqs_per_top_cat_cnts,
+    )
+    _LOG.info("store sequences per distinct category accuracy")
+    statistics.store_sequences_per_distinct_category_accuracy(accuracy=acc_seqs_per_cat)
+
+    # make plots
+    _LOG.info("make and store sequences per distinct category plots")
+    plot_store_sequences_per_distinct_category(
+        trn_seqs_per_cat_cnts=trn_seqs_per_cat_cnts,
+        syn_seqs_per_cat_cnts=syn_seqs_per_cat_cnts,
+        trn_seqs_per_top_cat_cnts=trn_seqs_per_top_cat_cnts,
+        syn_seqs_per_top_cat_cnts=syn_seqs_per_top_cat_cnts,
+        trn_n_seqs=trn_n_seqs,
+        syn_n_seqs=syn_n_seqs,
+        acc_seqs_per_cat=acc_seqs_per_cat,
+        workspace=workspace,
+    )
+
+    return acc_seqs_per_cat
 
 
 def _report_similarity(

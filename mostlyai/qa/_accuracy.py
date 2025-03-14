@@ -16,7 +16,7 @@ import functools
 import hashlib
 import logging
 import math
-from typing import Any
+from typing import Any, Literal
 from collections.abc import Callable, Iterable
 
 import fastcluster
@@ -196,22 +196,27 @@ def calculate_accuracy(trn_bin_cols: pd.DataFrame, syn_bin_cols: pd.DataFrame) -
     that can be expected due to the sampling noise.
     """
 
-    # create relative frequency tables for `trn` and `syn`
-    trn_freq = trn_bin_cols.value_counts(normalize=True)
-    syn_freq = syn_bin_cols.value_counts(normalize=True)
+    trn_bin_cnts = trn_bin_cols.value_counts()
+    syn_bin_cnts = syn_bin_cols.value_counts()
+    return calculate_accuracy_cnts(trn_bin_cnts, syn_bin_cnts)
+
+
+def calculate_accuracy_cnts(trn_bin_cnts: pd.Series, syn_bin_cnts: pd.Series) -> tuple[np.float64, np.float64]:
+    n_trn = trn_bin_cnts.sum()
+    n_syn = syn_bin_cnts.sum()
+    trn_freq = trn_bin_cnts / n_trn
+    syn_freq = syn_bin_cnts / n_syn
     freq = pd.merge(
         trn_freq.to_frame("tgt").reset_index(),
         syn_freq.to_frame("syn").reset_index(),
         how="outer",
-        on=list(trn_bin_cols.columns),
+        on=list(trn_bin_cnts.index.names),
     )
     freq["tgt"] = freq["tgt"].fillna(0.0)
     freq["syn"] = freq["syn"].fillna(0.0)
     # calculate L1 distance between `trn` and `syn`
     observed_l1 = (freq["tgt"] - freq["syn"]).abs().sum()
     # calculated expected L1 distance based on `trn`
-    n_trn = trn_bin_cols.shape[0]
-    n_syn = syn_bin_cols.shape[0]
     expected_l1 = calculate_expected_l1_multinomial(freq["tgt"].to_list(), n_trn, n_syn)
     # convert to accuracy; trim superfluous precision
     observed_acc = (1 - observed_l1 / 2).round(5)
@@ -413,14 +418,14 @@ def plot_store_univariate(
     workspace: TemporaryWorkspace,
 ) -> None:
     fig = plot_univariate(
-        col,
-        trn_num_kde,
-        syn_num_kde,
-        trn_cat_col_cnts,
-        syn_cat_col_cnts,
-        trn_bin_col_cnts,
-        syn_bin_col_cnts,
-        accuracy,
+        col_name=col,
+        trn_num_kde=trn_num_kde,
+        syn_num_kde=syn_num_kde,
+        trn_cat_col_cnts=trn_cat_col_cnts,
+        syn_cat_col_cnts=syn_cat_col_cnts,
+        trn_bin_col_cnts=trn_bin_col_cnts,
+        syn_bin_col_cnts=syn_bin_col_cnts,
+        accuracy=accuracy,
     )
     workspace.store_figure_html(fig, "univariate", col)
 
@@ -433,7 +438,11 @@ def plot_univariate(
     syn_cat_col_cnts: pd.Series | None,
     trn_bin_col_cnts: pd.Series,
     syn_bin_col_cnts: pd.Series,
-    accuracy: float | None,
+    trn_cnt: int | None = None,
+    syn_cnt: int | None = None,
+    accuracy: float | None = None,
+    sort_categorical_binned_by_frequency: bool = True,
+    max_label_length: int = 10,
 ) -> go.Figure:
     # either numerical/datetime KDEs or categorical counts must be provided
 
@@ -480,13 +489,27 @@ def plot_univariate(
     is_numeric = trn_num_kde is not None
     if is_numeric:
         trn_line1, syn_line1 = plot_univariate_distribution_numeric(trn_num_kde, syn_num_kde)
-        trn_line2, syn_line2 = plot_univariate_binned(trn_bin_col_cnts, syn_bin_col_cnts, sort_by_frequency=False)
+        trn_line2, syn_line2 = plot_univariate_binned(
+            trn_bin_col_cnts,
+            syn_bin_col_cnts,
+            sort_by_frequency=False,
+            trn_cnt=trn_cnt,
+            syn_cnt=syn_cnt,
+        )
         # prevent Plotly from trying to convert strings to dates
         fig.layout.xaxis2.update(type="category")
     else:
         fig.layout.yaxis.update(tickformat=".0%")
-        trn_line1, syn_line1 = plot_univariate_distribution_categorical(trn_cat_col_cnts, syn_cat_col_cnts)
-        trn_line2, syn_line2 = plot_univariate_binned(trn_bin_col_cnts, syn_bin_col_cnts, sort_by_frequency=True)
+        trn_line1, syn_line1 = plot_univariate_distribution_categorical(
+            trn_cat_col_cnts, syn_cat_col_cnts, trn_cnt, syn_cnt, max_label_length=max_label_length
+        )
+        trn_line2, syn_line2 = plot_univariate_binned(
+            trn_bin_col_cnts,
+            syn_bin_col_cnts,
+            sort_by_frequency=sort_categorical_binned_by_frequency,
+            trn_cnt=trn_cnt,
+            syn_cnt=syn_cnt,
+        )
         # prevent Plotly from trying to convert strings to dates
         fig.layout.xaxis.update(type="category")
         fig.layout.xaxis2.update(type="category")
@@ -505,26 +528,25 @@ def plot_univariate(
 def prepare_categorical_plot_data_distribution(
     trn_col_cnts: pd.Series,
     syn_col_cnts: pd.Series,
+    trn_cnt: int | None = None,
+    syn_cnt: int | None = None,
 ) -> pd.DataFrame:
     trn_col_cnts_idx = trn_col_cnts.index.to_series().astype("string").fillna(NA_BIN).replace("", EMPTY_BIN)
     syn_col_cnts_idx = syn_col_cnts.index.to_series().astype("string").fillna(NA_BIN).replace("", EMPTY_BIN)
     trn_col_cnts = trn_col_cnts.set_axis(trn_col_cnts_idx)
     syn_col_cnts = syn_col_cnts.set_axis(syn_col_cnts_idx)
-    t = trn_col_cnts.to_frame("target_cnt").reset_index()
-    s = syn_col_cnts.to_frame("synthetic_cnt").reset_index()
-    df = pd.merge(t, s, on="index", how="outer")
+    t = trn_col_cnts.to_frame("target_cnt").reset_index(names="category")
+    s = syn_col_cnts.to_frame("synthetic_cnt").reset_index(names="category")
+    df = pd.merge(t, s, on="category", how="outer")
     df["target_cnt"] = df["target_cnt"].fillna(0.0)
     df["synthetic_cnt"] = df["synthetic_cnt"].fillna(0.0)
     df["avg_cnt"] = (df["target_cnt"] + df["synthetic_cnt"]) / 2
     df = df[df["avg_cnt"] > 0]
-    df["target_pct"] = df["target_cnt"] / df["target_cnt"].sum()
-    df["synthetic_pct"] = df["synthetic_cnt"] / df["synthetic_cnt"].sum()
-    df = df.rename(columns={"index": "category"})
-    if df["category"].dtype.name == "category":
-        df["category_code"] = df["category"].cat.codes
-    else:
-        df["category_code"] = df["category"]
-    df = df.sort_values("category_code", ascending=True).reset_index(drop=True)
+    trn_cnt = trn_cnt or df["target_cnt"].sum()
+    syn_cnt = syn_cnt or df["synthetic_cnt"].sum()
+    df["target_pct"] = df["target_cnt"] / trn_cnt
+    df["synthetic_pct"] = df["synthetic_cnt"] / syn_cnt
+    df = df.sort_values("avg_cnt", ascending=False).reset_index(drop=True)
     return df
 
 
@@ -532,35 +554,45 @@ def prepare_categorical_plot_data_binned(
     trn_bin_col_cnts: pd.Series,
     syn_bin_col_cnts: pd.Series,
     sort_by_frequency: bool,
+    trn_cnt: int | None = None,
+    syn_cnt: int | None = None,
 ) -> pd.DataFrame:
     t = trn_bin_col_cnts.to_frame("target_cnt").reset_index(names="category")
     s = syn_bin_col_cnts.to_frame("synthetic_cnt").reset_index(names="category")
-    df = pd.merge(t, s, on="category", how="outer")
+    df = pd.merge(t, s, on="category", how="left")
+    df = df.set_index("category").reindex(t["category"]).reset_index()
+    missing_s = s[~s["category"].isin(t["category"])]
+    if not missing_s.empty:
+        df = pd.concat([df, missing_s], ignore_index=True)
     df["target_cnt"] = df["target_cnt"].fillna(0.0)
     df["synthetic_cnt"] = df["synthetic_cnt"].fillna(0.0)
     df["avg_cnt"] = (df["target_cnt"] + df["synthetic_cnt"]) / 2
     df = df[df["avg_cnt"] > 0]
-    df["target_pct"] = df["target_cnt"] / df["target_cnt"].sum()
-    df["synthetic_pct"] = df["synthetic_cnt"] / df["synthetic_cnt"].sum()
-    if df["category"].dtype.name == "category":
-        df["category_code"] = df["category"].cat.codes
-    else:
-        df["category_code"] = df["category"]
+    trn_cnt = trn_cnt or df["target_cnt"].sum()
+    syn_cnt = syn_cnt or df["synthetic_cnt"].sum()
+    df["target_pct"] = df["target_cnt"] / trn_cnt
+    df["synthetic_pct"] = df["synthetic_cnt"] / syn_cnt
+    cat_order = list(t["category"])
+    cat_order.extend([syn_cat for syn_cat in s["category"] if syn_cat not in cat_order])
+    df["category_order"] = df["category"].map({cat: i for i, cat in enumerate(cat_order)})
     if sort_by_frequency:
         df = df.sort_values("target_pct", ascending=False).reset_index(drop=True)
     else:
-        df = df.sort_values("category_code", ascending=True).reset_index(drop=True)
+        df = df.sort_values("category_order", ascending=True).reset_index(drop=True)
     return df
 
 
 def plot_univariate_distribution_categorical(
-    trn_cat_col_cnts: pd.Series, syn_cat_col_cnts: pd.Series
+    trn_cat_col_cnts: pd.Series,
+    syn_cat_col_cnts: pd.Series,
+    trn_cnt: int | None = None,
+    syn_cnt: int | None = None,
+    max_label_length: int = 10,
 ) -> tuple[go.Scatter, go.Scatter]:
     # prepare data
-    df = prepare_categorical_plot_data_distribution(trn_cat_col_cnts, syn_cat_col_cnts)
-    df = df.sort_values("avg_cnt", ascending=False)
+    df = prepare_categorical_plot_data_distribution(trn_cat_col_cnts, syn_cat_col_cnts, trn_cnt, syn_cnt)
     # trim labels
-    df["category"] = trim_labels(df["category"], max_length=10)
+    df["category"] = trim_labels(df["category"], max_length=max_label_length)
     # prepare plots
     trn_line = go.Scatter(
         mode="lines",
@@ -587,9 +619,11 @@ def plot_univariate_binned(
     trn_bin_col_cnts: pd.Series,
     syn_bin_col_cnts: pd.Series,
     sort_by_frequency: bool = False,
+    trn_cnt: int | None = None,
+    syn_cnt: int | None = None,
 ) -> tuple[go.Scatter, go.Scatter]:
     # prepare data
-    df = prepare_categorical_plot_data_binned(trn_bin_col_cnts, syn_bin_col_cnts, sort_by_frequency)
+    df = prepare_categorical_plot_data_binned(trn_bin_col_cnts, syn_bin_col_cnts, sort_by_frequency, trn_cnt, syn_cnt)
     # prepare plots
     trn_line = go.Scatter(
         mode="lines+markers",
@@ -941,7 +975,11 @@ def binning_data(
     return trn_bin, syn_bin
 
 
-def bin_data(df: pd.DataFrame, bins: int | dict[str, list]) -> tuple[pd.DataFrame, dict[str, list]]:
+def bin_data(
+    df: pd.DataFrame,
+    bins: int | dict[str, list],
+    non_categorical_label_style: Literal["bounded", "unbounded"] = "unbounded",
+) -> tuple[pd.DataFrame, dict[str, list]]:
     """
     Splits data into bins.
     Binning algorithm depends on column type. Categorical binning creates 'n' bins corresponding to the highest
@@ -962,20 +1000,20 @@ def bin_data(df: pd.DataFrame, bins: int | dict[str, list]) -> tuple[pd.DataFram
     cat_cols = [c for c in df.columns if c not in num_cols + dat_cols]
     if isinstance(bins, int):
         for col in num_cols:
-            cols[col], bins_dct[col] = bin_numeric(df[col], bins)
+            cols[col], bins_dct[col] = bin_numeric(df[col], bins, label_style=non_categorical_label_style)
         for col in dat_cols:
-            cols[col], bins_dct[col] = bin_datetime(df[col], bins)
+            cols[col], bins_dct[col] = bin_datetime(df[col], bins, label_style=non_categorical_label_style)
         for col in cat_cols:
             cols[col], bins_dct[col] = bin_categorical(df[col], bins)
     else:  # bins is a dict
         for col in num_cols:
             if col in bins:
-                cols[col], _ = bin_numeric(df[col], bins[col])
+                cols[col], _ = bin_numeric(df[col], bins[col], label_style=non_categorical_label_style)
             else:
                 _LOG.warning(f"'{col}' is missing in bins")
         for col in dat_cols:
             if col in bins:
-                cols[col], _ = bin_datetime(df[col], bins[col])
+                cols[col], _ = bin_datetime(df[col], bins[col], label_style=non_categorical_label_style)
             else:
                 _LOG.warning(f"'{col}' is missing in bins")
         for col in cat_cols:
@@ -987,7 +1025,9 @@ def bin_data(df: pd.DataFrame, bins: int | dict[str, list]) -> tuple[pd.DataFram
     return pd.DataFrame(cols), bins_dct
 
 
-def bin_numeric(col: pd.Series, bins: int | list[str]) -> tuple[pd.Categorical, list]:
+def bin_numeric(
+    col: pd.Series, bins: int | list[str], label_style: Literal["bounded", "unbounded"] = "unbounded"
+) -> tuple[pd.Categorical, list]:
     def _clip(col, bins):
         if isinstance(bins, list):
             # use precomputed bin boundaries
@@ -1031,10 +1071,12 @@ def bin_numeric(col: pd.Series, bins: int | list[str]) -> tuple[pd.Categorical, 
     def _adjust_breaks(breaks):
         return breaks[:-1] + [breaks[-1] + 1]
 
-    return bin_non_categorical(col, bins, _clip, _define_labels, _adjust_breaks)
+    return bin_non_categorical(col, bins, _clip, _define_labels, _adjust_breaks, label_style=label_style)
 
 
-def bin_datetime(col: pd.Series, bins: int | list[str]) -> tuple[pd.Categorical, list]:
+def bin_datetime(
+    col: pd.Series, bins: int | list[str], label_style: Literal["bounded", "unbounded"] = "unbounded"
+) -> tuple[pd.Categorical, list]:
     def _clip(col, bins):
         if isinstance(bins, list):
             # use precomputed bin boundaries
@@ -1077,7 +1119,7 @@ def bin_datetime(col: pd.Series, bins: int | list[str]) -> tuple[pd.Categorical,
     def _adjust_breaks(breaks):
         return breaks[:-1] + [max(breaks[-1] + np.timedelta64(1, "D"), breaks[-1])]
 
-    return bin_non_categorical(col, bins, _clip, _define_labels, _adjust_breaks)
+    return bin_non_categorical(col, bins, _clip, _define_labels, _adjust_breaks, label_style=label_style)
 
 
 def bin_non_categorical(
@@ -1086,6 +1128,7 @@ def bin_non_categorical(
     clip_and_breaks: Callable,
     create_labels: Callable,
     adjust_breaks: Callable,
+    label_style: Literal["bounded", "unbounded"] = "unbounded",
 ) -> tuple[pd.Categorical, list]:
     col = col.fillna(np.nan).infer_objects(copy=False)
 
@@ -1104,7 +1147,10 @@ def bin_non_categorical(
         )
         labels = [str(b) for b in breaks[:-1]]
 
-    new_labels_map = {label: f"⪰ {label}" for label in labels}
+    if label_style == "unbounded":
+        new_labels_map = {label: f"⪰ {label}" for label in labels}
+    else:  # label_style == "bounded"
+        new_labels_map = {label: f"⪰ {label} ≺ {next_label}" for label, next_label in zip(labels, labels[1:] + ["∞"])}
 
     bin_col = pd.cut(col, bins=adjust_breaks(breaks), labels=labels, right=False)
     bin_col = bin_col.cat.rename_categories(new_labels_map)

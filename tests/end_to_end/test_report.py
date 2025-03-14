@@ -116,6 +116,7 @@ def test_report_sequential(tmp_path):
         statistics_path=statistics_path,
         max_sample_size_accuracy=120,
         max_sample_size_embeddings=80,
+        max_sample_size_coherence=30,
     )
 
     assert report_path.exists()
@@ -150,6 +151,7 @@ def test_report_sequential(tmp_path):
         tgt_context_key="ctx_id",
         max_sample_size_accuracy=130,
         max_sample_size_embeddings=90,
+        max_sample_size_coherence=30,
         statistics_path=statistics_path,
     )
 

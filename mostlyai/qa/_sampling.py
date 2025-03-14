@@ -33,6 +33,7 @@ import numpy as np
 import pandas as pd
 import pyarrow as pa
 
+from mostlyai.qa._accuracy import bin_data
 from mostlyai.qa._common import (
     CTX_COLUMN_PREFIX,
     TGT_COLUMN_PREFIX,
@@ -167,6 +168,44 @@ def sample_two_consecutive_rows(
     second_rows.drop(columns=["__IDX"], inplace=True)
 
     return first_rows, second_rows
+
+
+def pull_data_for_coherence(
+    *,
+    df_tgt: pd.DataFrame,
+    tgt_context_key: str,
+    bins: int | dict[str, list] = 30,
+    max_sequence_length: int = 100,
+    max_sample_size: int | None = None,
+) -> tuple[pd.DataFrame, dict[str, list]]:
+    df_tgt = df_tgt.copy()
+
+    # limit sample size to at most max_sample_size sequences
+    keys = df_tgt[tgt_context_key].drop_duplicates().sample(frac=1).head(max_sample_size)
+    df_tgt = df_tgt[df_tgt[tgt_context_key].isin(keys)].reset_index(drop=True)
+
+    # randomly sample at most max_sequence_length rows per sequence
+    df_tgt = df_tgt.sample(frac=1).reset_index(drop=True)
+    df_tgt = df_tgt[df_tgt.groupby(tgt_context_key).cumcount() < max_sequence_length].reset_index(drop=True)
+
+    # split into key and non-key columns
+    non_key_cols = [c for c in df_tgt.columns if c != tgt_context_key]
+    keys = df_tgt[tgt_context_key]
+    df_tgt = df_tgt[non_key_cols]
+
+    # apply harmonize_dtype to all columns except tgt_context_key
+    df_tgt = df_tgt.apply(harmonize_dtype)
+
+    # sample tokens from text-like columns except tgt_context_key
+    df_tgt = sample_text_tokens(df_tgt)
+
+    # discretize all columns except tgt_context_key
+    df_tgt, bins = bin_data(df_tgt, bins=bins, non_categorical_label_style="bounded")
+
+    # merge keys with binned data
+    df_tgt = pd.concat([keys, df_tgt], axis=1)
+
+    return df_tgt, bins
 
 
 def pull_data_for_embeddings(
