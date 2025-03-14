@@ -23,7 +23,7 @@ from mostlyai.qa.reporting import report
 from mostlyai.qa.reporting_from_statistics import report_from_statistics
 
 __all__ = ["report", "report_from_statistics", "init_logging"]
-__version__ = "1.5.6"
+__version__ = "1.5.7"
 
 warnings.filterwarnings("ignore", category=FutureWarning, module="phik")
 warnings.filterwarnings("ignore", category=UserWarning, module="huggingface_hub")
