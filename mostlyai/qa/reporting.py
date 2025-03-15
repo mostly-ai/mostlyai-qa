@@ -345,7 +345,7 @@ def report(
         progress.update(completed=95, total=100)
 
         _LOG.info("report distances")
-        dcr_trn, dcr_hol = _report_distances(
+        dcr_syn_trn, dcr_syn_hol, dcr_trn_hol = _report_distances(
             syn_embeds=syn_embeds,
             trn_embeds=trn_embeds,
             hol_embeds=hol_embeds,
@@ -356,8 +356,9 @@ def report(
         metrics = _calculate_metrics(
             acc_uni=acc_uni,
             acc_biv=acc_biv,
-            dcr_trn=dcr_trn,
-            dcr_hol=dcr_hol,
+            dcr_syn_trn=dcr_syn_trn,
+            dcr_syn_hol=dcr_syn_hol,
+            dcr_trn_hol=dcr_trn_hol,
             sim_cosine_trn_hol=sim_cosine_trn_hol,
             sim_cosine_trn_syn=sim_cosine_trn_syn,
             sim_auc_trn_hol=sim_auc_trn_hol,
@@ -399,8 +400,9 @@ def _calculate_metrics(
     *,
     acc_uni: pd.DataFrame,
     acc_biv: pd.DataFrame,
-    dcr_trn: np.ndarray,
-    dcr_hol: np.ndarray,
+    dcr_syn_trn: np.ndarray,
+    dcr_syn_hol: np.ndarray | None,
+    dcr_trn_hol: np.ndarray | None,
     sim_cosine_trn_hol: np.float64,
     sim_cosine_trn_syn: np.float64,
     sim_auc_trn_hol: np.float64,
@@ -460,11 +462,15 @@ def _calculate_metrics(
         discriminator_auc_training_holdout=sim_auc_trn_hol if sim_auc_trn_hol is not None else None,
     )
     distances = Distances(
-        ims_training=(dcr_trn <= 1e-6).mean(),
-        ims_holdout=(dcr_hol <= 1e-6).mean() if dcr_hol is not None else None,
-        dcr_training=dcr_trn.mean(),
-        dcr_holdout=dcr_hol.mean() if dcr_hol is not None else None,
-        dcr_share=np.mean(dcr_trn < dcr_hol) + np.mean(dcr_trn == dcr_hol) / 2 if dcr_hol is not None else None,
+        ims_training=(dcr_syn_trn <= 1e-6).mean(),
+        ims_holdout=(dcr_syn_hol <= 1e-6).mean() if dcr_syn_hol is not None else None,
+        ims_trn_hol=(dcr_trn_hol <= 1e-6).mean() if dcr_trn_hol is not None else None,
+        dcr_training=dcr_syn_trn.mean(),
+        dcr_holdout=dcr_syn_hol.mean() if dcr_syn_hol is not None else None,
+        dcr_trn_hol=dcr_trn_hol.mean() if dcr_trn_hol is not None else None,
+        dcr_share=np.mean(dcr_syn_trn < dcr_syn_hol) + np.mean(dcr_syn_trn == dcr_syn_hol) / 2
+        if dcr_syn_hol is not None
+        else None,
     )
     return ModelMetrics(
         accuracy=accuracy,
@@ -737,9 +743,9 @@ def _report_distances(
     trn_embeds: np.ndarray,
     hol_embeds: np.ndarray | None,
     workspace: TemporaryWorkspace,
-) -> tuple[np.ndarray, np.ndarray | None]:
-    dcr_trn, dcr_hol = _distances.calculate_distances(
+) -> tuple[np.ndarray, np.ndarray | None, np.ndarray | None]:
+    dcr_syn_trn, dcr_syn_hol, dcr_trn_hol = _distances.calculate_distances(
         syn_embeds=syn_embeds, trn_embeds=trn_embeds, hol_embeds=hol_embeds
     )
-    _distances.plot_store_distances(dcr_trn, dcr_hol, workspace)
-    return dcr_trn, dcr_hol
+    _distances.plot_store_distances(dcr_syn_trn, dcr_syn_hol, dcr_trn_hol, workspace)
+    return dcr_syn_trn, dcr_syn_hol, dcr_trn_hol

@@ -192,6 +192,12 @@ class Distances(CustomBaseModel):
         "`ims_training`.",
         ge=0.0,
     )
+    ims_trn_hol: float | None = Field(
+        default=None,
+        alias="imsTrnHol",
+        description="Share of training samples that are identical to a holdout sample.",
+        ge=0.0,
+    )
     dcr_training: float | None = Field(
         default=None,
         alias="dcrTraining",
@@ -201,8 +207,13 @@ class Distances(CustomBaseModel):
     dcr_holdout: float | None = Field(
         default=None,
         alias="dcrHoldout",
-        description="Average L2 nearest-neighbor distance between synthetic and holdout samples. Serves as a "
-        "reference for `dcr_training`.",
+        description="Average L2 nearest-neighbor distance between synthetic and holdout samples. Serves as a reference for `dcr_training`.",
+        ge=0.0,
+    )
+    dcr_trn_hol: float | None = Field(
+        default=None,
+        alias="dcrTrnHol",
+        description="Average L2 nearest-neighbor distance between training and holdout samples. Serves as a reference for `dcr_training`.",
         ge=0.0,
     )
     dcr_share: float | None = Field(

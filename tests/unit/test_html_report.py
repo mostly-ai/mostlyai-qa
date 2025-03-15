@@ -46,7 +46,7 @@ def test_generate_store_report(tmp_path, cols, workspace):
         trn_embeds=trn_embeds,
         hol_embeds=hol_embeds,
     )
-    dcr_trn, dcr_hol = _distances.calculate_distances(
+    dcr_syn_trn, dcr_syn_hol, dcr_trn_hol = _distances.calculate_distances(
         syn_embeds=syn_embeds, trn_embeds=trn_embeds, hol_embeds=hol_embeds
     )
 
@@ -68,8 +68,9 @@ def test_generate_store_report(tmp_path, cols, workspace):
     metrics = _calculate_metrics(
         acc_uni=acc_uni,
         acc_biv=acc_biv,
-        dcr_trn=dcr_trn,
-        dcr_hol=dcr_hol,
+        dcr_syn_trn=dcr_syn_trn,
+        dcr_syn_hol=dcr_syn_hol,
+        dcr_trn_hol=dcr_trn_hol,
         sim_cosine_trn_hol=sim_cosine_trn_hol,
         sim_cosine_trn_syn=sim_cosine_trn_syn,
         sim_auc_trn_hol=sim_auc_trn_hol,
