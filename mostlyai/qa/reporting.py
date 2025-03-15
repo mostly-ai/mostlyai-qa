@@ -402,7 +402,7 @@ def _calculate_metrics(
     acc_biv: pd.DataFrame,
     dcr_syn_trn: np.ndarray,
     dcr_syn_hol: np.ndarray | None,
-    dcr_trn_hol: np.ndarray | None = None,
+    dcr_trn_hol: np.ndarray | None,
     sim_cosine_trn_hol: np.float64,
     sim_cosine_trn_syn: np.float64,
     sim_auc_trn_hol: np.float64,
