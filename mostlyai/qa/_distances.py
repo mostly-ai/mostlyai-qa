@@ -145,12 +145,11 @@ def plot_distances(
     )
     fig = go.Figure(layout=layout)
 
-    # Create the data
-    data = []
+    traces = []
 
-    # Training vs holdout (light gray)
+    # training vs holdout (light gray)
     if x_trn_hol is not None:
-        data.append(
+        traces.append(
             go.Scatter(
                 mode="lines",
                 x=x_trn_hol,
@@ -161,9 +160,9 @@ def plot_distances(
             )
         )
 
-    # Synthetic vs holdout (gray)
+    # synthetic vs holdout (gray)
     if x_syn_hol is not None:
-        data.append(
+        traces.append(
             go.Scatter(
                 mode="lines",
                 x=x_syn_hol,
@@ -174,8 +173,8 @@ def plot_distances(
             )
         )
 
-    # Synthetic vs training (green)
-    data.append(
+    # synthetic vs training (green)
+    traces.append(
         go.Scatter(
             mode="lines",
             x=x_syn_trn,
@@ -186,7 +185,7 @@ def plot_distances(
         )
     )
 
-    for trace in data:
+    for trace in traces:
         fig.add_trace(trace)
 
     fig.update_layout(
