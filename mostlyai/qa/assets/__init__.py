@@ -41,7 +41,8 @@ def load_tokenizer():
 def load_embedder():
     """
     Load the embedder model. 
-    Attempt to download the model only if it is not locally available.
+    Can deal with read-only cache folder by attempting to download the model if it is not locally available.
+    Users can set MOSTLY_HF_HOME environment variable to override the default cache folder.
     """
     from sentence_transformers import SentenceTransformer
 
