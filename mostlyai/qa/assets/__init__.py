@@ -39,10 +39,20 @@ def load_tokenizer():
 
 
 def load_embedder():
+    """
+    Load the embedder model. 
+    Attempt to download the model only if it is not locally available.
+    """
     from sentence_transformers import SentenceTransformer
 
     model_name = "sentence-transformers/all-MiniLM-L6-v2"
-    return SentenceTransformer(model_name, cache_folder=os.getenv("MOSTLY_HF_HOME"))
+    cache_folder=os.getenv("MOSTLY_HF_HOME")
+    try:
+        # First try loading from local cache
+        return SentenceTransformer(model_name_or_path=model_name, cache_folder=cache_folder, local_files_only=True)
+    except Exception:
+        # If not found in cache, attempt downloading
+        return SentenceTransformer(model_name_or_path=model_name, cache_folder=cache_folder, local_files_only=False)
 
 
 __all__ = ["load_embedder"]
