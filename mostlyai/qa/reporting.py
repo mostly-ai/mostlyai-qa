@@ -200,17 +200,6 @@ def report(
         else:
             setup = "1:1"
 
-        _LOG.info("prepare synthetic data for accuracy started")
-        syn = pull_data_for_accuracy(
-            df_tgt=syn_tgt_data,
-            df_ctx=syn_ctx_data,
-            ctx_primary_key=ctx_primary_key,
-            tgt_context_key=tgt_context_key,
-            max_sample_size=max_sample_size_accuracy,
-            setup=setup,
-        )
-        progress.update(completed=5, total=100)
-
         _LOG.info("prepare training data for accuracy started")
         trn = pull_data_for_accuracy(
             df_tgt=trn_tgt_data,
@@ -219,6 +208,18 @@ def report(
             tgt_context_key=tgt_context_key,
             max_sample_size=max_sample_size_accuracy,
             setup=setup,
+        )
+        progress.update(completed=5, total=100)
+
+        _LOG.info("prepare synthetic data for accuracy started")
+        syn = pull_data_for_accuracy(
+            df_tgt=syn_tgt_data,
+            df_ctx=syn_ctx_data,
+            ctx_primary_key=ctx_primary_key,
+            tgt_context_key=tgt_context_key,
+            max_sample_size=max_sample_size_accuracy,
+            setup=setup,
+            trn_dtypes=trn.dtypes.to_dict(),
         )
         progress.update(completed=10, total=100)
 
