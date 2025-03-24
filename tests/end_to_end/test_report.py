@@ -19,6 +19,7 @@ import pandas as pd
 import numpy as np
 
 from mostlyai import qa
+from datetime import datetime, timedelta
 
 
 def mock_data(n):
@@ -278,3 +279,28 @@ def test_missing(tmp_path):
         trn_tgt_data=df1,
     )
     assert metrics is not None
+
+
+def test_mixed_dtypes(tmp_path):
+    # test that datetime columns drawn from the same distribution, but having different dtype
+    # are still yielding high accuracy
+
+    def generate_dates(start_date, end_date, num_samples):
+        days_range = (end_date - start_date).days
+        return [start_date + timedelta(days=int(days)) for days in np.random.randint(0, days_range, num_samples)]
+
+    num_samples = 200
+    start_date = datetime(2020, 1, 1)
+    end_date = datetime(2023, 12, 31)
+    df = pd.DataFrame(
+        {
+            "trn_dt": pd.Series(generate_dates(start_date, end_date, num_samples), dtype="string"),
+            "syn_dt": pd.Series(generate_dates(start_date, end_date, num_samples), dtype="datetime64[ns]"),
+        }
+    )
+    trn_df, syn_df = df["trn_dt"].to_frame("dt"), df["syn_dt"].to_frame("dt")
+    _, statistics = qa.report(
+        syn_tgt_data=syn_df,
+        trn_tgt_data=trn_df,
+    )
+    assert statistics.accuracy.overall > 0.8
