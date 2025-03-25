@@ -28,6 +28,8 @@
 import logging
 import random
 import time
+from typing import Any
+from pandas.core.dtypes.common import is_numeric_dtype, is_datetime64_dtype
 
 import numpy as np
 import pandas as pd
@@ -56,6 +58,7 @@ def pull_data_for_accuracy(
     tgt_context_key: str | None = None,
     max_sample_size: int | None = None,
     setup: str | None = None,
+    trn_dtypes: dict[str, str] | None = None,
 ) -> pd.DataFrame:
     """
     Prepare single dataset for accuracy report.
@@ -129,6 +132,14 @@ def pull_data_for_accuracy(
 
     # harmonize dtypes
     df = df.apply(harmonize_dtype)
+
+    # coerce dtypes to trn_dtypes
+    for trn_col, trn_dtype in (trn_dtypes or {}).items():
+        if is_numeric_dtype(trn_dtype):
+            df[trn_col] = pd.to_numeric(df[trn_col], errors="coerce")
+        elif is_datetime64_dtype(trn_dtype):
+            df[trn_col] = pd.to_datetime(df[trn_col], errors="coerce")
+        df[trn_col] = df[trn_col].astype(trn_dtype)
 
     # sample tokens from text-like columns
     df = sample_text_tokens(df)
@@ -303,10 +314,10 @@ def calculate_embeddings(
 def sample_text_tokens(df: pd.DataFrame) -> pd.DataFrame:
     tokenizer = load_tokenizer()
 
-    def tokenize_and_sample(text: str | None) -> str | None:
+    def tokenize_and_sample(text: Any) -> str | None:
         if pd.isna(text) or text == "":
             return None
-        tokens = tokenizer.tokenize(text)
+        tokens = tokenizer.tokenize(str(text))
         tokens = (t.replace("Ġ", "▁") for t in tokens)  # replace initial space with thick underscore
         return random.choice(list(tokens))
 
@@ -337,7 +348,7 @@ def harmonize_dtype(x: pd.Series):
         else:
             x = x.astype("object")
     except Exception:
-        # leave dtype as-is, but just log a warning message
+        # leave dtype as-is
         pass
     return x
 
