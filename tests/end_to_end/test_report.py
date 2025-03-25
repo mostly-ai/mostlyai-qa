@@ -307,11 +307,13 @@ def test_mixed_dtypes(tmp_path):
             trn_tgt_data=trn_df,
             report_path=tmp_path / "report.html",
         )
-        assert any(
+        expected_warning = (
             "The column(s) ['dt'] have inconsistent data types across `syn`, `trn`, and `hol`. "
             "To achieve the most accurate results, please harmonize the data types of these inputs. "
-            "Proceeding with a best-effort attempt..." in str(warning.message)
-            for warning in w
-        ), "Expected a warning about dtype mismatch for column 'dt'"
+            "Proceeding with a best-effort attempt..."
+        )
+        assert any(expected_warning in str(warning.message) for warning in w), (
+            "Expected a warning about dtype mismatch for column 'dt'"
+        )
     assert statistics.accuracy.overall > 0.6
     assert 0.4 < statistics.similarity.discriminator_auc_training_synthetic < 0.6
