@@ -14,6 +14,7 @@
 
 import uuid
 from pathlib import Path
+import warnings
 
 import pandas as pd
 import numpy as np
@@ -283,7 +284,7 @@ def test_missing(tmp_path):
 
 def test_mixed_dtypes(tmp_path):
     # test that datetime columns drawn from the same distribution, but having different dtype
-    # are still yielding high accuracy
+    # are still yielding somewhat good results and warning is issued
 
     def generate_dates(start_date, end_date, num_samples):
         days_range = (end_date - start_date).days
@@ -294,13 +295,23 @@ def test_mixed_dtypes(tmp_path):
     end_date = datetime(2023, 12, 31)
     df = pd.DataFrame(
         {
-            "trn_dt": pd.Series(generate_dates(start_date, end_date, num_samples), dtype="string"),
+            "trn_dt": pd.Series(generate_dates(start_date, end_date, num_samples)).values.astype(str),
             "syn_dt": pd.Series(generate_dates(start_date, end_date, num_samples), dtype="datetime64[ns]"),
         }
     )
     trn_df, syn_df = df["trn_dt"].to_frame("dt"), df["syn_dt"].to_frame("dt")
-    _, statistics = qa.report(
-        syn_tgt_data=syn_df,
-        trn_tgt_data=trn_df,
-    )
-    assert statistics.accuracy.overall > 0.8
+
+    with warnings.catch_warnings(record=True) as w:
+        _, statistics = qa.report(
+            syn_tgt_data=syn_df,
+            trn_tgt_data=trn_df,
+            report_path=tmp_path / "report.html",
+        )
+        assert any(
+            "The column(s) ['dt'] have inconsistent data types across `syn`, `trn`, and `hol`. "
+            "To achieve the most accurate results, please harmonize the data types of these inputs. "
+            "Proceeding with a best-effort attempt..." in str(warning.message)
+            for warning in w
+        ), "Expected a warning about dtype mismatch for column 'dt'"
+    assert statistics.accuracy.overall > 0.6
+    assert 0.4 < statistics.similarity.discriminator_auc_training_synthetic < 0.6

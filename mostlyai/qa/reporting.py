@@ -148,6 +148,10 @@ def report(
         if hol_ctx_data is not None and trn_ctx_data is not None:
             hol_ctx_data = hol_ctx_data[trn_ctx_data.columns]
 
+        # warn if dtypes are inconsistent across datasets
+        _warn_if_dtypes_inconsistent(syn_tgt_data, trn_tgt_data, hol_tgt_data)
+        _warn_if_dtypes_inconsistent(syn_ctx_data, trn_ctx_data, hol_ctx_data)
+
         # prepare report_path
         if report_path is None:
             report_path = Path.cwd() / "model-report.html"
@@ -222,14 +226,6 @@ def report(
             trn_dtypes=trn.dtypes.to_dict(),
         )
         progress.update(completed=10, total=100)
-
-        # coerce dtypes to match the original training data dtypes
-        for col in trn:
-            if is_numeric_dtype(trn[col]):
-                syn[col] = pd.to_numeric(syn[col], errors="coerce")
-            elif is_datetime64_dtype(trn[col]):
-                syn[col] = pd.to_datetime(syn[col], errors="coerce")
-            syn[col] = syn[col].astype(trn[col].dtype)
 
         _LOG.info("report accuracy and correlations")
         acc_uni, acc_biv, corr_trn = _report_accuracy_and_correlations(
@@ -395,6 +391,29 @@ def report(
         )
         progress.update(completed=100, total=100)
         return report_path, metrics
+
+
+def _warn_if_dtypes_inconsistent(syn_df: pd.DataFrame | None, trn_df: pd.DataFrame | None, hol_df: pd.DataFrame | None):
+    dfs = [df for df in (syn_df, trn_df, hol_df) if df is not None]
+    if not dfs:
+        return
+    common_columns = set.intersection(*[set(df.columns) for df in dfs])
+    column_dtypes = {col: [df[col].dtype for df in dfs] for col in common_columns}
+    inconsistent_columns = []
+    for col, dtypes in column_dtypes.items():
+        any_datetimes = any(is_datetime64_dtype(dtype) for dtype in dtypes)
+        any_numbers = any(is_numeric_dtype(dtype) for dtype in dtypes)
+        any_others = any(not is_datetime64_dtype(dtype) and not is_numeric_dtype(dtype) for dtype in dtypes)
+        if sum([any_datetimes, any_numbers, any_others]) > 1:
+            inconsistent_columns.append(col)
+    if inconsistent_columns:
+        warnings.warn(
+            UserWarning(
+                f"The column(s) {inconsistent_columns} have inconsistent data types across `syn`, `trn`, and `hol`. "
+                "To achieve the most accurate results, please harmonize the data types of these inputs. "
+                "Proceeding with a best-effort attempt..."
+            )
+        )
 
 
 def _calculate_metrics(
