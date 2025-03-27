@@ -291,14 +291,16 @@ def calculate_embeddings(
     progress_from: int | None = None,
     progress_to: int | None = None,
 ) -> np.ndarray:
-    t0 = time.time()
     # load embedder
+    t0 = time.time()
     embedder = load_embedder()
+    _LOG.info(f"loaded load_embedder in {time.time() - t0:.2f}s")
     # split into buckets for calculating embeddings to avoid memory issues and report continuous progress
     steps = progress_to - progress_from if progress_to is not None and progress_from is not None else 1
     buckets = np.array_split(strings, steps)
     buckets = [b for b in buckets if len(b) > 0]
     # calculate embeddings for each bucket
+    t0 = time.time()
     embeds = []
     for i, bucket in enumerate(buckets, 1):
         embeds += [embedder.encode(bucket.tolist(), show_progress_bar=False)]
