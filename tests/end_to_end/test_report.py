@@ -213,6 +213,7 @@ def test_report_sequential_early_exit(tmp_path):
         {"dfs": make_dfs(ctx_rows=100, tgt_rows=100, shift=100, tgt_cols=["tgt_col"]), "early_term": True},
         # other setups should produce report
         {"dfs": make_dfs(ctx_rows=100, tgt_rows=100), "early_term": False},
+        {"dfs": make_dfs(ctx_rows=101, tgt_rows=100), "early_term": False},
         {"dfs": make_dfs(ctx_rows=100, tgt_rows=100, ctx_cols=["ctx_col"], tgt_cols=["tgt_col"]), "early_term": False},
     ]
 
