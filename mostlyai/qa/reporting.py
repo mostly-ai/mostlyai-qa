@@ -252,7 +252,8 @@ def report(
                 )
             )
 
-        do_coherence = setup == "1:N"
+        # do coherence analysis only if there are non-fk columns in the target data
+        do_coherence = setup == "1:N" and len(trn_tgt_data.columns) > 1
         if do_coherence:
             _LOG.info("prepare training data for coherence started")
             trn_coh, trn_coh_bins = pull_data_for_coherence(
