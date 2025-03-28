@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from collections.abc import Sequence
 import uuid
 from pathlib import Path
 import warnings
@@ -198,33 +197,24 @@ def test_report_flat_early_exit(tmp_path):
 
 def test_report_sequential_early_exit(tmp_path):
     def make_dfs(
-        ctx_ids: Sequence[int],
-        tgt_ids: Sequence[int],
-        ctx_cols: list[str] | None = None,
-        tgt_cols: list[str] | None = None,
+        ctx_rows: int, tgt_rows: int, ctx_cols: list[str] = None, tgt_cols: list[str] = None, shift: int = 0
     ) -> tuple[pd.DataFrame, pd.DataFrame]:
         ctx_cols = ctx_cols or []
         tgt_cols = tgt_cols or []
-        ctx = pd.DataFrame({"pk": ctx_ids} | {c: ctx_ids for c in ctx_cols})
-        tgt = pd.DataFrame({"ck": tgt_ids} | {c: tgt_ids for c in tgt_cols})
+        ctx = pd.DataFrame({"pk": range(ctx_rows)} | {c: range(ctx_rows) for c in ctx_cols})
+        tgt = pd.DataFrame({"ck": list(range(shift, shift + tgt_rows))} | {c: range(tgt_rows) for c in tgt_cols})
         return ctx, tgt
 
     # test empty-ish data sets
     test_dfs = [
         # setups with <100 rows in tgt/ctx should early terminate
-        {
-            "dfs": make_dfs(ctx_ids=range(99), tgt_ids=range(99), ctx_cols=["ctx_col"], tgt_cols=["tgt_col"]),
-            "early_term": True,
-        },
-        {"dfs": make_dfs(ctx_ids=range(100), tgt_ids=range(90, 190), tgt_cols=["tgt_col"]), "early_term": True},
-        {"dfs": make_dfs(ctx_ids=range(100), tgt_ids=range(100, 200), tgt_cols=["tgt_col"]), "early_term": True},
+        {"dfs": make_dfs(ctx_rows=99, tgt_rows=99, ctx_cols=["ctx_col"], tgt_cols=["tgt_col"]), "early_term": True},
+        {"dfs": make_dfs(ctx_rows=100, tgt_rows=100, shift=90, tgt_cols=["tgt_col"]), "early_term": True},
+        {"dfs": make_dfs(ctx_rows=100, tgt_rows=100, shift=100, tgt_cols=["tgt_col"]), "early_term": True},
         # other setups should produce report
-        {"dfs": make_dfs(ctx_ids=range(100), tgt_ids=range(100)), "early_term": False},
-        {"dfs": make_dfs(ctx_ids=range(100), tgt_ids=list(range(100)) + [0]), "early_term": False},
-        {
-            "dfs": make_dfs(ctx_ids=range(100), tgt_ids=range(100), ctx_cols=["ctx_col"], tgt_cols=["tgt_col"]),
-            "early_term": False,
-        },
+        {"dfs": make_dfs(ctx_rows=100, tgt_rows=100), "early_term": False},
+        {"dfs": make_dfs(ctx_rows=101, tgt_rows=100), "early_term": False},
+        {"dfs": make_dfs(ctx_rows=100, tgt_rows=100, ctx_cols=["ctx_col"], tgt_cols=["tgt_col"]), "early_term": False},
     ]
 
     for test_idx, df_dict in enumerate(test_dfs):
