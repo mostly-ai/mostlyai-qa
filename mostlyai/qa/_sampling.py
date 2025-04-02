@@ -44,7 +44,7 @@ from mostlyai.qa._common import (
     ACCURACY_MAX_COLUMNS,
     ProgressCallbackWrapper,
 )
-from mostlyai.qa.assets import load_embedder, load_tokenizer
+from mostlyai.qa.assets import load_tokenizer
 
 
 _LOG = logging.getLogger(__name__)
@@ -290,11 +290,8 @@ def calculate_embeddings(
     progress: ProgressCallbackWrapper | None = None,
     progress_from: int | None = None,
     progress_to: int | None = None,
+    embedder: Any | None = None,
 ) -> np.ndarray:
-    # load embedder
-    t0 = time.time()
-    embedder = load_embedder()
-    _LOG.info(f"loaded load_embedder in {time.time() - t0:.2f}s")
     # split into buckets for calculating embeddings to avoid memory issues and report continuous progress
     steps = progress_to - progress_from if progress_to is not None and progress_from is not None else 1
     buckets = np.array_split(strings, steps)

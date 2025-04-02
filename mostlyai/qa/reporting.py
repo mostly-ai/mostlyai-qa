@@ -45,6 +45,7 @@ from mostlyai.qa._coherence import (
     plot_store_distinct_categories_per_sequence,
     plot_store_sequences_per_distinct_category,
 )
+from mostlyai.qa.assets import load_embedder
 from mostlyai.qa.metrics import ModelMetrics, Accuracy, Similarity, Distances
 from mostlyai.qa._sampling import (
     calculate_embeddings,
@@ -288,6 +289,9 @@ def report(
             acc_cats_per_seq = acc_seqs_per_cat = pd.DataFrame({"column": [], "accuracy": [], "accuracy_max": []})
         progress.update(completed=25, total=100)
 
+        _LOG.info("load embedder")
+        embedder = load_embedder()
+
         _LOG.info("calculate embeddings for synthetic")
         syn_embeds = calculate_embeddings(
             strings=pull_data_for_embeddings(
@@ -300,6 +304,7 @@ def report(
             progress=progress,
             progress_from=25,
             progress_to=45,
+            embedder=embedder,
         )
         _LOG.info("calculate embeddings for training")
         trn_embeds = calculate_embeddings(
@@ -313,6 +318,7 @@ def report(
             progress=progress,
             progress_from=45,
             progress_to=65,
+            embedder=embedder,
         )
         if hol_tgt_data is not None:
             _LOG.info("calculate embeddings for holdout")
@@ -327,6 +333,7 @@ def report(
                 progress=progress,
                 progress_from=65,
                 progress_to=85,
+                embedder=embedder,
             )
         else:
             hol_embeds = None
