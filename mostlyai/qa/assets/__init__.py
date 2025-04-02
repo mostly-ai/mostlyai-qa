@@ -43,6 +43,8 @@ def load_embedder():
     Load the embedder model.
     Can deal with read-only cache folder by attempting to download the model if it is not locally available.
     Users can set MOSTLY_HF_HOME environment variable to override the default cache folder.
+
+    Note that this method can take significant time to load the model. Thus, it is recommended to call this method once and reuse the returned object.
     """
     from sentence_transformers import SentenceTransformer
 

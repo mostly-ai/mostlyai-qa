@@ -21,6 +21,7 @@ from mostlyai.qa._distances import (
     plot_store_distances,
 )
 from mostlyai.qa._sampling import calculate_embeddings
+from mostlyai.qa.assets import load_embedder
 
 
 @pytest.fixture()
@@ -42,9 +43,10 @@ def cat_with_rare_and_none():
 
 def test_calculate_distances():
     n = 10
-    syn_embeds = calculate_embeddings(["a 0 1.0"] * n)
-    trn_embeds = calculate_embeddings(["a 0 0.0"] * n)
-    hol_embeds = calculate_embeddings(["a 0 1.0"] * n)
+    embedder = load_embedder()
+    syn_embeds = calculate_embeddings(["a 0 1.0"] * n, embedder=embedder)
+    trn_embeds = calculate_embeddings(["a 0 0.0"] * n, embedder=embedder)
+    hol_embeds = calculate_embeddings(["a 0 1.0"] * n, embedder=embedder)
     dcr_syn_trn, dcr_syn_hol, dcr_trn_hol = calculate_distances(
         syn_embeds=syn_embeds, trn_embeds=trn_embeds, hol_embeds=hol_embeds
     )
@@ -55,9 +57,9 @@ def test_calculate_distances():
     assert dcr_syn_hol.max() == 0
 
     # test specifically that near matches do not report a distance of 0 due to rounding
-    syn_embeds = calculate_embeddings(["a 0.0002"] * n)
-    trn_embeds = calculate_embeddings(["a 0.0001"] * n)
-    hol_embeds = calculate_embeddings(["a 0.0001"] * n)
+    syn_embeds = calculate_embeddings(["a 0.0002"] * n, embedder=embedder)
+    trn_embeds = calculate_embeddings(["a 0.0001"] * n, embedder=embedder)
+    hol_embeds = calculate_embeddings(["a 0.0001"] * n, embedder=embedder)
     dcr_syn_trn, dcr_syn_hol, dcr_trn_hol = calculate_distances(
         syn_embeds=syn_embeds, trn_embeds=trn_embeds, hol_embeds=hol_embeds
     )
@@ -66,7 +68,8 @@ def test_calculate_distances():
 
 
 def test_plot_store_dcr(workspace):
-    embeds = calculate_embeddings(["a 0.0002"] * 100)
+    embedder = load_embedder()
+    embeds = calculate_embeddings(["a 0.0002"] * 100, embedder=embedder)
     dcr_syn_trn, dcr_syn_hol, dcr_trn_hol = calculate_distances(syn_embeds=embeds, trn_embeds=embeds, hol_embeds=embeds)
     plot_store_distances(dcr_syn_trn, dcr_syn_hol, dcr_trn_hol, workspace)
     output_dir = workspace.workspace_dir / "figures"

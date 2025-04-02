@@ -36,6 +36,7 @@ from mostlyai.qa._common import (
     ProgressCallbackWrapper,
 )
 from mostlyai.qa._filesystem import Statistics, TemporaryWorkspace
+from mostlyai.qa.assets import load_embedder
 
 _LOG = logging.getLogger(__name__)
 
@@ -162,6 +163,9 @@ def report_from_statistics(
             acc_cats_per_seq = acc_seqs_per_cat = pd.DataFrame({"column": [], "accuracy": [], "accuracy_max": []})
         progress.update(completed=40, total=100)
 
+        _LOG.info("load embedder")
+        embedder = load_embedder()
+
         _LOG.info("calculate embeddings for synthetic")
         syn_embeds = calculate_embeddings(
             strings=pull_data_for_embeddings(
@@ -174,6 +178,7 @@ def report_from_statistics(
             progress=progress,
             progress_from=40,
             progress_to=60,
+            embedder=embedder,
         )
 
         _LOG.info("report similarity")
