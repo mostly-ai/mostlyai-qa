@@ -16,6 +16,7 @@ import numpy as np
 
 from mostlyai.qa._similarity import calculate_cosine_similarities, calculate_discriminator_auc
 from mostlyai.qa._sampling import calculate_embeddings
+from mostlyai.qa.assets import load_embedder
 
 
 def test_calculate_embeddings():
@@ -25,9 +26,10 @@ def test_calculate_embeddings():
     # semantically distant synthetic data
     syn_distant = ["quantum physics theory", "deep space exploration"]
 
-    trn_embeds = calculate_embeddings(trn)
-    syn_close_embeds = calculate_embeddings(syn_close)
-    syn_distant_embeds = calculate_embeddings(syn_distant)
+    embedder = load_embedder()
+    trn_embeds = calculate_embeddings(trn, embedder=embedder)
+    syn_close_embeds = calculate_embeddings(syn_close, embedder=embedder)
+    syn_distant_embeds = calculate_embeddings(syn_distant, embedder=embedder)
     assert np.all(trn_embeds[0] == trn_embeds[2])  # check that we retain row order
 
     # check that syn_close is closer to trn than syn_distant
