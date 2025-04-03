@@ -12,6 +12,8 @@ Assess the fidelity and novelty of synthetic samples with respect to original sa
 
 ...all with a few lines of Python code 💥.
 
+https://github.com/user-attachments/assets/b27e270a-f19c-4059-b4f2-ed209c9a26b9
+
 ## Installation
 
 The latest release of `mostlyai-qa` can be installed via pip:
