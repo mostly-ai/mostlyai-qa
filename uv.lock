@@ -1370,7 +1370,7 @@ requires-dist = [
     { name = "numpy", specifier = ">=1.26.3,<2.0.0" },
     { name = "pandas", specifier = ">=2.0.0" },
     { name = "phik", specifier = ">=0.12.4" },
-    { name = "plotly", specifier = ">=5.18.0" },
+    { name = "plotly", specifier = ">=6.0.0" },
     { name = "pyarrow", specifier = ">=14.0.0" },
     { name = "pydantic", specifier = ">=2.0.0,<3.0.0" },
     { name = "rich", specifier = ">=13.9.4,<14" },
