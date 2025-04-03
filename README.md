@@ -99,10 +99,12 @@ report_path, metrics = qa.report(
 Please consider citing our project if you find it useful:
 
 ```bibtex
-@software{mostlyai-qa,
-    author = {{MOSTLY AI}},
-    title = {{MOSTLY AI - Quality Assurance}},
-    url = {https://github.com/mostly-ai/mostlyai-qa},
-    year = {2024}
+@misc{title={Benchmarking Synthetic Tabular Data: A Multi-Dimensional Evaluation Framework}, 
+      author={Andrey Sidorenko and Michael Platzer and Mario Scriminaci and Paul Tiwald},
+      year={2025},
+      eprint={2504.01908},
+      archivePrefix={arXiv},
+      primaryClass={cs.LG},
+      url={https://arxiv.org/abs/2504.01908}, 
 }
 ```
