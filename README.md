@@ -2,7 +2,7 @@
 
 [![Documentation](https://img.shields.io/badge/docs-latest-green)](https://mostly-ai.github.io/mostlyai-qa/) [![stats](https://pepy.tech/badge/mostlyai-qa)](https://pypi.org/project/mostlyai-qa/) ![license](https://img.shields.io/github/license/mostly-ai/mostlyai-qa) ![GitHub Release](https://img.shields.io/github/v/release/mostly-ai/mostlyai-qa) ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/mostlyai-qa)
 
-[Documentation](https://mostly-ai.github.io/mostlyai-qa/) | [Sample Reports](#sample-reports) | [Technical White Paper](https://raw.githubusercontent.com/mostly-ai/mostlyai-qa/refs/heads/main/docs/mostlyai-qa-technical-white-paper.pdf)
+[Documentation](https://mostly-ai.github.io/mostlyai-qa/) | [Sample Reports](#sample-reports) | [Technical White Paper](https://arxiv.org/abs/2504.01908)
 
 Assess the fidelity and novelty of synthetic samples with respect to original samples:
 
