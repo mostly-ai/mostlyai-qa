@@ -19,7 +19,7 @@ _MODULE_DIR = Path(__file__).resolve().parent
 _HTML_ASSET_FILES = [
     "bootstrap-5.3.3.bundle.min.js",
     "bootstrap-5.3.3.min.css",
-    "plotly-2.12.1.min.js",
+    "plotly-3.0.1.min.js",
     "explainer.svg",
     "info.svg",
 ]
