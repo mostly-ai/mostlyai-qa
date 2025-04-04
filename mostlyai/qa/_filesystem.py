@@ -157,11 +157,11 @@ class Statistics:
         return self.early_exit_path.exists()
 
     def store_meta(self, meta: dict):
-        with open(self.meta_path, "w") as file:
+        with open(self.meta_path, "w", encoding="utf-8") as file:
             json.dump(meta, file)
 
     def load_meta(self) -> dict:
-        with open(self.meta_path) as file:
+        with open(self.meta_path, encoding="utf-8") as file:
             return json.load(file)
 
     def store_bins(self, bins: dict[str, list]) -> None:

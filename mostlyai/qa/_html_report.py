@@ -35,21 +35,21 @@ _LOG = logging.getLogger(__name__)
 
 def get_uni_htmls(acc_uni: pd.DataFrame, workspace: TemporaryWorkspace) -> list[str]:
     paths_uni = workspace.get_figure_paths("univariate", acc_uni[["column"]]).values()
-    return [f.read_text() for f in paths_uni]
+    return [f.read_text(encoding="utf-8") for f in paths_uni]
 
 
 def get_cats_per_seq_htmls(acc_cats_per_seq: pd.DataFrame, workspace: TemporaryWorkspace) -> list[str]:
     paths_cats_per_seq = workspace.get_figure_paths(
         "distinct_categories_per_sequence", acc_cats_per_seq[["column"]]
     ).values()
-    return [f.read_text() for f in paths_cats_per_seq]
+    return [f.read_text(encoding="utf-8") for f in paths_cats_per_seq]
 
 
 def get_seqs_per_cat_htmls(acc_seqs_per_cat: pd.DataFrame, workspace: TemporaryWorkspace) -> list[str]:
     paths_seqs_per_cat = workspace.get_figure_paths(
         "sequences_per_distinct_category", acc_seqs_per_cat[["column"]]
     ).values()
-    return [f.read_text() for f in paths_seqs_per_cat]
+    return [f.read_text(encoding="utf-8") for f in paths_seqs_per_cat]
 
 
 def get_biv_htmls(acc_biv: pd.DataFrame, workspace: TemporaryWorkspace) -> tuple[list[str], list[str], list[str]]:
@@ -59,9 +59,9 @@ def get_biv_htmls(acc_biv: pd.DataFrame, workspace: TemporaryWorkspace) -> tuple
     paths_biv_ctx = workspace.get_figure_paths("bivariate", acc_biv_ctx[["col1", "col2"]]).values()
     paths_biv_tgt = workspace.get_figure_paths("bivariate", acc_biv_tgt[["col1", "col2"]]).values()
     paths_biv_nxt = workspace.get_figure_paths("bivariate", acc_biv_nxt[["col1", "col2"]]).values()
-    html_biv_ctx = [f.read_text() for f in paths_biv_ctx]
-    html_biv_tgt = [f.read_text() for f in paths_biv_tgt]
-    html_biv_nxt = [f.read_text() for f in paths_biv_nxt]
+    html_biv_ctx = [f.read_text(encoding="utf-8") for f in paths_biv_ctx]
+    html_biv_tgt = [f.read_text(encoding="utf-8") for f in paths_biv_tgt]
+    html_biv_nxt = [f.read_text(encoding="utf-8") for f in paths_biv_nxt]
     return html_biv_ctx, html_biv_tgt, html_biv_nxt
 
 
@@ -92,14 +92,14 @@ def store_report(
     acc_biv = filter_biv_acc_for_plotting(acc_biv, corr_trn)
     html_biv_ctx, html_biv_tgt, html_biv_nxt = get_biv_htmls(acc_biv=acc_biv, workspace=workspace)
 
-    correlation_matrix_html_chart = workspace.get_unique_figure_path("correlation_matrices").read_text()
+    correlation_matrix_html_chart = workspace.get_unique_figure_path("correlation_matrices").read_text(encoding="utf-8")
     similarity_pca_html_chart_path = workspace.get_unique_figure_path("similarity_pca")
     similarity_pca_html_chart = None
     if similarity_pca_html_chart_path.exists():
-        similarity_pca_html_chart = similarity_pca_html_chart_path.read_text()
+        similarity_pca_html_chart = similarity_pca_html_chart_path.read_text(encoding="utf-8")
     if report_type == "model_report":
-        accuracy_matrix_html_chart = workspace.get_unique_figure_path("accuracy_matrix").read_text()
-        distances_dcr_html_chart = workspace.get_unique_figure_path("distances_dcr").read_text()
+        accuracy_matrix_html_chart = workspace.get_unique_figure_path("accuracy_matrix").read_text(encoding="utf-8")
+        distances_dcr_html_chart = workspace.get_unique_figure_path("distances_dcr").read_text(encoding="utf-8")
     else:
         accuracy_matrix_html_chart = None
         distances_dcr_html_chart = None
@@ -127,7 +127,7 @@ def store_report(
         bivariate_html_charts_ctx=html_biv_ctx,
         bivariate_html_charts_nxt=html_biv_nxt,
     )
-    report_path.write_text(html)
+    report_path.write_text(html, encoding="utf-8")
 
 
 def summarize_accuracies_by_column(
@@ -175,4 +175,4 @@ def summarize_accuracies_by_column(
 def store_early_exit_report(report_path: Path):
     template = Environment(loader=FileSystemLoader(HTML_ASSETS_PATH)).get_template(HTML_REPORT_EARLY_EXIT)
     report_html = template.render(html_assets=read_html_assets(), meta={})
-    report_path.write_text(report_html)
+    report_path.write_text(report_html, encoding="utf-8")

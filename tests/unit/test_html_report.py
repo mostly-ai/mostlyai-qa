@@ -66,7 +66,7 @@ def test_generate_store_report(tmp_path, cols, workspace):
     )
     for path in plot_paths:
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text("<div></div>")
+        path.write_text("<div></div>", encoding="utf-8")
 
     metrics = _calculate_metrics(
         acc_uni=acc_uni,
