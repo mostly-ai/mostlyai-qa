@@ -82,7 +82,6 @@ class TemporaryWorkspace(TemporaryDirectory):
                     "resetScale",
                 ],
             },
-            encoding="utf-8",
         )
 
     def store_figure_html(self, fig: go.Figure, figure_type: FIGURE_TYPE, *cols: str) -> None:
