@@ -28,8 +28,8 @@ HTML_REPORT_TEMPLATE = "report_template.html"
 HTML_REPORT_EARLY_EXIT = "report_early_exit.html"
 
 
-def read_html_assets():
-    return {fn: Path(HTML_ASSETS_PATH / fn).read_text() for fn in _HTML_ASSET_FILES}
+def read_html_assets() -> dict[str, str]:
+    return {fn: Path(HTML_ASSETS_PATH / fn).read_text(encoding='utf-8') for fn in _HTML_ASSET_FILES}
 
 
 def load_tokenizer():
