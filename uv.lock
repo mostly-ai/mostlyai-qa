@@ -24,6 +24,26 @@ conflicts = [[
 ]]
 
 [[package]]
+name = "accelerate"
+version = "1.6.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "huggingface-hub" },
+    { name = "numpy" },
+    { name = "packaging" },
+    { name = "psutil" },
+    { name = "pyyaml" },
+    { name = "safetensors" },
+    { name = "torch", version = "2.6.0", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "(sys_platform == 'darwin' and extra == 'extra-11-mostlyai-qa-cpu') or (extra == 'extra-11-mostlyai-qa-cpu' and extra == 'extra-11-mostlyai-qa-gpu')" },
+    { name = "torch", version = "2.6.0", source = { registry = "https://pypi.org/simple" }, marker = "extra == 'extra-11-mostlyai-qa-gpu' or extra != 'extra-11-mostlyai-qa-cpu'" },
+    { name = "torch", version = "2.6.0+cpu", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "(sys_platform != 'darwin' and extra == 'extra-11-mostlyai-qa-cpu') or (extra == 'extra-11-mostlyai-qa-cpu' and extra == 'extra-11-mostlyai-qa-gpu')" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/8a/6e/c29a1dcde7db07f47870ed63e5124086b11874ad52ccd533dc1ca2c799da/accelerate-1.6.0.tar.gz", hash = "sha256:28c1ef1846e690944f98b68dc7b8bb6c51d032d45e85dcbb3adb0c8b99dffb32", size = 363804 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/63/b1/8198e3cdd11a426b1df2912e3381018c4a4a55368f6d0857ba3ca418ef93/accelerate-1.6.0-py3-none-any.whl", hash = "sha256:1aee717d3d3735ad6d09710a7c26990ee4652b79b4e93df46551551b5227c2aa", size = 354748 },
+]
+
+[[package]]
 name = "annotated-types"
 version = "0.7.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1289,6 +1309,7 @@ name = "mostlyai-qa"
 version = "1.5.14"
 source = { editable = "." }
 dependencies = [
+    { name = "accelerate" },
     { name = "jinja2" },
     { name = "joblib" },
     { name = "numpy" },
@@ -1305,7 +1326,6 @@ dependencies = [
     { name = "torch", version = "2.6.0", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "(sys_platform == 'darwin' and extra == 'extra-11-mostlyai-qa-cpu') or (extra == 'extra-11-mostlyai-qa-cpu' and extra == 'extra-11-mostlyai-qa-gpu')" },
     { name = "torch", version = "2.6.0", source = { registry = "https://pypi.org/simple" }, marker = "extra == 'extra-11-mostlyai-qa-gpu' or extra != 'extra-11-mostlyai-qa-cpu'" },
     { name = "torch", version = "2.6.0+cpu", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "(sys_platform != 'darwin' and extra == 'extra-11-mostlyai-qa-cpu') or (extra == 'extra-11-mostlyai-qa-cpu' and extra == 'extra-11-mostlyai-qa-gpu')" },
-    { name = "transformers" },
 ]
 
 [package.optional-dependencies]
@@ -1337,6 +1357,7 @@ docs = [
 
 [package.metadata]
 requires-dist = [
+    { name = "accelerate", specifier = ">=1.5.0" },
     { name = "jinja2", specifier = ">=3.1.2" },
     { name = "joblib", specifier = ">=1.4.2" },
     { name = "numpy", specifier = ">=1.26.3" },
@@ -1354,7 +1375,6 @@ requires-dist = [
     { name = "torch", marker = "sys_platform == 'linux' and extra == 'cpu'", specifier = "==2.6.0+cpu", index = "https://download.pytorch.org/whl/cpu", conflict = { package = "mostlyai-qa", extra = "cpu" } },
     { name = "torch", marker = "sys_platform != 'linux' and extra == 'cpu'", specifier = ">=2.6.0" },
     { name = "torch", marker = "extra == 'gpu'", specifier = ">=2.6.0" },
-    { name = "transformers", specifier = "<4.51.0" },
 ]
 provides-extras = ["gpu", "cpu"]
 
@@ -2929,7 +2949,7 @@ wheels = [
 
 [[package]]
 name = "transformers"
-version = "4.50.3"
+version = "4.51.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "filelock" },
@@ -2943,9 +2963,9 @@ dependencies = [
     { name = "tokenizers" },
     { name = "tqdm" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/c0/29/37877123d6633a188997d75dc17d6f526745d63361794348ce748db23d49/transformers-4.50.3.tar.gz", hash = "sha256:1d795d24925e615a8e63687d077e4f7348c2702eb87032286eaa76d83cdc684f", size = 8774363 }
+sdist = { url = "https://files.pythonhosted.org/packages/38/75/6ebdae4d6f4574f47139a070445245537e43482d006f615af8e23d5bf05e/transformers-4.51.0.tar.gz", hash = "sha256:2d302563ff6c2cc2d0e88ef352cf059f9a21ce18102fd43662bb1246f70b8a84", size = 8925571 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/aa/22/733a6fc4a6445d835242f64c490fdd30f4a08d58f2b788613de3f9170692/transformers-4.50.3-py3-none-any.whl", hash = "sha256:6111610a43dec24ef32c3df0632c6b25b07d9711c01d9e1077bdd2ff6b14a38c", size = 10180411 },
+    { url = "https://files.pythonhosted.org/packages/6f/db/7ee15028d5130929aa0b1b85bab6d8bafe806254d3b5c56c42a0066cceb8/transformers-4.51.0-py3-none-any.whl", hash = "sha256:2e6baa476735ab8adccbaee6961525a0d1ce8c21d49293af30ef5ee4b082f64d", size = 10362017 },
 ]
 
 [[package]]
