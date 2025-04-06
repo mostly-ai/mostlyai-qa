@@ -19,7 +19,6 @@ import math
 from typing import Any, Literal
 from collections.abc import Callable, Iterable
 
-import fastcluster
 import numpy as np
 import pandas as pd
 import phik.phik
@@ -1234,7 +1233,7 @@ def calculate_correlations(binned: pd.DataFrame, corr_cols: Iterable[str] | None
             # determine column order via hierarchical linkage based on data; this mimics the logic used within
             # `seaborn.clustermap`. We wrap this in try/except to be on the safe side, as `dendogram` and `linkage` can
             # raise errors for edge cases. And because the improved sort order is not critical to have in place.
-            corr_link = fastcluster.linkage(corr, method="complete", metric="euclidean")
+            corr_link = scipy.cluster.hierarchy.linkage(corr, method="complete", metric="euclidean")
             corr_idx = scipy.cluster.hierarchy.dendrogram(corr_link, no_plot=True)["leaves"]
             corr_cols = corr.columns[corr_idx]
         except Exception:
