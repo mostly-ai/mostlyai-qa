@@ -29,7 +29,7 @@ HTML_REPORT_EARLY_EXIT = "report_early_exit.html"
 
 
 def read_html_assets() -> dict[str, str]:
-    return {fn: Path(HTML_ASSETS_PATH / fn).read_text(encoding='utf-8') for fn in _HTML_ASSET_FILES}
+    return {fn: Path(HTML_ASSETS_PATH / fn).read_text(encoding="utf-8") for fn in _HTML_ASSET_FILES}
 
 
 def load_tokenizer():
