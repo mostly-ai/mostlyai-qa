@@ -108,7 +108,7 @@ class Similarity(CustomBaseModel):
     1. **Cosine Similarity**: The cosine similarity between the centroids of synthetic and training samples.
     2. **Discriminator AUC**: The AUC of a discriminative model to distinguish between synthetic and training samples.
 
-    The SentenceTransformer model [all-MiniLM-L6-v2](https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2) is
+    The Model2Vec model [potion-base-8M](https://huggingface.co/minishlab/potion-base-8M) is
     used to compute the embeddings of a string-ified representation of individual records. In case of sequential data
     the records, that belong to the same group, are being concatenated. We then calculate the cosine similarity
     between the centroids of the provided datasets within the embedding space.

@@ -46,16 +46,16 @@ def load_embedder():
 
     Note that this method can take significant time to load the model. Thus, it is recommended to call this method once and reuse the returned object.
     """
-    from sentence_transformers import SentenceTransformer
+    from model2vec import StaticModel
 
-    model_name = "sentence-transformers/all-MiniLM-L6-v2"
+    model_name = "minishlab/potion-base-8M"
     cache_folder = os.getenv("MOSTLY_HF_HOME")
     try:
         # First try loading from local cache
-        return SentenceTransformer(model_name_or_path=model_name, cache_folder=cache_folder, local_files_only=True)
+        return StaticModel.from_pretrained(model_name_or_path=model_name, cache_dir=cache_folder, local_files_only=True)
     except Exception:
         # If not found in cache, attempt downloading
-        return SentenceTransformer(model_name_or_path=model_name, cache_folder=cache_folder, local_files_only=False)
+        return StaticModel.from_pretrained(model_name_or_path=model_name, cache_dir=cache_folder, local_files_only=False)
 
 
 __all__ = ["load_embedder"]

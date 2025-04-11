@@ -300,7 +300,7 @@ def calculate_embeddings(
     t0 = time.time()
     embeds = []
     for i, bucket in enumerate(buckets, 1):
-        embeds += [embedder.encode(bucket.tolist(), show_progress_bar=False)]
+        embeds += [embedder.encode(bucket.tolist())]
         if progress is not None:
             progress.update(completed=progress_from + i, total=100)
     if progress is not None:
