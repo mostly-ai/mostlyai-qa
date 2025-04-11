@@ -30,7 +30,10 @@ jobs:
           python-version: '3.10'
 
       - name: Setup | dependencies
-        run: uv venv && uv pip install --index-strategy unsafe-first-match torch==2.6.0+cpu torchvision==0.21.0+cpu . --extra-index-url https://download.pytorch.org/whl/cpu
+        run: |
+          uv sync --frozen --only-group dev --only-group docs
+          uv pip install --index-strategy unsafe-first-match torch==2.6.0+cpu torchvision==0.21.0+cpu . --extra-index-url https://download.pytorch.org/whl/cpu
+
       - name: Run tests
         run: uv run --no-sync pytest tests/
 
