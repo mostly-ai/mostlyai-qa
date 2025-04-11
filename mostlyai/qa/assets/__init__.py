@@ -40,22 +40,15 @@ def load_tokenizer():
 
 def load_embedder():
     """
-    Load the embedder model.
-    Can deal with read-only cache folder by attempting to download the model if it is not locally available.
-    Users can set MOSTLY_HF_HOME environment variable to override the default cache folder.
+    Load the embedder model from local files.
+    The model files are included in the package to avoid downloading at runtime.
 
     Note that this method can take significant time to load the model. Thus, it is recommended to call this method once and reuse the returned object.
     """
     from model2vec import StaticModel
 
-    model_name = "minishlab/potion-base-8M"
-    cache_folder = os.getenv("MOSTLY_HF_HOME")
-    try:
-        # First try loading from local cache
-        return StaticModel.from_pretrained(model_name_or_path=model_name, cache_dir=cache_folder, local_files_only=True)
-    except Exception:
-        # If not found in cache, attempt downloading
-        return StaticModel.from_pretrained(model_name_or_path=model_name, cache_dir=cache_folder, local_files_only=False)
+    model_path = _MODULE_DIR / "embedders" / "potion-base-8M"
+    return StaticModel.from_pretrained(model_path)
 
 
 __all__ = ["load_embedder"]
