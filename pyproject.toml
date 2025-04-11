@@ -41,15 +41,6 @@ dependencies = [
     "torch>=2.6.0",
 ]
 
-# [project.optional-dependencies]
-# gpu = [
-#     "torch>=2.6.0",
-# ]
-# cpu = [
-#     "torch==2.6.0+cpu; sys_platform == 'linux'",
-#     "torch>=2.6.0; sys_platform != 'linux'",
-# ]
-
 [project.urls]
 homepage = "https://github.com/mostly-ai/mostlyai-qa"
 repository = "https://github.com/mostly-ai/mostlyai-qa"
@@ -75,22 +66,6 @@ docs = [
 
 [tool.uv]
 default-groups = ["dev", "docs"]
-# conflicts = [
-#   [
-#     { extra = "cpu" },
-#     { extra = "gpu" },
-#   ],
-# ]
-
-# [[tool.uv.index]]
-# name = "pytorch-cpu"
-# url = "https://download.pytorch.org/whl/cpu"
-# explicit = true
-#
-# [tool.uv.sources]
-# torch = [
-#   { index = "pytorch-cpu", extra = "cpu", marker = "sys_platform == 'linux'"},
-# ]
 
 [tool.hatch.build.targets.sdist]
 include = ["mostlyai/qa"]
