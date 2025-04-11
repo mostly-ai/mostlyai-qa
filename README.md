@@ -105,7 +105,7 @@ report_path, metrics = qa.report(
 Please consider citing our project if you find it useful:
 
 ```bibtex
-@misc{title={motlyai-qa,
+@misc{mostlyai-qa,
       title={Benchmarking Synthetic Tabular Data: A Multi-Dimensional Evaluation Framework},
       author={Andrey Sidorenko and Michael Platzer and Mario Scriminaci and Paul Tiwald},
       year={2025},
