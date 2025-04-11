@@ -22,7 +22,11 @@ The latest release of `mostlyai-qa` can be installed via pip:
 pip install -U mostlyai-qa
 ```
 
-On Linux, one can explicitly install `mostlyai-qa[cpu]` or `mostlyai-qa[gpu]`, for CPU-only or CUDA support respectively.
+On Linux, one can explicitly install the CPU-only variant of torch together with `mostlyai-qa`:
+
+```bash
+pip install -U torch==2.6.0+cpu torchvision==0.21.0+cpu mostlyai-qa --extra-index-url https://download.pytorch.org/whl/cpu
+```
 
 ## Quick Start
 
@@ -101,7 +105,7 @@ report_path, metrics = qa.report(
 Please consider citing our project if you find it useful:
 
 ```bibtex
-@misc{title={motlyai-qa,
+@misc{mostlyai-qa,
       title={Benchmarking Synthetic Tabular Data: A Multi-Dimensional Evaluation Framework},
       author={Andrey Sidorenko and Michael Platzer and Mario Scriminaci and Paul Tiwald},
       year={2025},
