@@ -280,8 +280,7 @@ def pull_data_for_embeddings(
     )
     # cap at 1k chars, as encoder truncates anyway; still it speeds things up by truncating beforehand
     strings = strings.astype("string[pyarrow]").str[:1_000]
-    time_elapsed = time.time() - t0
-    _LOG.info(f"finished pulling data for embeddings ({time_elapsed=:.2f}s, {strings.shape=})")
+    _LOG.info(f"pulled data {strings.shape} for embeddings in {time.time() - t0:.2f}s")
     return strings.to_list()
 
 

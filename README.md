@@ -45,7 +45,7 @@ syn = pd.read_csv(f"{base_url}/census2k-syn_mostly.csv.gz")
 trn = pd.read_csv(f"{base_url}/census2k-trn.csv.gz")
 hol = pd.read_csv(f"{base_url}/census2k-hol.csv.gz")
 
-# runs for ~30secs
+# calculate metrics
 report_path, metrics = qa.report(
     syn_tgt_data=syn,
     trn_tgt_data=trn,

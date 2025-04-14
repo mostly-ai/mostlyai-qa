@@ -92,7 +92,9 @@ def calculate_sequences_per_distinct_category(
     df: pd.DataFrame, context_key: str, top_cats: dict[str, list[str]] | None = None
 ) -> tuple[dict[str, pd.Series], dict[str, pd.Series], dict[str, list[str]], int]:
     seqs_per_cat = {
-        col: df.groupby(col)[context_key].nunique().rename_axis("index") for col in df.columns if col != context_key
+        col: df.groupby(col, observed=False)[context_key].nunique().rename_axis("index")
+        for col in df.columns
+        if col != context_key
     }
 
     # transform df to contain:
@@ -114,7 +116,9 @@ def calculate_sequences_per_distinct_category(
             df.loc[not_in_top_cats_mask, col] = other_cat
             df[col] = df[col].cat.remove_unused_categories()
     binned_seqs_per_cat = {
-        col: df.groupby(col)[context_key].nunique().rename_axis("index") for col in df.columns if col != context_key
+        col: df.groupby(col, observed=False)[context_key].nunique().rename_axis("index")
+        for col in df.columns
+        if col != context_key
     }
 
     # number of sequences
