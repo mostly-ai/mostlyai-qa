@@ -205,10 +205,10 @@ def report(
         else:
             setup = "1:1"
 
-        _LOG.info("prepare training data for accuracy started")
+        _LOG.info("prepare original data for accuracy started")
         trn = pull_data_for_accuracy(
-            df_tgt=trn_tgt_data,
-            df_ctx=trn_ctx_data,
+            df_tgt=pd.concat([trn_tgt_data, hol_tgt_data]) if hol_tgt_data is not None else trn_tgt_data,
+            df_ctx=pd.concat([trn_ctx_data, hol_ctx_data]) if hol_ctx_data is not None else trn_ctx_data,
             ctx_primary_key=ctx_primary_key,
             tgt_context_key=tgt_context_key,
             max_sample_size=max_sample_size_accuracy,

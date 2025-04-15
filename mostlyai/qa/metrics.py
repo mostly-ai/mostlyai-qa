@@ -97,7 +97,7 @@ class Accuracy(CustomBaseModel):
 
     @field_validator("*", mode="after")
     def trim_metric_precision(cls, value):
-        precision = 3
+        precision = 7
         return round(value, precision) if value is not None else None
 
 
