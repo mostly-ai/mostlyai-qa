@@ -650,8 +650,8 @@ def test_plot_store_correlation_matrices(cols, workspace):
     # prefix some columns with "tgt::"
     columns = [f"tgt::{c}" if idx > 0 else c for idx, c in enumerate(trn.columns)]
     trn.columns, syn.columns = columns, columns
-    corr_trn = calculate_correlations(trn)
-    corr_syn = calculate_correlations(trn, corr_trn.columns)
-    plot_store_correlation_matrices(corr_trn, corr_syn, workspace)
+    corr_ori = calculate_correlations(trn)
+    corr_syn = calculate_correlations(trn, corr_ori.columns)
+    plot_store_correlation_matrices(corr_ori=corr_ori, corr_syn=corr_syn, workspace=workspace)
     output_dir = workspace.workspace_dir / "figures"
     assert len(list(output_dir.glob("*.html"))) == 1

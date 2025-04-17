@@ -58,7 +58,7 @@ def pull_data_for_accuracy(
     tgt_context_key: str | None = None,
     max_sample_size: int | None = None,
     setup: str | None = None,
-    trn_dtypes: dict[str, str] | None = None,
+    ori_dtypes: dict[str, str] | None = None,
 ) -> pd.DataFrame:
     """
     Prepare single dataset for accuracy report.
@@ -134,7 +134,7 @@ def pull_data_for_accuracy(
     df = df.apply(harmonize_dtype)
 
     # coerce dtypes to trn_dtypes
-    for trn_col, trn_dtype in (trn_dtypes or {}).items():
+    for trn_col, trn_dtype in (ori_dtypes or {}).items():
         if is_numeric_dtype(trn_dtype):
             df[trn_col] = pd.to_numeric(df[trn_col], errors="coerce")
         elif is_datetime64_dtype(trn_dtype):

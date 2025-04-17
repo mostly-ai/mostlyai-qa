@@ -135,7 +135,7 @@ class Statistics:
 
         # similarity
         self.pca_model_path = self.path / "pca_model.skops"
-        self.trn_pca_path = self.path / "trn_pca.npy"
+        self.ori_pca_path = self.path / "trn_pca.npy"
         self.hol_pca_path = self.path / "hol_pca.npy"
 
     def _store_file_per_row(self, df: pd.DataFrame, path: Path, explode_cols: list[str]) -> None:
@@ -174,8 +174,8 @@ class Statistics:
         df["column"] = df["column"].str.replace(_OLD_COL_PREFIX, _NEW_COL_PREFIX, regex=True)
         return df.set_index("column")["bins"].to_dict()
 
-    def store_correlations(self, trn_corr: pd.DataFrame) -> None:
-        trn_corr.to_parquet(self.correlations_path)
+    def store_correlations(self, corr: pd.DataFrame) -> None:
+        corr.to_parquet(self.correlations_path)
 
     def load_correlations(self) -> pd.DataFrame:
         df = pd.read_parquet(self.correlations_path)
@@ -249,25 +249,25 @@ class Statistics:
 
     def store_bin_counts(
         self,
-        trn_cnts_uni: dict[str, pd.Series],
-        trn_cnts_biv: dict[tuple[str, str], pd.Series],
+        ori_cnts_uni: dict[str, pd.Series],
+        ori_cnts_biv: dict[tuple[str, str], pd.Series],
     ) -> None:
         # store univariate bin counts
-        trn_cnts_uni = pd.DataFrame(
-            [(column, list(bin_counts.index), list(bin_counts.values)) for column, bin_counts in trn_cnts_uni.items()],
+        ori_cnts_uni = pd.DataFrame(
+            [(column, list(bin_counts.index), list(bin_counts.values)) for column, bin_counts in ori_cnts_uni.items()],
             columns=["column", "bin", "count"],
         )
-        trn_cnts_uni.to_parquet(self.bin_counts_uni_path)
+        ori_cnts_uni.to_parquet(self.bin_counts_uni_path)
 
         # store bivariate bin counts
-        trn_cnts_biv = pd.DataFrame(
+        ori_cnts_biv = pd.DataFrame(
             [
                 (column[0], column[1], list(bin_counts.index), list(bin_counts.values))
-                for column, bin_counts in trn_cnts_biv.items()
+                for column, bin_counts in ori_cnts_biv.items()
             ],
             columns=["col1", "col2", "bin", "count"],
         )
-        trn_cnts_biv.to_parquet(self.bin_counts_biv_path)
+        ori_cnts_biv.to_parquet(self.bin_counts_biv_path)
 
     def load_bin_counts(
         self,
@@ -321,17 +321,17 @@ class Statistics:
         return sio.load(self.pca_model_path)
 
     def store_trn_hol_pcas(self, trn_pca: np.ndarray, hol_pca: np.ndarray | None):
-        np.save(self.trn_pca_path, trn_pca)
+        np.save(self.ori_pca_path, trn_pca)
         if hol_pca is not None:
             np.save(self.hol_pca_path, hol_pca)
 
-    def load_trn_hol_pcas(self) -> tuple[np.ndarray, np.ndarray | None]:
-        trn_pca = np.load(self.trn_pca_path)
+    def load_ori_hol_pcas(self) -> tuple[np.ndarray, np.ndarray | None]:
+        ori_pca = np.load(self.ori_pca_path)
         if self.hol_pca_path.exists():
             hol_pca = np.load(self.hol_pca_path)
         else:
             hol_pca = None
-        return trn_pca, hol_pca
+        return ori_pca, hol_pca
 
     def store_coherence_bins(self, bins: dict[str, list]) -> None:
         df = pd.Series(bins).to_frame("bins").reset_index().rename(columns={"index": "column"})
@@ -343,12 +343,12 @@ class Statistics:
         df = self._load_df_from_row_files(self.coherence_bins_dir, ["column", "bins"], "column")
         return df.set_index("column")["bins"].to_dict()
 
-    def store_distinct_categories_per_sequence_kdes(self, trn_kdes: dict[str, pd.Series]) -> None:
-        trn_kdes = pd.DataFrame(
-            [(column, list(xy.index), list(xy.values)) for column, xy in trn_kdes.items()],
+    def store_distinct_categories_per_sequence_kdes(self, ori_kdes: dict[str, pd.Series]) -> None:
+        ori_kdes = pd.DataFrame(
+            [(column, list(xy.index), list(xy.values)) for column, xy in ori_kdes.items()],
             columns=["column", "x", "y"],
         )
-        self._store_file_per_row(trn_kdes, self.distinct_categories_per_sequence_kdes_dir, ["x", "y"])
+        self._store_file_per_row(ori_kdes, self.distinct_categories_per_sequence_kdes_dir, ["x", "y"])
 
     def load_distinct_categories_per_sequence_kdes(self) -> dict[str, pd.Series]:
         kdes = self._load_df_from_row_files(
