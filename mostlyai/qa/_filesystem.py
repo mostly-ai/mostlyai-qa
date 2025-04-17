@@ -135,7 +135,7 @@ class Statistics:
 
         # similarity
         self.pca_model_path = self.path / "pca_model.skops"
-        self.trn_pca_path = self.path / "trn_pca.npy"
+        self.ori_pca_path = self.path / "trn_pca.npy"
         self.hol_pca_path = self.path / "hol_pca.npy"
 
     def _store_file_per_row(self, df: pd.DataFrame, path: Path, explode_cols: list[str]) -> None:
@@ -321,17 +321,17 @@ class Statistics:
         return sio.load(self.pca_model_path)
 
     def store_trn_hol_pcas(self, trn_pca: np.ndarray, hol_pca: np.ndarray | None):
-        np.save(self.trn_pca_path, trn_pca)
+        np.save(self.ori_pca_path, trn_pca)
         if hol_pca is not None:
             np.save(self.hol_pca_path, hol_pca)
 
-    def load_trn_hol_pcas(self) -> tuple[np.ndarray, np.ndarray | None]:
-        trn_pca = np.load(self.trn_pca_path)
+    def load_ori_hol_pcas(self) -> tuple[np.ndarray, np.ndarray | None]:
+        ori_pca = np.load(self.ori_pca_path)
         if self.hol_pca_path.exists():
             hol_pca = np.load(self.hol_pca_path)
         else:
             hol_pca = None
-        return trn_pca, hol_pca
+        return ori_pca, hol_pca
 
     def store_coherence_bins(self, bins: dict[str, list]) -> None:
         df = pd.Series(bins).to_frame("bins").reset_index().rename(columns={"index": "column"})

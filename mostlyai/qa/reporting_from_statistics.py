@@ -135,14 +135,14 @@ def report_from_statistics(
         )
         progress.update(completed=30, total=100)
 
-        trn_coh_bins = statistics.load_coherence_bins()
-        do_coherence = trn_coh_bins is not None
+        ori_coh_bins = statistics.load_coherence_bins()
+        do_coherence = ori_coh_bins is not None
         if do_coherence:
             _LOG.info("prepare synthetic data for coherence started")
             syn_coh, _ = pull_data_for_coherence(
                 df_tgt=syn_tgt_data,
                 tgt_context_key=tgt_context_key,
-                bins=trn_coh_bins,
+                bins=ori_coh_bins,
                 max_sample_size=max_sample_size_coherence,
             )
             _LOG.info("report sequences per distinct category")
@@ -231,22 +231,22 @@ def _report_accuracy_and_correlations_from_statistics(
     acc_biv = statistics.load_bivariate_accuracies()
 
     _LOG.info("load numeric KDEs")
-    trn_num_kdes = statistics.load_numeric_uni_kdes()
+    ori_num_kdes = statistics.load_numeric_uni_kdes()
 
     _LOG.info("load categorical counts")
-    trn_cat_uni_cnts = statistics.load_categorical_uni_counts()
+    ori_cat_uni_cnts = statistics.load_categorical_uni_counts()
 
     _LOG.info("load bin counts")
-    trn_bin_cnts_uni, trn_bin_cnts_biv = statistics.load_bin_counts()
+    ori_bin_cnts_uni, ori_bin_cnts_biv = statistics.load_bin_counts()
 
     _LOG.info("load correlations")
-    corr_trn = statistics.load_correlations()
+    corr_ori = statistics.load_correlations()
 
     _LOG.info("calculate synthetic correlations")
-    corr_syn = _accuracy.calculate_correlations(binned=syn_bin, corr_cols=corr_trn.columns)
+    corr_syn = _accuracy.calculate_correlations(binned=syn_bin, corr_cols=corr_ori.columns)
 
     _LOG.info("plot correlations")
-    _accuracy.plot_store_correlation_matrices(corr_ori=corr_trn, corr_syn=corr_syn, workspace=workspace)
+    _accuracy.plot_store_correlation_matrices(corr_ori=corr_ori, corr_syn=corr_syn, workspace=workspace)
 
     _LOG.info("filter columns for plotting")
     syn = syn[acc_uni["column"]]
@@ -254,12 +254,12 @@ def _report_accuracy_and_correlations_from_statistics(
     syn_bin = syn_bin[acc_cols]
 
     _LOG.info("calculate numeric KDEs for synthetic")
-    syn_num_kdes = _accuracy.calculate_numeric_uni_kdes(df=syn, ori_kdes=trn_num_kdes)
+    syn_num_kdes = _accuracy.calculate_numeric_uni_kdes(df=syn, ori_kdes=ori_num_kdes)
 
     _LOG.info("calculate categorical counts for synthetic")
     syn_cat_uni_cnts = _accuracy.calculate_categorical_uni_counts(
         df=syn,
-        ori_col_counts=trn_cat_uni_cnts,
+        ori_col_counts=ori_cat_uni_cnts,
         hash_rare_values=False,
     )
 
@@ -268,11 +268,11 @@ def _report_accuracy_and_correlations_from_statistics(
 
     _LOG.info("plot univariates")
     _accuracy.plot_store_univariates(
-        ori_num_kdes=trn_num_kdes,
+        ori_num_kdes=ori_num_kdes,
         syn_num_kdes=syn_num_kdes,
-        ori_cat_cnts=trn_cat_uni_cnts,
+        ori_cat_cnts=ori_cat_uni_cnts,
         syn_cat_cnts=syn_cat_uni_cnts,
-        ori_cnts_uni=trn_bin_cnts_uni,
+        ori_cnts_uni=ori_bin_cnts_uni,
         syn_cnts_uni=syn_bin_cnts_uni,
         acc_uni=acc_uni,
         workspace=workspace,
@@ -281,16 +281,16 @@ def _report_accuracy_and_correlations_from_statistics(
 
     _LOG.info("plot bivariates")
     _accuracy.plot_store_bivariates(
-        ori_cnts_uni=trn_bin_cnts_uni,
+        ori_cnts_uni=ori_bin_cnts_uni,
         syn_cnts_uni=syn_bin_cnts_uni,
-        ori_cnts_biv=trn_bin_cnts_biv,
+        ori_cnts_biv=ori_bin_cnts_biv,
         syn_cnts_biv=syn_bin_cnts_biv,
         acc_biv=acc_biv,
         workspace=workspace,
         show_accuracy=False,
     )
 
-    return acc_uni, acc_biv, corr_trn
+    return acc_uni, acc_biv, corr_ori
 
 
 def _report_coherence_distinct_categories_per_sequence(
@@ -312,13 +312,13 @@ def _report_coherence_distinct_categories_per_sequence(
 
     # prepare KDEs for distribution (left) plots
     _LOG.info("load KDEs of distinct categories per sequence for training")
-    trn_cats_per_seq_kdes = statistics.load_distinct_categories_per_sequence_kdes()
+    ori_cats_per_seq_kdes = statistics.load_distinct_categories_per_sequence_kdes()
     _LOG.info("calculate KDEs of distinct categories per sequence for synthetic")
-    syn_cats_per_seq_kdes = _accuracy.calculate_numeric_uni_kdes(df=syn_cats_per_seq, ori_kdes=trn_cats_per_seq_kdes)
+    syn_cats_per_seq_kdes = _accuracy.calculate_numeric_uni_kdes(df=syn_cats_per_seq, ori_kdes=ori_cats_per_seq_kdes)
 
     # prepare counts for binned (right) plots
     _LOG.info("load counts of binned distinct categories per sequence for training")
-    trn_binned_cats_per_seq_cnts = statistics.load_binned_distinct_categories_per_sequence_counts()
+    ori_binned_cats_per_seq_cnts = statistics.load_binned_distinct_categories_per_sequence_counts()
     _LOG.info("calculate counts of binned distinct categories per sequence for synthetic")
     syn_binned_cats_per_seq_cnts = _accuracy.calculate_categorical_uni_counts(
         df=syn_binned_cats_per_seq, hash_rare_values=False
@@ -331,9 +331,9 @@ def _report_coherence_distinct_categories_per_sequence(
     # make plots
     _LOG.info("plot and store distinct categories per sequence")
     plot_store_distinct_categories_per_sequence(
-        ori_cats_per_seq_kdes=trn_cats_per_seq_kdes,
+        ori_cats_per_seq_kdes=ori_cats_per_seq_kdes,
         syn_cats_per_seq_kdes=syn_cats_per_seq_kdes,
-        ori_binned_cats_per_seq_cnts=trn_binned_cats_per_seq_cnts,
+        ori_binned_cats_per_seq_cnts=ori_binned_cats_per_seq_cnts,
         syn_binned_cats_per_seq_cnts=syn_binned_cats_per_seq_cnts,
         acc_cats_per_seq=acc_cats_per_seq,
         workspace=workspace,
@@ -349,7 +349,7 @@ def _report_coherence_sequences_per_distinct_category(
     workspace: TemporaryWorkspace,
 ) -> pd.DataFrame:
     _LOG.info("load sequences per distinct category artifacts for training")
-    seqs_per_cat_cnts, seqs_per_top_cat_cnts, top_cats, trn_n_seqs = (
+    seqs_per_cat_cnts, seqs_per_top_cat_cnts, top_cats, ori_n_seqs = (
         statistics.load_sequences_per_distinct_category_artifacts()
     )
 
@@ -371,7 +371,7 @@ def _report_coherence_sequences_per_distinct_category(
         syn_seqs_per_cat_cnts=seqs_per_cat_syn_cnts,
         ori_seqs_per_top_cat_cnts=seqs_per_top_cat_cnts,
         syn_seqs_per_top_cat_cnts=seqs_per_cat_syn_binned_cnts,
-        ori_n_seqs=trn_n_seqs,
+        ori_n_seqs=ori_n_seqs,
         syn_n_seqs=syn_cnt_sum,
         acc_seqs_per_cat=acc_seqs_per_cat,
         workspace=workspace,
@@ -393,9 +393,9 @@ def _report_similarity_from_statistics(
         return
 
     _LOG.info("load training and holdout PCA-projected embeddings")
-    trn_pca, hol_pca = statistics.load_trn_hol_pcas()
+    ori_pca, hol_pca = statistics.load_ori_hol_pcas()
 
     _LOG.info("plot and store PCA similarity contours")
     _similarity.plot_store_similarity_contours(
-        pca_model=pca_model, trn_pca=trn_pca, hol_pca=hol_pca, syn_embeds=syn_embeds, workspace=workspace
+        pca_model=pca_model, ori_pca=ori_pca, hol_pca=hol_pca, syn_embeds=syn_embeds, workspace=workspace
     )

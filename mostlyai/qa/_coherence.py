@@ -34,7 +34,7 @@ def calculate_distinct_categories_per_sequence_accuracy(
     with parallel_config("loky", n_jobs=min(cpu_count() - 1, 16)):
         results = Parallel()(
             delayed(calculate_accuracy)(
-                trn_bin_cols=ori_binned_cats_per_seq[[row["column"]]],
+                ori_bin_cols=ori_binned_cats_per_seq[[row["column"]]],
                 syn_bin_cols=syn_binned_cats_per_seq[[row["column"]]],
             )
             for _, row in acc_cats_per_seq.iterrows()
@@ -68,20 +68,20 @@ def plot_store_distinct_categories_per_sequence(
 
 def plot_store_single_distinct_categories_per_sequence(
     col: str,
-    trn_cats_per_seq_kde: pd.Series,
+    ori_cats_per_seq_kde: pd.Series,
     syn_cats_per_seq_kde: pd.Series,
-    trn_binned_cats_per_seq_cnts: pd.Series,
+    ori_binned_cats_per_seq_cnts: pd.Series,
     syn_binned_cats_per_seq_cnts: pd.Series,
     accuracy: float,
     workspace: TemporaryWorkspace,
 ) -> None:
     fig = plot_univariate(
         col_name=col,
-        ori_num_kde=trn_cats_per_seq_kde,
+        ori_num_kde=ori_cats_per_seq_kde,
         syn_num_kde=syn_cats_per_seq_kde,
         ori_cat_col_cnts=None,
         syn_cat_col_cnts=None,
-        ori_bin_col_cnts=trn_binned_cats_per_seq_cnts,
+        ori_bin_col_cnts=ori_binned_cats_per_seq_cnts,
         syn_bin_col_cnts=syn_binned_cats_per_seq_cnts,
         accuracy=accuracy,
     )
@@ -174,11 +174,11 @@ def plot_store_sequences_per_distinct_category(
 
 def plot_store_single_sequences_per_distinct_category(
     col: str,
-    trn_seqs_per_cat_cnts: pd.Series,
+    ori_seqs_per_cat_cnts: pd.Series,
     syn_seqs_per_cat_cnts: pd.Series,
-    trn_seqs_per_top_cat_cnts: pd.Series,
+    ori_seqs_per_top_cat_cnts: pd.Series,
     syn_seqs_per_top_cat_cnts: pd.Series,
-    trn_n_seqs: int,
+    ori_n_seqs: int,
     syn_n_seqs: int,
     accuracy: float,
     workspace: TemporaryWorkspace,
@@ -187,11 +187,11 @@ def plot_store_single_sequences_per_distinct_category(
         col_name=col,
         ori_num_kde=None,
         syn_num_kde=None,
-        ori_cat_col_cnts=trn_seqs_per_cat_cnts,
+        ori_cat_col_cnts=ori_seqs_per_cat_cnts,
         syn_cat_col_cnts=syn_seqs_per_cat_cnts,
-        ori_bin_col_cnts=trn_seqs_per_top_cat_cnts,
+        ori_bin_col_cnts=ori_seqs_per_top_cat_cnts,
         syn_bin_col_cnts=syn_seqs_per_top_cat_cnts,
-        ori_cnt=trn_n_seqs,
+        ori_cnt=ori_n_seqs,
         syn_cnt=syn_n_seqs,
         accuracy=accuracy,
         sort_categorical_binned_by_frequency=False,
