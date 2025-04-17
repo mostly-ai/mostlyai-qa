@@ -174,8 +174,8 @@ class Statistics:
         df["column"] = df["column"].str.replace(_OLD_COL_PREFIX, _NEW_COL_PREFIX, regex=True)
         return df.set_index("column")["bins"].to_dict()
 
-    def store_correlations(self, trn_corr: pd.DataFrame) -> None:
-        trn_corr.to_parquet(self.correlations_path)
+    def store_correlations(self, corr: pd.DataFrame) -> None:
+        corr.to_parquet(self.correlations_path)
 
     def load_correlations(self) -> pd.DataFrame:
         df = pd.read_parquet(self.correlations_path)
@@ -249,25 +249,25 @@ class Statistics:
 
     def store_bin_counts(
         self,
-        trn_cnts_uni: dict[str, pd.Series],
-        trn_cnts_biv: dict[tuple[str, str], pd.Series],
+        ori_cnts_uni: dict[str, pd.Series],
+        ori_cnts_biv: dict[tuple[str, str], pd.Series],
     ) -> None:
         # store univariate bin counts
-        trn_cnts_uni = pd.DataFrame(
-            [(column, list(bin_counts.index), list(bin_counts.values)) for column, bin_counts in trn_cnts_uni.items()],
+        ori_cnts_uni = pd.DataFrame(
+            [(column, list(bin_counts.index), list(bin_counts.values)) for column, bin_counts in ori_cnts_uni.items()],
             columns=["column", "bin", "count"],
         )
-        trn_cnts_uni.to_parquet(self.bin_counts_uni_path)
+        ori_cnts_uni.to_parquet(self.bin_counts_uni_path)
 
         # store bivariate bin counts
-        trn_cnts_biv = pd.DataFrame(
+        ori_cnts_biv = pd.DataFrame(
             [
                 (column[0], column[1], list(bin_counts.index), list(bin_counts.values))
-                for column, bin_counts in trn_cnts_biv.items()
+                for column, bin_counts in ori_cnts_biv.items()
             ],
             columns=["col1", "col2", "bin", "count"],
         )
-        trn_cnts_biv.to_parquet(self.bin_counts_biv_path)
+        ori_cnts_biv.to_parquet(self.bin_counts_biv_path)
 
     def load_bin_counts(
         self,
@@ -343,12 +343,12 @@ class Statistics:
         df = self._load_df_from_row_files(self.coherence_bins_dir, ["column", "bins"], "column")
         return df.set_index("column")["bins"].to_dict()
 
-    def store_distinct_categories_per_sequence_kdes(self, trn_kdes: dict[str, pd.Series]) -> None:
-        trn_kdes = pd.DataFrame(
-            [(column, list(xy.index), list(xy.values)) for column, xy in trn_kdes.items()],
+    def store_distinct_categories_per_sequence_kdes(self, ori_kdes: dict[str, pd.Series]) -> None:
+        ori_kdes = pd.DataFrame(
+            [(column, list(xy.index), list(xy.values)) for column, xy in ori_kdes.items()],
             columns=["column", "x", "y"],
         )
-        self._store_file_per_row(trn_kdes, self.distinct_categories_per_sequence_kdes_dir, ["x", "y"])
+        self._store_file_per_row(ori_kdes, self.distinct_categories_per_sequence_kdes_dir, ["x", "y"])
 
     def load_distinct_categories_per_sequence_kdes(self) -> dict[str, pd.Series]:
         kdes = self._load_df_from_row_files(

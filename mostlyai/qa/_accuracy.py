@@ -52,19 +52,19 @@ _LOG = logging.getLogger(__name__)
 
 
 def calculate_univariates(
-    trn_bin: pd.DataFrame,
+    ori_bin: pd.DataFrame,
     syn_bin: pd.DataFrame,
 ) -> pd.DataFrame:
     """
     Calculates univariate accuracies for all target columns.
     """
 
-    tgt_cols = [c for c in trn_bin.columns if c.startswith(TGT_COLUMN)]
+    tgt_cols = [c for c in ori_bin.columns if c.startswith(TGT_COLUMN)]
     accuracies = pd.DataFrame({"column": tgt_cols})
     with parallel_config("loky", n_jobs=min(cpu_count() - 1, 16)):
         results = Parallel()(
             delayed(calculate_accuracy)(
-                trn_bin_cols=trn_bin[[row["column"]]],
+                ori_bin_cols=ori_bin[[row["column"]]],
                 syn_bin_cols=syn_bin[[row["column"]]],
             )
             for _, row in accuracies.iterrows()
@@ -74,7 +74,7 @@ def calculate_univariates(
 
 
 def calculate_bivariates(
-    trn_bin: pd.DataFrame,
+    ori_bin: pd.DataFrame,
     syn_bin: pd.DataFrame,
 ) -> pd.DataFrame:
     """
@@ -89,14 +89,14 @@ def calculate_bivariates(
 
     # the result for symmetric pairs is the same, so we only calculate one of them
     # later, we append copy results for symmetric pairs
-    accuracies = calculate_bivariate_columns(trn_bin, append_symetric=False)
+    accuracies = calculate_bivariate_columns(ori_bin, append_symetric=False)
 
     # calculate bivariates if there is at least one pair
     if len(accuracies) > 0:
         with parallel_config("loky", n_jobs=min(cpu_count() - 1, 16)):
             results = Parallel()(
                 delayed(calculate_accuracy)(
-                    trn_bin_cols=trn_bin[[row["col1"], row["col2"]]],
+                    ori_bin_cols=ori_bin[[row["col1"], row["col2"]]],
                     syn_bin_cols=syn_bin[[row["col1"], row["col2"]]],
                 )
                 for _, row in accuracies.iterrows()
@@ -118,14 +118,14 @@ def calculate_bivariates(
     return accuracies
 
 
-def calculate_bivariate_columns(trn_bin: pd.DataFrame, append_symetric: bool = True) -> pd.DataFrame:
+def calculate_bivariate_columns(ori_bin: pd.DataFrame, append_symetric: bool = True) -> pd.DataFrame:
     """
     Creates DataFrame with all column-pairs subject to bivariate analysis.
     """
 
-    tgt_cols = [c for c in trn_bin.columns if c.startswith(TGT_COLUMN_PREFIX)]
-    ctx_cols = [c for c in trn_bin.columns if c.startswith(CTX_COLUMN_PREFIX)]
-    nxt_cols = [c for c in trn_bin.columns if c.startswith(NXT_COLUMN_PREFIX)]
+    tgt_cols = [c for c in ori_bin.columns if c.startswith(TGT_COLUMN_PREFIX)]
+    ctx_cols = [c for c in ori_bin.columns if c.startswith(CTX_COLUMN_PREFIX)]
+    nxt_cols = [c for c in ori_bin.columns if c.startswith(NXT_COLUMN_PREFIX)]
 
     # create cross-combinations between all `tgt` columns
     columns_df = pd.merge(
@@ -189,44 +189,44 @@ def calculate_expected_l1_multinomial(probs: list[float], n_1: int, n_2: int) ->
     return expected_l1
 
 
-def calculate_accuracy(trn_bin_cols: pd.DataFrame, syn_bin_cols: pd.DataFrame) -> tuple[np.float64, np.float64]:
+def calculate_accuracy(ori_bin_cols: pd.DataFrame, syn_bin_cols: pd.DataFrame) -> tuple[np.float64, np.float64]:
     """
     Calculates accuracy between the empirical distributions of training vs. synthetic, as well as the max accuracy,
     that can be expected due to the sampling noise.
     """
 
-    trn_bin_cnts = trn_bin_cols.value_counts()
+    ori_bin_cnts = ori_bin_cols.value_counts()
     syn_bin_cnts = syn_bin_cols.value_counts()
-    return calculate_accuracy_cnts(trn_bin_cnts, syn_bin_cnts)
+    return calculate_accuracy_cnts(ori_bin_cnts, syn_bin_cnts)
 
 
-def calculate_accuracy_cnts(trn_bin_cnts: pd.Series, syn_bin_cnts: pd.Series) -> tuple[np.float64, np.float64]:
-    n_trn = trn_bin_cnts.sum()
+def calculate_accuracy_cnts(ori_bin_cnts: pd.Series, syn_bin_cnts: pd.Series) -> tuple[np.float64, np.float64]:
+    n_ori = ori_bin_cnts.sum()
     n_syn = syn_bin_cnts.sum()
-    trn_freq = trn_bin_cnts / n_trn
+    ori_freq = ori_bin_cnts / n_ori
     syn_freq = syn_bin_cnts / n_syn
     freq = pd.merge(
-        trn_freq.to_frame("tgt").reset_index(),
+        ori_freq.to_frame("tgt").reset_index(),
         syn_freq.to_frame("syn").reset_index(),
         how="outer",
-        on=list(trn_bin_cnts.index.names),
+        on=list(ori_bin_cnts.index.names),
     )
     freq["tgt"] = freq["tgt"].fillna(0.0)
     freq["syn"] = freq["syn"].fillna(0.0)
     # calculate L1 distance between `trn` and `syn`
     observed_l1 = (freq["tgt"] - freq["syn"]).abs().sum()
     # calculated expected L1 distance based on `trn`
-    expected_l1 = calculate_expected_l1_multinomial(freq["tgt"].to_list(), n_trn, n_syn)
+    expected_l1 = calculate_expected_l1_multinomial(freq["tgt"].to_list(), n_ori, n_syn)
     # convert to accuracy; trim superfluous precision
     observed_acc = (1 - observed_l1 / 2).round(5)
     expected_acc = (1 - expected_l1 / 2).round(5)
     return observed_acc, expected_acc
 
 
-def calculate_numeric_uni_kdes(df: pd.DataFrame, trn_kdes: dict[str, pd.Series] | None = None) -> dict[str, pd.Series]:
+def calculate_numeric_uni_kdes(df: pd.DataFrame, ori_kdes: dict[str, pd.Series] | None = None) -> dict[str, pd.Series]:
     """
     Calculates univariate kernel density estimates for numeric/datetime columns.
-    `trn_kdes` is used as a reference for the grid points to evaluate the KDEs.
+    `ori_kdes` is used as a reference for the grid points to evaluate the KDEs.
     """
 
     col_kdes = {}
@@ -236,11 +236,11 @@ def calculate_numeric_uni_kdes(df: pd.DataFrame, trn_kdes: dict[str, pd.Series] 
         is_numeric = pd.api.types.is_numeric_dtype(series)
         is_datetime = pd.api.types.is_datetime64_dtype(series)
         is_empty = series.dropna().size == 0
-        missing_in_trn = trn_kdes is not None and col not in trn_kdes
+        missing_in_trn = ori_kdes is not None and col not in ori_kdes
         if not missing_in_trn and (is_numeric or is_datetime) and not is_empty:
             # column is treated as numeric/datetime
 
-            if trn_kdes is None:
+            if ori_kdes is None:
                 # determine grid points to evaluate kernel estimates
                 val_min = series.min()
                 val_max = series.max()
@@ -249,9 +249,9 @@ def calculate_numeric_uni_kdes(df: pd.DataFrame, trn_kdes: dict[str, pd.Series] 
                     val_x = pd.date_range(start=val_min, end=val_max, periods=no_of_bins + 1)
                 else:
                     val_x = pd.Series(np.linspace(val_min, val_max, no_of_bins), dtype="float")
-            else:  # trn_kdes is not None
+            else:  # ori_kdes is not None
                 # use grid points from training data
-                val_x = trn_kdes[col].index
+                val_x = ori_kdes[col].index
 
             # estimate gaussian kernels
             series_vals = series.dropna().to_numpy("float")
@@ -267,24 +267,24 @@ def calculate_numeric_uni_kdes(df: pd.DataFrame, trn_kdes: dict[str, pd.Series] 
                 val_y = [1] * len(val_x)
             col_kdes[col] = pd.Series(val_y, index=val_x, name=col)
 
-    if trn_kdes is not None:
+    if ori_kdes is not None:
         # ensure the result has the same shape as for Model QA
-        for trn_col, trn_kdes in trn_kdes.items():
-            if trn_col not in col_kdes:
-                kdes = pd.Series(0, index=trn_kdes.index, name=trn_col)
-                col_kdes[trn_col] = kdes
+        for ori_col, ori_kdes in ori_kdes.items():
+            if ori_col not in col_kdes:
+                kdes = pd.Series(0, index=ori_kdes.index, name=ori_col)
+                col_kdes[ori_col] = kdes
 
     return col_kdes
 
 
 def calculate_categorical_uni_counts(
     df: pd.DataFrame,
-    trn_col_counts: dict[str, pd.Series] | None = None,
+    ori_col_counts: dict[str, pd.Series] | None = None,
     hash_rare_values: bool = True,
 ) -> dict[str, pd.Series]:
     """
     Calculates counts of unique values in each categorical column of a DataFrame.
-    Protects rare labels by hashing them. `trn_col_counts` is used as
+    Protects rare labels by hashing them. `ori_col_counts` is used as
     template to ensure the result has the same shape as for Model QA.
     """
 
@@ -322,10 +322,10 @@ def calculate_categorical_uni_counts(
             cnts = cnts.set_index(cnts[col].rename(None))["cnt"].rename(col)
             col_counts[col] = cnts
 
-    if trn_col_counts is not None:
+    if ori_col_counts is not None:
         # ensure the result has the same shape as for Model QA
-        for trn_col, trn_counts in trn_col_counts.items():
-            col_counts[trn_col] = col_counts.get(trn_col, pd.Series(0, index=trn_counts.index, name=trn_col))
+        for ori_col, ori_counts in ori_col_counts.items():
+            col_counts[ori_col] = col_counts.get(ori_col, pd.Series(0, index=ori_counts.index, name=ori_col))
 
     return col_counts
 
@@ -374,11 +374,11 @@ def calculate_bin_counts(
 
 
 def plot_store_univariates(
-    trn_num_kdes: dict[str, pd.Series],
+    ori_num_kdes: dict[str, pd.Series],
     syn_num_kdes: dict[str, pd.Series],
-    trn_cat_cnts: dict[str, pd.Series],
+    ori_cat_cnts: dict[str, pd.Series],
     syn_cat_cnts: dict[str, pd.Series],
-    trn_cnts_uni: dict[str, pd.Series],
+    ori_cnts_uni: dict[str, pd.Series],
     syn_cnts_uni: dict[str, pd.Series],
     acc_uni: pd.DataFrame,
     workspace: TemporaryWorkspace,
@@ -392,11 +392,11 @@ def plot_store_univariates(
         Parallel()(
             delayed(plot_store_univariate)(
                 row["column"],
-                trn_num_kdes.get(row["column"]),
+                ori_num_kdes.get(row["column"]),
                 syn_num_kdes.get(row["column"]),
-                trn_cat_cnts.get(row["column"]),
+                ori_cat_cnts.get(row["column"]),
                 syn_cat_cnts.get(row["column"]),
-                trn_cnts_uni[row["column"]],
+                ori_cnts_uni[row["column"]],
                 syn_cnts_uni[row["column"]],
                 row["accuracy"] if show_accuracy else None,
                 workspace,
@@ -407,22 +407,22 @@ def plot_store_univariates(
 
 def plot_store_univariate(
     col: str,
-    trn_num_kde: pd.Series | None,
+    ori_num_kde: pd.Series | None,
     syn_num_kde: pd.Series | None,
-    trn_cat_col_cnts: pd.Series | None,
+    ori_cat_col_cnts: pd.Series | None,
     syn_cat_col_cnts: pd.Series | None,
-    trn_bin_col_cnts: pd.Series,
+    ori_bin_col_cnts: pd.Series,
     syn_bin_col_cnts: pd.Series,
     accuracy: float | None,
     workspace: TemporaryWorkspace,
 ) -> None:
     fig = plot_univariate(
         col_name=col,
-        trn_num_kde=trn_num_kde,
+        ori_num_kde=ori_num_kde,
         syn_num_kde=syn_num_kde,
-        trn_cat_col_cnts=trn_cat_col_cnts,
+        ori_cat_col_cnts=ori_cat_col_cnts,
         syn_cat_col_cnts=syn_cat_col_cnts,
-        trn_bin_col_cnts=trn_bin_col_cnts,
+        ori_bin_col_cnts=ori_bin_col_cnts,
         syn_bin_col_cnts=syn_bin_col_cnts,
         accuracy=accuracy,
     )
@@ -431,13 +431,13 @@ def plot_store_univariate(
 
 def plot_univariate(
     col_name: str,
-    trn_num_kde: pd.Series | None,
+    ori_num_kde: pd.Series | None,
     syn_num_kde: pd.Series | None,
-    trn_cat_col_cnts: pd.Series | None,
+    ori_cat_col_cnts: pd.Series | None,
     syn_cat_col_cnts: pd.Series | None,
-    trn_bin_col_cnts: pd.Series,
+    ori_bin_col_cnts: pd.Series,
     syn_bin_col_cnts: pd.Series,
-    trn_cnt: int | None = None,
+    ori_cnt: int | None = None,
     syn_cnt: int | None = None,
     accuracy: float | None = None,
     sort_categorical_binned_by_frequency: bool = True,
@@ -485,28 +485,28 @@ def plot_univariate(
     )
     fig.update_annotations(font_size=10)  # set font size of subplot titles
     # plot content
-    is_numeric = trn_num_kde is not None
+    is_numeric = ori_num_kde is not None
     if is_numeric:
-        trn_line1, syn_line1 = plot_univariate_distribution_numeric(trn_num_kde, syn_num_kde)
-        trn_line2, syn_line2 = plot_univariate_binned(
-            trn_bin_col_cnts,
+        ori_line1, syn_line1 = plot_univariate_distribution_numeric(ori_num_kde, syn_num_kde)
+        ori_line2, syn_line2 = plot_univariate_binned(
+            ori_bin_col_cnts,
             syn_bin_col_cnts,
             sort_by_frequency=False,
-            trn_cnt=trn_cnt,
+            ori_cnt=ori_cnt,
             syn_cnt=syn_cnt,
         )
         # prevent Plotly from trying to convert strings to dates
         fig.layout.xaxis2.update(type="category")
     else:
         fig.layout.yaxis.update(tickformat=".0%")
-        trn_line1, syn_line1 = plot_univariate_distribution_categorical(
-            trn_cat_col_cnts, syn_cat_col_cnts, trn_cnt, syn_cnt, max_label_length=max_label_length
+        ori_line1, syn_line1 = plot_univariate_distribution_categorical(
+            ori_cat_col_cnts, syn_cat_col_cnts, ori_cnt, syn_cnt, max_label_length=max_label_length
         )
-        trn_line2, syn_line2 = plot_univariate_binned(
-            trn_bin_col_cnts,
+        ori_line2, syn_line2 = plot_univariate_binned(
+            ori_bin_col_cnts,
             syn_bin_col_cnts,
             sort_by_frequency=sort_categorical_binned_by_frequency,
-            trn_cnt=trn_cnt,
+            ori_cnt=ori_cnt,
             syn_cnt=syn_cnt,
         )
         # prevent Plotly from trying to convert strings to dates
@@ -514,49 +514,49 @@ def plot_univariate(
         fig.layout.xaxis2.update(type="category")
 
     # rescale y2 axis dependent on max peak
-    y_max = min(0.999, 2.0 * max(trn_line2["y"]))
+    y_max = min(0.999, 2.0 * max(ori_line2["y"]))
     fig.layout.yaxis2.update(range=[0, y_max], tickformat=".0%")
 
-    fig.add_trace(trn_line1, row=1, col=1)
+    fig.add_trace(ori_line1, row=1, col=1)
     fig.add_trace(syn_line1, row=1, col=1)
-    fig.add_trace(trn_line2, row=1, col=2)
+    fig.add_trace(ori_line2, row=1, col=2)
     fig.add_trace(syn_line2, row=1, col=2)
     return fig
 
 
 def prepare_categorical_plot_data_distribution(
-    trn_col_cnts: pd.Series,
+    ori_col_cnts: pd.Series,
     syn_col_cnts: pd.Series,
-    trn_cnt: int | None = None,
+    ori_cnt: int | None = None,
     syn_cnt: int | None = None,
 ) -> pd.DataFrame:
-    trn_col_cnts_idx = trn_col_cnts.index.to_series().astype("string").fillna(NA_BIN).replace("", EMPTY_BIN)
+    ori_col_cnts_idx = ori_col_cnts.index.to_series().astype("string").fillna(NA_BIN).replace("", EMPTY_BIN)
     syn_col_cnts_idx = syn_col_cnts.index.to_series().astype("string").fillna(NA_BIN).replace("", EMPTY_BIN)
-    trn_col_cnts = trn_col_cnts.set_axis(trn_col_cnts_idx)
+    ori_col_cnts = ori_col_cnts.set_axis(ori_col_cnts_idx)
     syn_col_cnts = syn_col_cnts.set_axis(syn_col_cnts_idx)
-    t = trn_col_cnts.to_frame("target_cnt").reset_index(names="category")
+    t = ori_col_cnts.to_frame("target_cnt").reset_index(names="category")
     s = syn_col_cnts.to_frame("synthetic_cnt").reset_index(names="category")
     df = pd.merge(t, s, on="category", how="outer")
     df["target_cnt"] = df["target_cnt"].fillna(0.0)
     df["synthetic_cnt"] = df["synthetic_cnt"].fillna(0.0)
     df["avg_cnt"] = (df["target_cnt"] + df["synthetic_cnt"]) / 2
     df = df[df["avg_cnt"] > 0]
-    trn_cnt = trn_cnt or df["target_cnt"].sum()
+    ori_cnt = ori_cnt or df["target_cnt"].sum()
     syn_cnt = syn_cnt or df["synthetic_cnt"].sum()
-    df["target_pct"] = df["target_cnt"] / trn_cnt
+    df["target_pct"] = df["target_cnt"] / ori_cnt
     df["synthetic_pct"] = df["synthetic_cnt"] / syn_cnt
     df = df.sort_values("avg_cnt", ascending=False).reset_index(drop=True)
     return df
 
 
 def prepare_categorical_plot_data_binned(
-    trn_bin_col_cnts: pd.Series,
+    ori_bin_col_cnts: pd.Series,
     syn_bin_col_cnts: pd.Series,
     sort_by_frequency: bool,
-    trn_cnt: int | None = None,
+    ori_cnt: int | None = None,
     syn_cnt: int | None = None,
 ) -> pd.DataFrame:
-    t = trn_bin_col_cnts.to_frame("target_cnt").reset_index(names="category")
+    t = ori_bin_col_cnts.to_frame("target_cnt").reset_index(names="category")
     s = syn_bin_col_cnts.to_frame("synthetic_cnt").reset_index(names="category")
     df = pd.merge(t, s, on="category", how="left")
     df = df.set_index("category").reindex(t["category"]).reset_index()
@@ -567,9 +567,9 @@ def prepare_categorical_plot_data_binned(
     df["synthetic_cnt"] = df["synthetic_cnt"].fillna(0.0)
     df["avg_cnt"] = (df["target_cnt"] + df["synthetic_cnt"]) / 2
     df = df[df["avg_cnt"] > 0]
-    trn_cnt = trn_cnt or df["target_cnt"].sum()
+    ori_cnt = ori_cnt or df["target_cnt"].sum()
     syn_cnt = syn_cnt or df["synthetic_cnt"].sum()
-    df["target_pct"] = df["target_cnt"] / trn_cnt
+    df["target_pct"] = df["target_cnt"] / ori_cnt
     df["synthetic_pct"] = df["synthetic_cnt"] / syn_cnt
     cat_order = list(t["category"])
     cat_order.extend([syn_cat for syn_cat in s["category"] if syn_cat not in cat_order])
@@ -582,18 +582,18 @@ def prepare_categorical_plot_data_binned(
 
 
 def plot_univariate_distribution_categorical(
-    trn_cat_col_cnts: pd.Series,
+    ori_cat_col_cnts: pd.Series,
     syn_cat_col_cnts: pd.Series,
-    trn_cnt: int | None = None,
+    ori_cnt: int | None = None,
     syn_cnt: int | None = None,
     max_label_length: int = 10,
 ) -> tuple[go.Scatter, go.Scatter]:
     # prepare data
-    df = prepare_categorical_plot_data_distribution(trn_cat_col_cnts, syn_cat_col_cnts, trn_cnt, syn_cnt)
+    df = prepare_categorical_plot_data_distribution(ori_cat_col_cnts, syn_cat_col_cnts, ori_cnt, syn_cnt)
     # trim labels
     df["category"] = trim_labels(df["category"], max_length=max_label_length)
     # prepare plots
-    trn_line = go.Scatter(
+    ori_line = go.Scatter(
         mode="lines",
         x=df["category"],
         y=df["target_pct"],
@@ -611,20 +611,20 @@ def plot_univariate_distribution_categorical(
         fill="tonexty",
         fillcolor=CHARTS_COLORS["gap"],
     )
-    return trn_line, syn_line
+    return ori_line, syn_line
 
 
 def plot_univariate_binned(
-    trn_bin_col_cnts: pd.Series,
+    ori_bin_col_cnts: pd.Series,
     syn_bin_col_cnts: pd.Series,
     sort_by_frequency: bool = False,
-    trn_cnt: int | None = None,
+    ori_cnt: int | None = None,
     syn_cnt: int | None = None,
 ) -> tuple[go.Scatter, go.Scatter]:
     # prepare data
-    df = prepare_categorical_plot_data_binned(trn_bin_col_cnts, syn_bin_col_cnts, sort_by_frequency, trn_cnt, syn_cnt)
+    df = prepare_categorical_plot_data_binned(ori_bin_col_cnts, syn_bin_col_cnts, sort_by_frequency, ori_cnt, syn_cnt)
     # prepare plots
-    trn_line = go.Scatter(
+    ori_line = go.Scatter(
         mode="lines+markers",
         x=df["category"],
         y=df["target_pct"],
@@ -646,15 +646,15 @@ def plot_univariate_binned(
         marker_symbol="diamond",
         marker_size=6,
     )
-    return trn_line, syn_line
+    return ori_line, syn_line
 
 
 def plot_univariate_distribution_numeric(
-    trn_num_kde: pd.Series, syn_num_kde: pd.Series
+    ori_num_kde: pd.Series, syn_num_kde: pd.Series
 ) -> tuple[go.Scatter, go.Scatter]:
-    trn_line = go.Scatter(
-        x=trn_num_kde.index,
-        y=trn_num_kde.values,
+    ori_line = go.Scatter(
+        x=ori_num_kde.index,
+        y=ori_num_kde.values,
         name="original",
         line_color=CHARTS_COLORS["original"],
         yhoverformat=".5f",
@@ -668,13 +668,13 @@ def plot_univariate_distribution_numeric(
         fill="tonexty",
         fillcolor=CHARTS_COLORS["gap"],
     )
-    return trn_line, syn_line
+    return ori_line, syn_line
 
 
 def plot_store_bivariates(
-    trn_cnts_uni: dict[str, pd.Series],
+    ori_cnts_uni: dict[str, pd.Series],
     syn_cnts_uni: dict[str, pd.Series],
-    trn_cnts_biv: dict[tuple[str, str], pd.Series],
+    ori_cnts_biv: dict[tuple[str, str], pd.Series],
     syn_cnts_biv: dict[tuple[str, str], pd.Series],
     acc_biv: pd.DataFrame,
     workspace: TemporaryWorkspace,
@@ -689,11 +689,11 @@ def plot_store_bivariates(
             delayed(plot_store_bivariate)(
                 row["col1"],
                 row["col2"],
-                trn_cnts_uni[row["col1"]],
-                trn_cnts_uni[row["col2"]],
+                ori_cnts_uni[row["col1"]],
+                ori_cnts_uni[row["col2"]],
                 syn_cnts_uni[row["col1"]],
                 syn_cnts_uni[row["col2"]],
-                trn_cnts_biv[(row["col1"], row["col2"])],
+                ori_cnts_biv[(row["col1"], row["col2"])],
                 syn_cnts_biv[(row["col1"], row["col2"])],
                 row["accuracy"] if show_accuracy else None,
                 workspace,
@@ -705,11 +705,11 @@ def plot_store_bivariates(
 def plot_store_bivariate(
     col1: str,
     col2: str,
-    trn_cnts_col1: pd.Series,
-    trn_cnts_col2: pd.Series,
+    ori_cnts_col1: pd.Series,
+    ori_cnts_col2: pd.Series,
     syn_cnts_col1: pd.Series,
     syn_cnts_col2: pd.Series,
-    trn_cnts_col12: pd.Series,
+    ori_cnts_col12: pd.Series,
     syn_cnts_col12: pd.Series,
     accuracy: float | None,
     workspace: TemporaryWorkspace,
@@ -717,11 +717,11 @@ def plot_store_bivariate(
     fig = plot_bivariate(
         col1,
         col2,
-        trn_cnts_col1,
-        trn_cnts_col2,
+        ori_cnts_col1,
+        ori_cnts_col2,
         syn_cnts_col1,
         syn_cnts_col2,
-        trn_cnts_col12,
+        ori_cnts_col12,
         syn_cnts_col12,
         accuracy,
     )
@@ -731,22 +731,22 @@ def plot_store_bivariate(
 def plot_bivariate(
     col1: str,
     col2: str,
-    trn_cnts_col1: pd.Series,
-    trn_cnts_col2: pd.Series,
+    ori_cnts_col1: pd.Series,
+    ori_cnts_col2: pd.Series,
     syn_cnts_col1: pd.Series,
     syn_cnts_col2: pd.Series,
-    trn_cnts_col12: pd.Series,
+    ori_cnts_col12: pd.Series,
     syn_cnts_col12: pd.Series,
     accuracy: float | None,
 ) -> go.Figure:
     # prepare data
     # establish grid of cross-combinations
-    x = pd.concat([trn_cnts_col1.index.to_series(), syn_cnts_col1.index.to_series()]).drop_duplicates().to_frame(col1)
-    y = pd.concat([trn_cnts_col2.index.to_series(), syn_cnts_col2.index.to_series()]).drop_duplicates().to_frame(col2)
+    x = pd.concat([ori_cnts_col1.index.to_series(), syn_cnts_col1.index.to_series()]).drop_duplicates().to_frame(col1)
+    y = pd.concat([ori_cnts_col2.index.to_series(), syn_cnts_col2.index.to_series()]).drop_duplicates().to_frame(col2)
     df = pd.merge(x, y, how="cross")
     df = pd.merge(
         df,
-        trn_cnts_col12.to_frame("target").reset_index(),
+        ori_cnts_col12.to_frame("target").reset_index(),
         how="left",
     )
     df = pd.merge(
@@ -961,17 +961,17 @@ def trim_labels(labels: list[str], max_length: int = None, ensure_unique=True) -
 
 
 def binning_data(
-    trn: pd.DataFrame,
+    ori: pd.DataFrame,
     syn: pd.DataFrame,
     statistics: Statistics,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     _LOG.info("calculate original data bins")
-    trn_bin, bins = bin_data(df=trn, bins=10)
+    ori_bin, bins = bin_data(df=ori, bins=10)
     _LOG.info("store original data bins")
     statistics.store_bins(bins=bins)
     _LOG.info("calculate synthetic data bins")
     syn_bin, _ = bin_data(df=syn, bins=bins)
-    return trn_bin, syn_bin
+    return ori_bin, syn_bin
 
 
 def bin_data(
@@ -1197,7 +1197,7 @@ def search_bin_boundaries(num_col: pd.Series, n: int) -> list:
 
 
 def plot_store_correlation_matrices(
-    corr_trn: pd.DataFrame,
+    corr_ori: pd.DataFrame,
     corr_syn: pd.DataFrame,
     workspace: TemporaryWorkspace,
 ) -> None:
@@ -1207,7 +1207,7 @@ def plot_store_correlation_matrices(
     under workspace dir.
     """
 
-    fig = plot_correlation_matrices(corr_trn, corr_syn)
+    fig = plot_correlation_matrices(corr_ori=corr_ori, corr_syn=corr_syn)
     workspace.store_figure_html(fig, "correlation_matrices")
 
 
@@ -1242,7 +1242,7 @@ def calculate_correlations(binned: pd.DataFrame, corr_cols: Iterable[str] | None
     return corr
 
 
-def plot_correlation_matrices(corr_trn: pd.DataFrame, corr_syn: pd.DataFrame) -> go.Figure:
+def plot_correlation_matrices(corr_ori: pd.DataFrame, corr_syn: pd.DataFrame) -> go.Figure:
     # plot layout
     layout = go.Layout(
         title=dict(text="<b>Correlation Matrices</b>", x=0.5, y=0.98),
@@ -1264,12 +1264,12 @@ def plot_correlation_matrices(corr_trn: pd.DataFrame, corr_syn: pd.DataFrame) ->
     )
     fig.update_annotations(font_size=12)  # set font size of subplot titles
     # plot content
-    col_names = trim_labels(corr_trn.columns, max_length=30)
+    col_names = trim_labels(corr_ori.columns, max_length=30)
     hovertemplate = "`%{x}` vs. `%{y}`: %{z:.2f}"
     heat1 = go.Heatmap(
         x=col_names,
         y=col_names,
-        z=corr_trn,
+        z=corr_ori,
         name="original",
         zmin=0,
         zmax=1.0,
@@ -1293,7 +1293,7 @@ def plot_correlation_matrices(corr_trn: pd.DataFrame, corr_syn: pd.DataFrame) ->
     heat3 = go.Heatmap(
         x=col_names,
         y=col_names,
-        z=(corr_trn - corr_syn).abs(),
+        z=(corr_ori - corr_syn).abs(),
         name="difference",
         zmin=0,
         zmax=1.0,
