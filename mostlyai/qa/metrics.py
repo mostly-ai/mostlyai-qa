@@ -184,6 +184,7 @@ class Distances(CustomBaseModel):
         alias="imsTraining",
         description="Share of synthetic samples that are identical to a training sample.",
         ge=0.0,
+        le=1.0,
     )
     ims_holdout: float | None = Field(
         default=None,
@@ -191,12 +192,15 @@ class Distances(CustomBaseModel):
         description="Share of synthetic samples that are identical to a holdout sample. Serves as a reference for "
         "`ims_training`.",
         ge=0.0,
+        le=1.0,
     )
     ims_trn_hol: float | None = Field(
         default=None,
         alias="imsTrnHol",
-        description="Share of training samples that are identical to a holdout sample.",
+        description="Share of training samples that are identical to a holdout sample. Serves as a reference for "
+        "`ims_training`.",
         ge=0.0,
+        le=1.0,
     )
     dcr_training: float | None = Field(
         default=None,
