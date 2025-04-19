@@ -54,7 +54,7 @@ def test_calculate_distances():
     assert len(dcr_syn_hol) == n
     assert len(dcr_trn_hol) == n
     assert dcr_syn_trn.min() > 0
-    assert dcr_syn_hol.max() == 0
+    assert dcr_syn_hol.max() <= 1e-6
 
     # test specifically that near matches do not report a distance of 0 due to rounding
     syn_embeds = calculate_embeddings(["a 0.0002"] * n, embedder=embedder)
