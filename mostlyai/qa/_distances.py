@@ -28,6 +28,27 @@ from sklearn.neighbors import NearestNeighbors
 _LOG = logging.getLogger(__name__)
 
 
+def calculate_dcrs(data: np.ndarray | None, query: np.ndarray | None) -> np.ndarray | None:
+    """
+    Calculate Distance to Closest Records (DCRs).
+
+    Args:
+        data: Embeddings of the training data.
+        query: Embeddings of the query set.
+
+    Returns:
+    """
+    if data is None or query is None:
+        return None
+    # sort data by first dimension to enforce deterministic results
+    data = data[data[:, 0].argsort()]
+    _LOG.info(f"calculate DCRs for {data.shape=} and {query.shape=}")
+    index = NearestNeighbors(n_neighbors=1, algorithm="auto", metric="cosine", n_jobs=min(cpu_count() - 1, 16))
+    index.fit(data)
+    dcrs, _ = index.kneighbors(query)
+    return dcrs[:, 0]
+
+
 def calculate_distances(
     *, syn_embeds: np.ndarray, trn_embeds: np.ndarray, hol_embeds: np.ndarray | None
 ) -> tuple[np.ndarray, np.ndarray | None, np.ndarray | None]:
@@ -47,28 +68,13 @@ def calculate_distances(
     """
     if hol_embeds is not None:
         assert trn_embeds.shape == hol_embeds.shape
+
     # calculate DCR for synthetic to training
-    index_syn = NearestNeighbors(n_neighbors=1, algorithm="brute", metric="l2", n_jobs=min(cpu_count() - 1, 16))
-    index_syn.fit(syn_embeds)
-    _LOG.info(f"calculate DCRs for {len(syn_embeds):,} synthetic to {len(trn_embeds):,} training")
-    dcrs_syn_trn, _ = index_syn.kneighbors(trn_embeds)
-    dcr_syn_trn = dcrs_syn_trn[:, 0]
-
-    dcr_syn_hol = None
-    dcr_trn_hol = None
-
-    if hol_embeds is not None:
-        # calculate DCR for synthetic to holdout
-        _LOG.info(f"calculate DCRs for {len(syn_embeds):,} synthetic to {len(hol_embeds):,} holdout")
-        dcrs_syn_hol, _ = index_syn.kneighbors(hol_embeds)
-        dcr_syn_hol = dcrs_syn_hol[:, 0]
-
-        # calculate DCR for training to holdout
-        _LOG.info(f"calculate DCRs for {len(trn_embeds):,} training to {len(hol_embeds):,} holdout")
-        index_trn = NearestNeighbors(n_neighbors=1, algorithm="brute", metric="l2", n_jobs=min(cpu_count() - 1, 16))
-        index_trn.fit(trn_embeds)
-        dcrs_trn_hol, _ = index_trn.kneighbors(hol_embeds)
-        dcr_trn_hol = dcrs_trn_hol[:, 0]
+    dcr_syn_trn = calculate_dcrs(data=trn_embeds, query=syn_embeds)
+    # calculate DCR for synthetic to holdout
+    dcr_syn_hol = calculate_dcrs(data=hol_embeds, query=syn_embeds)
+    # calculate DCR for holdout to training
+    dcr_trn_hol = calculate_dcrs(data=trn_embeds, query=hol_embeds)
 
     dcr_syn_trn_deciles = np.round(np.quantile(dcr_syn_trn, np.linspace(0, 1, 11)), 3)
     _LOG.info(f"DCR deciles for synthetic to training: {dcr_syn_trn_deciles}")
