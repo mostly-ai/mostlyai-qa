@@ -49,7 +49,7 @@ def calculate_dcrs_nndrs(
     index.fit(data)
     dcrs, _ = index.kneighbors(query)
     dcr = dcrs[:, 0]
-    nndr = np.log((dcrs[:, 0] + 1e-8) / (dcrs[:, 1] + 1e-8))
+    nndr = (dcrs[:, 0] + 1e-8) / (dcrs[:, 1] + 1e-8)
     return dcr, nndr
 
 

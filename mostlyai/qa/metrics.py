@@ -249,8 +249,8 @@ class Distances(CustomBaseModel):
     )
 
     @field_validator("*", mode="after")
-    def trim_metric_precision(cls, value):
-        precision = 3
+    def trim_metric_precision(cls, value, info):
+        precision = 12 if "nndr" in info.field_name else 3
         return round(value, precision) if value is not None else None
 
 

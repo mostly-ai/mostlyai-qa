@@ -411,7 +411,7 @@
               {% endif %}
             </tr>
             <tr>
-              <td>Average DCR</td>
+              <td>Average Distances</td>
               <td>{{ "{:.3f}".format(metrics.distances.dcr_training) }}</td>
               {% if metrics.distances.dcr_holdout is not none %}
               <td><small style="color: #666666;">{{ "{:.3f}".format(metrics.distances.dcr_holdout) }}</small></td>
@@ -427,11 +427,11 @@
             </tr>
             {% endif %}
             <tr>
-              <td>10th smallest NNDR</td>
-              <td>{{ "{:.6f}".format(metrics.distances.nndr_training) }}</td>
+              <td>NNDR Min10</td>
+              <td>{{ "{:.2e}".format(metrics.distances.nndr_training) if metrics.distances.nndr_training < 0.01 else "{:.3f}".format(metrics.distances.nndr_training) }}</td>
               {% if metrics.distances.nndr_holdout is not none %}
-              <td><small style="color: #666666;">{{ "{:.6f}".format(metrics.distances.nndr_holdout) }}</small></td>
-              <td><small style="color: #999999;">{{ "{:.6f}".format(metrics.distances.nndr_trn_hol) if metrics.distances.nndr_trn_hol is not none else "N/A" }}</small></td>
+              <td><small style="color: #666666;">{{ "{:.2e}".format(metrics.distances.nndr_holdout) if metrics.distances.nndr_holdout < 0.01 else "{:.3f}".format(metrics.distances.nndr_holdout) }}</small></td>
+              <td><small style="color: #999999;">{{ "{:.2e}".format(metrics.distances.nndr_trn_hol) if metrics.distances.nndr_trn_hol < 0.01 else "{:.3f}".format(metrics.distances.nndr_trn_hol) if metrics.distances.nndr_trn_hol is not none else "N/A" }}</small></td>
               {% endif %}
             </tr>
           </tbody>
