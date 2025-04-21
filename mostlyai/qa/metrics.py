@@ -169,7 +169,7 @@ class Distances(CustomBaseModel):
     an optimal sensitivity of this privacy assessment it is recommended to use a 50/50 split between training and
     holdout data, and then generate synthetic data of the same size.
 
-    The embeddings of these samples are then computed, and the L2 nearest neighbor distances are calculated for each
+    The embeddings of these samples are then computed, and the nearest neighbor distances are calculated for each
     synthetic sample to the training and holdout samples. Based on these nearest neighbor distances the following
     metrics are calculated:
     - Identical Match Share (IMS): The share of synthetic samples that are identical to a training or holdout sample.
@@ -205,19 +205,19 @@ class Distances(CustomBaseModel):
     dcr_training: float | None = Field(
         default=None,
         alias="dcrTraining",
-        description="Average L2 nearest-neighbor distance between synthetic and training samples.",
+        description="Average nearest-neighbor distance between synthetic and training samples.",
         ge=0.0,
     )
     dcr_holdout: float | None = Field(
         default=None,
         alias="dcrHoldout",
-        description="Average L2 nearest-neighbor distance between synthetic and holdout samples. Serves as a reference for `dcr_training`.",
+        description="Average nearest-neighbor distance between synthetic and holdout samples. Serves as a reference for `dcr_training`.",
         ge=0.0,
     )
     dcr_trn_hol: float | None = Field(
         default=None,
         alias="dcrTrnHol",
-        description="Average L2 nearest-neighbor distance between training and holdout samples. Serves as a reference for `dcr_training`.",
+        description="Average nearest-neighbor distance between training and holdout samples. Serves as a reference for `dcr_training`.",
         ge=0.0,
     )
     dcr_share: float | None = Field(
