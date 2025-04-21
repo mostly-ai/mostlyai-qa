@@ -49,9 +49,7 @@ def test_generate_store_report(tmp_path, cols, workspace):
         trn_embeds=trn_embeds,
         hol_embeds=hol_embeds,
     )
-    dcr_syn_trn, dcr_syn_hol, dcr_trn_hol = _distances.calculate_distances(
-        syn_embeds=syn_embeds, trn_embeds=trn_embeds, hol_embeds=hol_embeds
-    )
+    distances = _distances.calculate_distances(syn_embeds=syn_embeds, trn_embeds=trn_embeds, hol_embeds=hol_embeds)
 
     # simulate created plots
     plot_paths = (
@@ -71,9 +69,12 @@ def test_generate_store_report(tmp_path, cols, workspace):
     metrics = _calculate_metrics(
         acc_uni=acc_uni,
         acc_biv=acc_biv,
-        dcr_syn_trn=dcr_syn_trn,
-        dcr_syn_hol=dcr_syn_hol,
-        dcr_trn_hol=dcr_trn_hol,
+        dcr_syn_trn=distances["dcr_syn_trn"],
+        dcr_syn_hol=distances["dcr_syn_hol"],
+        dcr_trn_hol=distances["dcr_trn_hol"],
+        nndr_syn_trn=distances["nndr_syn_trn"],
+        nndr_syn_hol=distances["nndr_syn_hol"],
+        nndr_trn_hol=distances["nndr_trn_hol"],
         sim_cosine_trn_hol=sim_cosine_trn_hol,
         sim_cosine_trn_syn=sim_cosine_trn_syn,
         sim_auc_trn_hol=sim_auc_trn_hol,

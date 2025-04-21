@@ -28,9 +28,11 @@ from sklearn.neighbors import NearestNeighbors
 _LOG = logging.getLogger(__name__)
 
 
-def calculate_dcrs(data: np.ndarray | None, query: np.ndarray | None) -> np.ndarray | None:
+def calculate_dcrs_nndrs(
+    data: np.ndarray | None, query: np.ndarray | None
+) -> tuple[np.ndarray | None, np.ndarray | None]:
     """
-    Calculate Distance to Closest Records (DCRs).
+    Calculate Distance to Closest Records (DCRs) and Nearest Neighbor Distance Ratios (NNDRs).
 
     Args:
         data: Embeddings of the training data.
@@ -46,12 +48,14 @@ def calculate_dcrs(data: np.ndarray | None, query: np.ndarray | None) -> np.ndar
     index = NearestNeighbors(n_neighbors=1, algorithm="auto", metric="cosine", n_jobs=min(cpu_count() - 1, 16))
     index.fit(data)
     dcrs, _ = index.kneighbors(query)
-    return dcrs[:, 0]
+    dcr = dcrs[:, 0]
+    nndr = np.log((dcrs[:, 0] + 1e-8) / (dcrs[:, 1] + 1e-8))
+    return dcr, nndr
 
 
 def calculate_distances(
     *, syn_embeds: np.ndarray, trn_embeds: np.ndarray, hol_embeds: np.ndarray | None
-) -> tuple[np.ndarray, np.ndarray | None, np.ndarray | None]:
+) -> dict[str, np.ndarray]:
     """
     Calculates distances to the closest records (DCR).
 
@@ -61,40 +65,55 @@ def calculate_distances(
         hol_embeds: Embeddings of holdout data.
 
     Returns:
-        Tuple containing:
+        Dictionary containing:
             - dcr_syn_trn: DCR for synthetic to training.
             - dcr_syn_hol: DCR for synthetic to holdout.
             - dcr_trn_hol: DCR for training to holdout.
+            - nndr_syn_trn: NNDR for synthetic to training.
+            - nndr_syn_hol: NNDR for synthetic to holdout.
+            - nndr_trn_hol: NNDR for training to holdout.
     """
     if hol_embeds is not None:
         assert trn_embeds.shape == hol_embeds.shape
 
-    # calculate DCR for synthetic to training
-    dcr_syn_trn = calculate_dcrs(data=trn_embeds, query=syn_embeds)
-    # calculate DCR for synthetic to holdout
-    dcr_syn_hol = calculate_dcrs(data=hol_embeds, query=syn_embeds)
-    # calculate DCR for holdout to training
-    dcr_trn_hol = calculate_dcrs(data=trn_embeds, query=hol_embeds)
+    # calculate DCR / NNDR for synthetic to training
+    dcr_syn_trn, nndr_syn_trn = calculate_dcrs_nndrs(data=trn_embeds, query=syn_embeds)
+    # calculate DCR / NNDR for synthetic to holdout
+    dcr_syn_hol, nndr_syn_hol = calculate_dcrs_nndrs(data=hol_embeds, query=syn_embeds)
+    # calculate DCR / NNDR for holdout to training
+    dcr_trn_hol, nndr_trn_hol = calculate_dcrs_nndrs(data=trn_embeds, query=hol_embeds)
 
-    dcr_syn_trn_deciles = np.round(np.quantile(dcr_syn_trn, np.linspace(0, 1, 11)), 3)
-    _LOG.info(f"DCR deciles for synthetic to training: {dcr_syn_trn_deciles}")
+    # log statistics
+    def deciles(x):
+        return np.round(np.quantile(x, np.linspace(0, 1, 11)), 3)
+
+    _LOG.info(f"DCR deciles for synthetic to training: {deciles(dcr_syn_trn)}")
+    _LOG.info(f"NNDR deciles for synthetic to training: {deciles(nndr_syn_trn)}")
     if dcr_syn_hol is not None:
-        dcr_syn_hol_deciles = np.round(np.quantile(dcr_syn_hol, np.linspace(0, 1, 11)), 3)
-        _LOG.info(f"DCR deciles for synthetic to holdout:  {dcr_syn_hol_deciles}")
-        # calculate share of dcr_syn_trn != dcr_syn_hol
+        _LOG.info(f"DCR deciles for synthetic to holdout:  {deciles(dcr_syn_hol)}")
+        _LOG.info(f"NNDR deciles for synthetic to holdout: {deciles(nndr_syn_hol)}")
         _LOG.info(f"share of dcr_syn_trn < dcr_syn_hol: {np.mean(dcr_syn_trn < dcr_syn_hol):.1%}")
+        _LOG.info(f"share of nndr_syn_trn < nndr_syn_hol: {np.mean(nndr_syn_trn < nndr_syn_hol):.1%}")
         _LOG.info(f"share of dcr_syn_trn > dcr_syn_hol: {np.mean(dcr_syn_trn > dcr_syn_hol):.1%}")
-
+        _LOG.info(f"share of nndr_syn_trn > nndr_syn_hol: {np.mean(nndr_syn_trn > nndr_syn_hol):.1%}")
     if dcr_trn_hol is not None:
-        dcr_trn_hol_deciles = np.round(np.quantile(dcr_trn_hol, np.linspace(0, 1, 11)), 3)
-        _LOG.info(f"DCR deciles for training to holdout:  {dcr_trn_hol_deciles}")
+        _LOG.info(f"DCR deciles for training to holdout:  {deciles(dcr_trn_hol)}")
+        _LOG.info(f"NNDR deciles for training to holdout: {deciles(nndr_trn_hol)}")
+    return {
+        "dcr_syn_trn": dcr_syn_trn,
+        "nndr_syn_trn": nndr_syn_trn,
+        "dcr_syn_hol": dcr_syn_hol,
+        "nndr_syn_hol": nndr_syn_hol,
+        "dcr_trn_hol": dcr_trn_hol,
+        "nndr_trn_hol": nndr_trn_hol,
+    }
 
-    return dcr_syn_trn, dcr_syn_hol, dcr_trn_hol
 
+def plot_distances(plot_title: str, distances: dict[str, np.ndarray]) -> go.Figure:
+    dcr_syn_trn = distances["dcr_syn_trn"]
+    dcr_syn_hol = distances["dcr_syn_hol"]
+    dcr_trn_hol = distances["dcr_trn_hol"]
 
-def plot_distances(
-    plot_title: str, dcr_syn_trn: np.ndarray, dcr_syn_hol: np.ndarray | None, dcr_trn_hol: np.ndarray | None
-) -> go.Figure:
     # calculate quantiles
     y = np.linspace(0, 1, 101)
     x_syn_trn = np.quantile(dcr_syn_trn, y)
@@ -210,12 +229,11 @@ def plot_distances(
 
 
 def plot_store_distances(
-    dcr_syn_trn: np.ndarray,
-    dcr_syn_hol: np.ndarray | None,
-    dcr_trn_hol: np.ndarray | None,
+    distances: dict[str, np.ndarray],
     workspace: TemporaryWorkspace,
 ) -> None:
     fig = plot_distances(
-        "Cumulative Distributions of Distance to Closest Records (DCR)", dcr_syn_trn, dcr_syn_hol, dcr_trn_hol
+        "Cumulative Distributions of Distance to Closest Records (DCR)",
+        distances,
     )
     workspace.store_figure_html(fig, "distances_dcr")

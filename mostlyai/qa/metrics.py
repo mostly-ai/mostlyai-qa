@@ -174,6 +174,7 @@ class Distances(CustomBaseModel):
     metrics are calculated:
     - Identical Match Share (IMS): The share of synthetic samples that are identical to a training or holdout sample.
     - Distance to Closest Record (DCR): The average distance of synthetic to training or holdout samples.
+    - Nearest Neighbor Distance Ratio (NNDR): The 10-th smallest ratio of the distance to nearest and second nearest neighbor.
 
     For privacy-safe synthetic data we expect to see about as many identical matches, and about the same distances
     for synthetic samples to training, as we see for synthetic samples to holdout.
@@ -227,6 +228,24 @@ class Distances(CustomBaseModel):
         "should not be significantly larger than 50%.",
         ge=0.0,
         le=1.0,
+    )
+    nndr_training: float | None = Field(
+        default=None,
+        alias="nndrTraining",
+        description="10th smallest nearest-neighbor distance ratio between synthetic and training samples.",
+        ge=0.0,
+    )
+    nndr_holdout: float | None = Field(
+        default=None,
+        alias="nndrHoldout",
+        description="10th smallest nearest-neighbor distance ratio between synthetic and holdout samples.",
+        ge=0.0,
+    )
+    nndr_trn_hol: float | None = Field(
+        default=None,
+        alias="nndrTrnHol",
+        description="10th smallest nearest-neighbor distance ratio between training and holdout samples.",
+        ge=0.0,
     )
 
     @field_validator("*", mode="after")
