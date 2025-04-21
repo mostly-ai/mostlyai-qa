@@ -428,10 +428,10 @@
             {% endif %}
             <tr>
               <td>10th smallest NNDR</td>
-              <td>{{ "{:.3f}".format(metrics.distances.nndr_training) }}</td>
+              <td>{{ "{:.6f}".format(metrics.distances.nndr_training) }}</td>
               {% if metrics.distances.nndr_holdout is not none %}
-              <td><small style="color: #666666;">{{ "{:.3f}".format(metrics.distances.nndr_holdout) }}</small></td>
-              <td><small style="color: #999999;">{{ "{:.3f}".format(metrics.distances.nndr_trn_hol) if metrics.distances.nndr_trn_hol is not none else "N/A" }}</small></td>
+              <td><small style="color: #666666;">{{ "{:.6f}".format(metrics.distances.nndr_holdout) }}</small></td>
+              <td><small style="color: #999999;">{{ "{:.6f}".format(metrics.distances.nndr_trn_hol) if metrics.distances.nndr_trn_hol is not none else "N/A" }}</small></td>
               {% endif %}
             </tr>
           </tbody>
