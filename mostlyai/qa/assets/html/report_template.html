@@ -411,7 +411,7 @@
               {% endif %}
             </tr>
             <tr>
-              <td>Average Distances</td>
+              <td>DCR Average</td>
               <td>{{ "{:.3f}".format(metrics.distances.dcr_training) }}</td>
               {% if metrics.distances.dcr_holdout is not none %}
               <td><small style="color: #666666;">{{ "{:.3f}".format(metrics.distances.dcr_holdout) }}</small></td>

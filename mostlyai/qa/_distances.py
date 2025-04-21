@@ -41,7 +41,7 @@ def calculate_dcrs_nndrs(
     Returns:
     """
     if data is None or query is None:
-        return None
+        return None, None
     # sort data by first dimension to enforce deterministic results
     data = data[data[:, 0].argsort()]
     _LOG.info(f"calculate DCRs for {data.shape=} and {query.shape=}")
