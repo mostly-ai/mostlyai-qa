@@ -411,7 +411,7 @@
               {% endif %}
             </tr>
             <tr>
-              <td>Average Distances</td>
+              <td>DCR Average</td>
               <td>{{ "{:.3f}".format(metrics.distances.dcr_training) }}</td>
               {% if metrics.distances.dcr_holdout is not none %}
               <td><small style="color: #666666;">{{ "{:.3f}".format(metrics.distances.dcr_holdout) }}</small></td>
@@ -422,16 +422,25 @@
             <tr>
               <td>DCR Share</td>
               <td>{{ "{:.1%}".format(metrics.distances.dcr_share) }}</td>
-              <td></td>
+              <td><small style="color: #666666;">{{ "{:.1%}".format(1 - metrics.distances.dcr_share) }}</small></td>
               <td></td>
             </tr>
             {% endif %}
+            <tr>
+              <td>NNDR Min10</td>
+              <td>{{ "{:.2e}".format(metrics.distances.nndr_training) if metrics.distances.nndr_training < 0.01 else "{:.3f}".format(metrics.distances.nndr_training) }}</td>
+              {% if metrics.distances.nndr_holdout is not none %}
+              <td><small style="color: #666666;">{{ "{:.2e}".format(metrics.distances.nndr_holdout) if metrics.distances.nndr_holdout < 0.01 else "{:.3f}".format(metrics.distances.nndr_holdout) }}</small></td>
+              <td></td>
+              {% endif %}
+            </tr>
           </tbody>
         </table>
-        <br />
-        <div class="white-box p-3">
+      </div>
+    </div>
+    <div class="row">
+      <div class="white-box p-3">
           {{ distances_dcr_html_chart }}
-        </div>
       </div>
     </div>
     <br />

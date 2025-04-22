@@ -28,9 +28,11 @@ from sklearn.neighbors import NearestNeighbors
 _LOG = logging.getLogger(__name__)
 
 
-def calculate_dcrs(data: np.ndarray | None, query: np.ndarray | None) -> np.ndarray | None:
+def calculate_dcrs_nndrs(
+    data: np.ndarray | None, query: np.ndarray | None
+) -> tuple[np.ndarray | None, np.ndarray | None]:
     """
-    Calculate Distance to Closest Records (DCRs).
+    Calculate Distance to Closest Records (DCRs) and Nearest Neighbor Distance Ratios (NNDRs).
 
     Args:
         data: Embeddings of the training data.
@@ -39,19 +41,21 @@ def calculate_dcrs(data: np.ndarray | None, query: np.ndarray | None) -> np.ndar
     Returns:
     """
     if data is None or query is None:
-        return None
+        return None, None
     # sort data by first dimension to enforce deterministic results
     data = data[data[:, 0].argsort()]
     _LOG.info(f"calculate DCRs for {data.shape=} and {query.shape=}")
-    index = NearestNeighbors(n_neighbors=1, algorithm="auto", metric="cosine", n_jobs=min(cpu_count() - 1, 16))
+    index = NearestNeighbors(n_neighbors=2, algorithm="auto", metric="cosine", n_jobs=min(cpu_count() - 1, 16))
     index.fit(data)
     dcrs, _ = index.kneighbors(query)
-    return dcrs[:, 0]
+    dcr = dcrs[:, 0]
+    nndr = (dcrs[:, 0] + 1e-8) / (dcrs[:, 1] + 1e-8)
+    return dcr, nndr
 
 
 def calculate_distances(
     *, syn_embeds: np.ndarray, trn_embeds: np.ndarray, hol_embeds: np.ndarray | None
-) -> tuple[np.ndarray, np.ndarray | None, np.ndarray | None]:
+) -> dict[str, np.ndarray]:
     """
     Calculates distances to the closest records (DCR).
 
@@ -61,52 +65,96 @@ def calculate_distances(
         hol_embeds: Embeddings of holdout data.
 
     Returns:
-        Tuple containing:
+        Dictionary containing:
             - dcr_syn_trn: DCR for synthetic to training.
             - dcr_syn_hol: DCR for synthetic to holdout.
             - dcr_trn_hol: DCR for training to holdout.
+            - nndr_syn_trn: NNDR for synthetic to training.
+            - nndr_syn_hol: NNDR for synthetic to holdout.
+            - nndr_trn_hol: NNDR for training to holdout.
     """
     if hol_embeds is not None:
         assert trn_embeds.shape == hol_embeds.shape
 
-    # calculate DCR for synthetic to training
-    dcr_syn_trn = calculate_dcrs(data=trn_embeds, query=syn_embeds)
-    # calculate DCR for synthetic to holdout
-    dcr_syn_hol = calculate_dcrs(data=hol_embeds, query=syn_embeds)
-    # calculate DCR for holdout to training
-    dcr_trn_hol = calculate_dcrs(data=trn_embeds, query=hol_embeds)
+    # calculate DCR / NNDR for synthetic to training
+    dcr_syn_trn, nndr_syn_trn = calculate_dcrs_nndrs(data=trn_embeds, query=syn_embeds)
+    # calculate DCR / NNDR for synthetic to holdout
+    dcr_syn_hol, nndr_syn_hol = calculate_dcrs_nndrs(data=hol_embeds, query=syn_embeds)
+    # calculate DCR / NNDR for holdout to training
+    dcr_trn_hol, nndr_trn_hol = calculate_dcrs_nndrs(data=trn_embeds, query=hol_embeds)
 
-    dcr_syn_trn_deciles = np.round(np.quantile(dcr_syn_trn, np.linspace(0, 1, 11)), 3)
-    _LOG.info(f"DCR deciles for synthetic to training: {dcr_syn_trn_deciles}")
+    # log statistics
+    def deciles(x):
+        return np.round(np.quantile(x, np.linspace(0, 1, 11)), 3)
+
+    _LOG.info(f"DCR deciles for synthetic to training: {deciles(dcr_syn_trn)}")
+    _LOG.info(f"NNDR deciles for synthetic to training: {deciles(nndr_syn_trn)}")
     if dcr_syn_hol is not None:
-        dcr_syn_hol_deciles = np.round(np.quantile(dcr_syn_hol, np.linspace(0, 1, 11)), 3)
-        _LOG.info(f"DCR deciles for synthetic to holdout:  {dcr_syn_hol_deciles}")
-        # calculate share of dcr_syn_trn != dcr_syn_hol
+        _LOG.info(f"DCR deciles for synthetic to holdout:  {deciles(dcr_syn_hol)}")
+        _LOG.info(f"NNDR deciles for synthetic to holdout: {deciles(nndr_syn_hol)}")
         _LOG.info(f"share of dcr_syn_trn < dcr_syn_hol: {np.mean(dcr_syn_trn < dcr_syn_hol):.1%}")
+        _LOG.info(f"share of nndr_syn_trn < nndr_syn_hol: {np.mean(nndr_syn_trn < nndr_syn_hol):.1%}")
         _LOG.info(f"share of dcr_syn_trn > dcr_syn_hol: {np.mean(dcr_syn_trn > dcr_syn_hol):.1%}")
-
+        _LOG.info(f"share of nndr_syn_trn > nndr_syn_hol: {np.mean(nndr_syn_trn > nndr_syn_hol):.1%}")
     if dcr_trn_hol is not None:
-        dcr_trn_hol_deciles = np.round(np.quantile(dcr_trn_hol, np.linspace(0, 1, 11)), 3)
-        _LOG.info(f"DCR deciles for training to holdout:  {dcr_trn_hol_deciles}")
+        _LOG.info(f"DCR deciles for training to holdout:  {deciles(dcr_trn_hol)}")
+        _LOG.info(f"NNDR deciles for training to holdout: {deciles(nndr_trn_hol)}")
+    return {
+        "dcr_syn_trn": dcr_syn_trn,
+        "nndr_syn_trn": nndr_syn_trn,
+        "dcr_syn_hol": dcr_syn_hol,
+        "nndr_syn_hol": nndr_syn_hol,
+        "dcr_trn_hol": dcr_trn_hol,
+        "nndr_trn_hol": nndr_trn_hol,
+    }
 
-    return dcr_syn_trn, dcr_syn_hol, dcr_trn_hol
 
+def plot_distances(plot_title: str, distances: dict[str, np.ndarray]) -> go.Figure:
+    dcr_syn_trn = distances["dcr_syn_trn"]
+    dcr_syn_hol = distances["dcr_syn_hol"]
+    dcr_trn_hol = distances["dcr_trn_hol"]
+    nndr_syn_trn = distances["nndr_syn_trn"]
+    nndr_syn_hol = distances["nndr_syn_hol"]
+    nndr_trn_hol = distances["nndr_trn_hol"]
 
-def plot_distances(
-    plot_title: str, dcr_syn_trn: np.ndarray, dcr_syn_hol: np.ndarray | None, dcr_trn_hol: np.ndarray | None
-) -> go.Figure:
-    # calculate quantiles
+    # calculate quantiles for DCR
     y = np.linspace(0, 1, 101)
-    x_syn_trn = np.quantile(dcr_syn_trn, y)
+
+    # Calculate max values to use later
+    max_dcr_syn_trn = np.max(dcr_syn_trn)
+    max_dcr_syn_hol = None if dcr_syn_hol is None else np.max(dcr_syn_hol)
+    max_dcr_trn_hol = None if dcr_trn_hol is None else np.max(dcr_trn_hol)
+    max_nndr_syn_trn = np.max(nndr_syn_trn)
+    max_nndr_syn_hol = None if nndr_syn_hol is None else np.max(nndr_syn_hol)
+    max_nndr_trn_hol = None if nndr_trn_hol is None else np.max(nndr_trn_hol)
+
+    # Ensure first point is always at x=0 for all lines
+    # and last point is at the maximum x value with y=1
+    x_dcr_syn_trn = np.concatenate([[0], np.quantile(dcr_syn_trn, y[1:-1]), [max_dcr_syn_trn]])
     if dcr_syn_hol is not None:
-        x_syn_hol = np.quantile(dcr_syn_hol, y)
+        x_dcr_syn_hol = np.concatenate([[0], np.quantile(dcr_syn_hol, y[1:-1]), [max_dcr_syn_hol]])
     else:
-        x_syn_hol = None
+        x_dcr_syn_hol = None
 
     if dcr_trn_hol is not None:
-        x_trn_hol = np.quantile(dcr_trn_hol, y)
+        x_dcr_trn_hol = np.concatenate([[0], np.quantile(dcr_trn_hol, y[1:-1]), [max_dcr_trn_hol]])
     else:
-        x_trn_hol = None
+        x_dcr_trn_hol = None
+
+    # calculate quantiles for NNDR
+    x_nndr_syn_trn = np.concatenate([[0], np.quantile(nndr_syn_trn, y[1:-1]), [max_nndr_syn_trn]])
+    if nndr_syn_hol is not None:
+        x_nndr_syn_hol = np.concatenate([[0], np.quantile(nndr_syn_hol, y[1:-1]), [max_nndr_syn_hol]])
+    else:
+        x_nndr_syn_hol = None
+
+    if nndr_trn_hol is not None:
+        x_nndr_trn_hol = np.concatenate([[0], np.quantile(nndr_trn_hol, y[1:-1]), [max_nndr_trn_hol]])
+    else:
+        x_nndr_trn_hol = None
+
+    # Adjust y to match the new x arrays with the added 0 and 1 points
+    y = np.concatenate([[0], y[1:-1], [1]])
 
     # prepare layout
     layout = go.Layout(
@@ -120,79 +168,131 @@ def plot_distances(
         plot_bgcolor=CHARTS_COLORS["background"],
         autosize=True,
         height=500,
-        margin=dict(l=20, r=20, b=20, t=40, pad=5),
+        margin=dict(l=20, r=20, b=20, t=60, pad=5),
         showlegend=True,
-        yaxis=dict(
-            showticklabels=False,
-            zeroline=True,
-            zerolinewidth=1,
-            zerolinecolor="#999999",
-            rangemode="tozero",
-            showline=True,
-            linewidth=1,
-            linecolor="#999999",
-        ),
-        yaxis2=dict(
-            overlaying="y",
-            side="right",
-            tickformat=".0%",
-            showgrid=False,
-            range=[0, 1],
-            showline=True,
-            linewidth=1,
-            linecolor="#999999",
-        ),
-        xaxis=dict(
+    )
+
+    # Create a figure with two subplots side by side
+    fig = go.Figure(layout=layout).set_subplots(
+        rows=1,
+        cols=2,
+        horizontal_spacing=0.05,
+        subplot_titles=("Distance to Closest Record (DCR)", "Nearest Neighbor Distance Ratio (NNDR)"),
+    )
+    fig.update_annotations(font_size=12)
+
+    # Configure axes for both subplots
+    for i in range(1, 3):
+        fig.update_xaxes(
+            col=i,
             showline=True,
             linewidth=1,
             linecolor="#999999",
             hoverformat=".3f",
-        ),
-    )
-    fig = go.Figure(layout=layout)
+        )
 
-    traces = []
+        # Only show y-axis on the right side with percentage labels
+        fig.update_yaxes(
+            col=i,
+            tickformat=".0%",
+            showgrid=False,
+            range=[-0.01, 1.01],
+            showline=True,
+            linewidth=1,
+            linecolor="#999999",
+            side="right",
+            tickvals=[0, 0.2, 0.4, 0.6, 0.8, 1.0],
+        )
 
+    # Add traces for DCR plot (left subplot)
     # training vs holdout (light gray)
-    if x_trn_hol is not None:
-        traces.append(
+    if x_dcr_trn_hol is not None:
+        fig.add_trace(
             go.Scatter(
                 mode="lines",
-                x=x_trn_hol,
+                x=x_dcr_trn_hol,
                 y=y,
                 name="Training vs. Holdout Data",
                 line=dict(color="#999999", width=5),
-                yaxis="y2",
-            )
+                showlegend=True,
+            ),
+            row=1,
+            col=1,
         )
 
     # synthetic vs holdout (gray)
-    if x_syn_hol is not None:
-        traces.append(
+    if x_dcr_syn_hol is not None:
+        fig.add_trace(
             go.Scatter(
                 mode="lines",
-                x=x_syn_hol,
+                x=x_dcr_syn_hol,
                 y=y,
                 name="Synthetic vs. Holdout Data",
                 line=dict(color="#666666", width=5),
-                yaxis="y2",
-            )
+                showlegend=True,
+            ),
+            row=1,
+            col=1,
         )
 
     # synthetic vs training (green)
-    traces.append(
+    fig.add_trace(
         go.Scatter(
             mode="lines",
-            x=x_syn_trn,
+            x=x_dcr_syn_trn,
             y=y,
             name="Synthetic vs. Training Data",
             line=dict(color="#24db96", width=5),
-            yaxis="y2",
-        )
+            showlegend=True,
+        ),
+        row=1,
+        col=1,
     )
 
-    for trace in traces:
-        fig.add_trace(trace)
+    # Add traces for NNDR plot (right subplot)
+    # training vs holdout (light gray)
+    if x_nndr_trn_hol is not None:
+        fig.add_trace(
+            go.Scatter(
+                mode="lines",
+                x=x_nndr_trn_hol,
+                y=y,
+                name="Training vs. Holdout Data",
+                line=dict(color="#999999", width=5),
+                showlegend=False,
+            ),
+            row=1,
+            col=2,
+        )
+
+    # synthetic vs holdout (gray)
+    if x_nndr_syn_hol is not None:
+        fig.add_trace(
+            go.Scatter(
+                mode="lines",
+                x=x_nndr_syn_hol,
+                y=y,
+                name="Synthetic vs. Holdout Data",
+                line=dict(color="#666666", width=5),
+                showlegend=False,
+            ),
+            row=1,
+            col=2,
+        )
+
+    # synthetic vs training (green)
+    fig.add_trace(
+        go.Scatter(
+            mode="lines",
+            x=x_nndr_syn_trn,
+            y=y,
+            name="Synthetic vs. Training Data",
+            line=dict(color="#24db96", width=5),
+            showlegend=False,
+        ),
+        row=1,
+        col=2,
+    )
 
     fig.update_layout(
         legend=dict(
@@ -210,12 +310,11 @@ def plot_distances(
 
 
 def plot_store_distances(
-    dcr_syn_trn: np.ndarray,
-    dcr_syn_hol: np.ndarray | None,
-    dcr_trn_hol: np.ndarray | None,
+    distances: dict[str, np.ndarray],
     workspace: TemporaryWorkspace,
 ) -> None:
     fig = plot_distances(
-        "Cumulative Distributions of Distance to Closest Records (DCR)", dcr_syn_trn, dcr_syn_hol, dcr_trn_hol
+        "Cumulative Distributions of Distance Metrics",
+        distances,
     )
     workspace.store_figure_html(fig, "distances_dcr")

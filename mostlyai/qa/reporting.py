@@ -352,7 +352,7 @@ def report(
         progress.update(completed=95, total=100)
 
         _LOG.info("report distances")
-        dcr_syn_trn, dcr_syn_hol, dcr_trn_hol = _report_distances(
+        distances = _report_distances(
             syn_embeds=syn_embeds,
             trn_embeds=trn_embeds,
             hol_embeds=hol_embeds,
@@ -363,9 +363,12 @@ def report(
         metrics = _calculate_metrics(
             acc_uni=acc_uni,
             acc_biv=acc_biv,
-            dcr_syn_trn=dcr_syn_trn,
-            dcr_syn_hol=dcr_syn_hol,
-            dcr_trn_hol=dcr_trn_hol,
+            dcr_syn_trn=distances["dcr_syn_trn"],
+            dcr_syn_hol=distances["dcr_syn_hol"],
+            dcr_trn_hol=distances["dcr_trn_hol"],
+            nndr_syn_trn=distances["nndr_syn_trn"],
+            nndr_syn_hol=distances["nndr_syn_hol"],
+            nndr_trn_hol=distances["nndr_trn_hol"],
             sim_cosine_trn_hol=sim_cosine_trn_hol,
             sim_cosine_trn_syn=sim_cosine_trn_syn,
             sim_auc_trn_hol=sim_auc_trn_hol,
@@ -433,6 +436,9 @@ def _calculate_metrics(
     dcr_syn_trn: np.ndarray,
     dcr_syn_hol: np.ndarray | None,
     dcr_trn_hol: np.ndarray | None,
+    nndr_syn_trn: np.ndarray,
+    nndr_syn_hol: np.ndarray | None,
+    nndr_trn_hol: np.ndarray | None,
     sim_cosine_trn_hol: np.float64,
     sim_cosine_trn_syn: np.float64,
     sim_auc_trn_hol: np.float64,
@@ -501,6 +507,9 @@ def _calculate_metrics(
         dcr_share=np.mean(dcr_syn_trn < dcr_syn_hol) + np.mean(dcr_syn_trn == dcr_syn_hol) / 2
         if dcr_syn_hol is not None
         else None,
+        nndr_training=np.sort(nndr_syn_trn)[9],
+        nndr_holdout=np.sort(nndr_syn_hol)[9] if nndr_syn_hol is not None else None,
+        nndr_trn_hol=np.sort(nndr_trn_hol)[9] if nndr_trn_hol is not None else None,
     )
     return ModelMetrics(
         accuracy=accuracy,
@@ -773,9 +782,7 @@ def _report_distances(
     trn_embeds: np.ndarray,
     hol_embeds: np.ndarray | None,
     workspace: TemporaryWorkspace,
-) -> tuple[np.ndarray, np.ndarray | None, np.ndarray | None]:
-    dcr_syn_trn, dcr_syn_hol, dcr_trn_hol = _distances.calculate_distances(
-        syn_embeds=syn_embeds, trn_embeds=trn_embeds, hol_embeds=hol_embeds
-    )
-    _distances.plot_store_distances(dcr_syn_trn, dcr_syn_hol, dcr_trn_hol, workspace)
-    return dcr_syn_trn, dcr_syn_hol, dcr_trn_hol
+) -> dict[str, np.ndarray]:
+    distances = _distances.calculate_distances(syn_embeds=syn_embeds, trn_embeds=trn_embeds, hol_embeds=hol_embeds)
+    _distances.plot_store_distances(distances, workspace)
+    return distances
