@@ -268,7 +268,14 @@ def pull_data_for_embeddings(
     def row_to_string(row: pd.Series) -> str:
         # we concatenate all values as strings rather than convert to
         # JSON to keep the string length for faster speed short
-        return " ".join(row.values.astype(str))
+        values = []
+        for val in row.values:
+            if pd.api.types.is_datetime64_dtype(type(val)) or isinstance(val, pd.Timestamp):
+                # Format datetimes consistently
+                values.append(pd.Timestamp(val).strftime("%Y-%m-%dT%H:%M:%S.%f000"))
+            else:
+                values.append(str(val))
+        return " ".join(values)
 
     def sequence_to_string(sequence: pd.DataFrame) -> str:
         return ", ".join(sequence.apply(row_to_string, axis=1))
@@ -279,8 +286,8 @@ def pull_data_for_embeddings(
     # split into chunks and process in parallel
     n_jobs = min(16, max(1, cpu_count() - 1))
     grouped = df_tgt.groupby(tgt_context_key)
-    chunks_key = np.array_split(list(grouped.groups.keys()), n_jobs)
-    chunks = [df_tgt.loc[df_tgt[tgt_context_key].isin(keys)] for keys in chunks_key if len(keys) > 0]
+    chunks_keys = np.array_split(list(grouped.groups.keys()), n_jobs)
+    chunks = [df_tgt.loc[df_tgt[tgt_context_key].isin(keys)] for keys in chunks_keys if len(keys) > 0]
     with parallel_config("loky", n_jobs=n_jobs):
         results = Parallel()(delayed(process_chunk)(chunk) for chunk in chunks)
 
