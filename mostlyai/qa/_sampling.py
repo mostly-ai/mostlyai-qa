@@ -45,6 +45,7 @@ from mostlyai.qa._common import (
     ProgressCallbackWrapper,
 )
 from mostlyai.qa.assets import load_tokenizer
+from joblib import Parallel, cpu_count, delayed, parallel_config
 
 
 _LOG = logging.getLogger(__name__)
@@ -227,6 +228,7 @@ def pull_data_for_embeddings(
     tgt_context_key: str | None = None,
     max_sample_size: int | None = None,
 ) -> list[str]:
+    _LOG.info("pulling data for embeddings")
     t0 = time.time()
 
     # keys must be provided if df_ctx provided
@@ -271,13 +273,21 @@ def pull_data_for_embeddings(
     def sequence_to_string(sequence: pd.DataFrame) -> str:
         return ", ".join(sequence.apply(row_to_string, axis=1))
 
-    strings = (
-        df_tgt.set_index(tgt_context_key)
-        .groupby(tgt_context_key)
-        .apply(sequence_to_string)
-        .sample(frac=1)
-        .reset_index(drop=True)
-    )
+    def process_chunk(chunk: pd.DataFrame) -> list[str]:
+        return [sequence_to_string(seq) for _, seq in chunk.groupby(tgt_context_key)]
+
+    # split into chunks and process in parallel
+    n_jobs = min(16, max(1, cpu_count() - 1))
+    index_splits = np.array_split(df_tgt.index, n_jobs)
+    chunks = [df_tgt.iloc[split] for split in index_splits]
+
+    with parallel_config("loky", n_jobs=n_jobs):
+        results = Parallel()(delayed(process_chunk)(chunk) for chunk in chunks)
+
+    # flatten results and convert to pandas Series
+    strings = pd.Series([item for sublist in results for item in sublist])
+    strings = strings.sample(frac=1).reset_index(drop=True)
+
     # cap at 1k chars, as encoder truncates anyway; still it speeds things up by truncating beforehand
     strings = strings.astype("string[pyarrow]").str[:1_000]
     _LOG.info(f"pulled data {strings.shape} for embeddings in {time.time() - t0:.2f}s")
