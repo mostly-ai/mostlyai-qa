@@ -114,7 +114,7 @@ def calculate_discriminator_auc(
     else:
         sim_auc_trn_hol = None
     sim_auc_trn_syn = calculate_mean_auc(trn_embeds, syn_embeds)
-    _LOG.info(f"sim_auc_trn_hol={float(sim_auc_trn_hol)}, sim_auc_trn_syn={float(sim_auc_trn_syn)}")
+    _LOG.info(f"sim_auc_trn_hol={sim_auc_trn_hol:.8f}, sim_auc_trn_syn={sim_auc_trn_syn:.8f}")
     return sim_auc_trn_hol, sim_auc_trn_syn
 
 
