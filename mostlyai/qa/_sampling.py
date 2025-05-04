@@ -278,9 +278,9 @@ def pull_data_for_embeddings(
 
     # split into chunks and process in parallel
     n_jobs = min(16, max(1, cpu_count() - 1))
-    index_splits = np.array_split(df_tgt.index, n_jobs)
-    chunks = [df_tgt.iloc[split] for split in index_splits]
-
+    grouped = df_tgt.groupby(tgt_context_key)
+    chunks_key = np.array_split(list(grouped.groups.keys()), n_jobs)
+    chunks = [df_tgt.loc[df_tgt[tgt_context_key].isin(keys)] for keys in chunks_key if len(keys) > 0]
     with parallel_config("loky", n_jobs=n_jobs):
         results = Parallel()(delayed(process_chunk)(chunk) for chunk in chunks)
 
@@ -291,6 +291,7 @@ def pull_data_for_embeddings(
     # cap at 1k chars, as encoder truncates anyway; still it speeds things up by truncating beforehand
     strings = strings.astype("string[pyarrow]").str[:1_000]
     _LOG.info(f"pulled data {strings.shape} for embeddings in {time.time() - t0:.2f}s")
+    print(strings.to_list()[:5])
     return strings.to_list()
 
 
