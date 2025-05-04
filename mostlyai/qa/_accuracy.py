@@ -61,7 +61,7 @@ def calculate_univariates(
 
     tgt_cols = [c for c in ori_bin.columns if c.startswith(TGT_COLUMN)]
     accuracies = pd.DataFrame({"column": tgt_cols})
-    with parallel_config("loky", n_jobs=min(cpu_count() - 1, 16)):
+    with parallel_config("loky", n_jobs=min(16, max(1, cpu_count() - 1))):
         results = Parallel()(
             delayed(calculate_accuracy)(
                 ori_bin_cols=ori_bin[[row["column"]]],
@@ -93,7 +93,7 @@ def calculate_bivariates(
 
     # calculate bivariates if there is at least one pair
     if len(accuracies) > 0:
-        with parallel_config("loky", n_jobs=min(cpu_count() - 1, 16)):
+        with parallel_config("loky", n_jobs=min(16, max(1, cpu_count() - 1))):
             results = Parallel()(
                 delayed(calculate_accuracy)(
                     ori_bin_cols=ori_bin[[row["col1"], row["col2"]]],
@@ -347,7 +347,7 @@ def calculate_bin_counts(
     Calculates counts of unique values in each bin.
     """
 
-    with parallel_config("loky", n_jobs=min(cpu_count() - 1, 16)):
+    with parallel_config("loky", n_jobs=min(16, max(1, cpu_count() - 1))):
         results = Parallel()(
             delayed(bin_count_uni)(
                 col=col,
@@ -358,7 +358,7 @@ def calculate_bin_counts(
         bin_cnts_uni = dict(results)
 
     biv_cols = calculate_bivariate_columns(binned)
-    with parallel_config("loky", n_jobs=min(cpu_count() - 1, 16)):
+    with parallel_config("loky", n_jobs=min(16, max(1, cpu_count() - 1))):
         results = Parallel()(
             delayed(bin_count_biv)(
                 col1=row["col1"],
@@ -388,7 +388,7 @@ def plot_store_univariates(
     Plots all univariate accuracy figures and stores them under workspace dir.
     """
 
-    with parallel_config("loky", n_jobs=min(cpu_count() - 1, 16)):
+    with parallel_config("loky", n_jobs=min(16, max(1, cpu_count() - 1))):
         Parallel()(
             delayed(plot_store_univariate)(
                 row["column"],
@@ -684,7 +684,7 @@ def plot_store_bivariates(
     Plots all bivariate accuracy figures and stores them under workspace dir.
     """
 
-    with parallel_config("loky", n_jobs=min(cpu_count() - 1, 16)):
+    with parallel_config("loky", n_jobs=min(16, max(1, cpu_count() - 1))):
         Parallel()(
             delayed(plot_store_bivariate)(
                 row["col1"],
