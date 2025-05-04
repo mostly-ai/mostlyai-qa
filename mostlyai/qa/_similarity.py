@@ -51,7 +51,7 @@ def calculate_cosine_similarities(
     else:
         sim_cosine_trn_hol = None
     sim_cosine_trn_syn = np.clip(cosine_similarity(trn_centroid, syn_centroid)[0][0], 0.0, 1.0)
-    _LOG.info(f"{sim_cosine_trn_hol=}, {sim_cosine_trn_syn=}")
+    _LOG.info(f"sim_cosine_trn_hol={sim_cosine_trn_hol:.8f}, sim_cosine_trn_syn={sim_cosine_trn_syn:.8f}")
     return sim_cosine_trn_hol, sim_cosine_trn_syn
 
 
@@ -98,7 +98,7 @@ def calculate_discriminator_auc(
                 auc_score = roc_auc_score(y_holdout, y_holdout_pred)
                 auc_scores.append(round(auc_score, 4))
 
-            _LOG.info(f"{auc_scores=}")
+            _LOG.info(f"auc_scores={[float(auc) for auc in auc_scores]}")
 
             # calculate the mean AUC score
             mean_auc_score = np.mean(auc_scores)
@@ -114,7 +114,7 @@ def calculate_discriminator_auc(
     else:
         sim_auc_trn_hol = None
     sim_auc_trn_syn = calculate_mean_auc(trn_embeds, syn_embeds)
-    _LOG.info(f"{sim_auc_trn_hol=}, {sim_auc_trn_syn=}")
+    _LOG.info(f"sim_auc_trn_hol={float(sim_auc_trn_hol)}, sim_auc_trn_syn={float(sim_auc_trn_syn)}")
     return sim_auc_trn_hol, sim_auc_trn_syn
 
 
