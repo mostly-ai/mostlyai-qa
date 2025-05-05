@@ -58,6 +58,7 @@ def calculate_univariates(
     """
     Calculates univariate accuracies for all target columns.
     """
+    _LOG.info("calculate univariates")
 
     tgt_cols = [c for c in ori_bin.columns if c.startswith(TGT_COLUMN)]
     accuracies = pd.DataFrame({"column": tgt_cols})
@@ -86,6 +87,7 @@ def calculate_bivariates(
     For each such column pair, value pair frequencies
     are calculated both for training and synthetic data.
     """
+    _LOG.info("calculate bivariates")
 
     # the result for symmetric pairs is the same, so we only calculate one of them
     # later, we append copy results for symmetric pairs
@@ -228,7 +230,7 @@ def calculate_numeric_uni_kdes(df: pd.DataFrame, ori_kdes: dict[str, pd.Series] 
     Calculates univariate kernel density estimates for numeric/datetime columns.
     `ori_kdes` is used as a reference for the grid points to evaluate the KDEs.
     """
-
+    _LOG.info("calculate numeric univariate kdes")
     col_kdes = {}
 
     # calculate numeric/datetime column KDEs
@@ -287,6 +289,7 @@ def calculate_categorical_uni_counts(
     Protects rare labels by hashing them. `ori_col_counts` is used as
     template to ensure the result has the same shape as for Model QA.
     """
+    _LOG.info("calculate categorical univariate counts")
 
     def hash_rare(rare: Any, column_name: str) -> str:
         hash_in = str(rare) + column_name
@@ -346,7 +349,7 @@ def calculate_bin_counts(
     """
     Calculates counts of unique values in each bin.
     """
-
+    _LOG.info("calculate bin counts")
     with parallel_config("loky", n_jobs=min(16, max(1, cpu_count() - 1))):
         results = Parallel()(
             delayed(bin_count_uni)(
@@ -387,6 +390,7 @@ def plot_store_univariates(
     """
     Plots all univariate accuracy figures and stores them under workspace dir.
     """
+    _LOG.info("plot univariates")
 
     with parallel_config("loky", n_jobs=min(16, max(1, cpu_count() - 1))):
         Parallel()(
@@ -683,6 +687,7 @@ def plot_store_bivariates(
     """
     Plots all bivariate accuracy figures and stores them under workspace dir.
     """
+    _LOG.info("plot bivariates")
 
     with parallel_config("loky", n_jobs=min(16, max(1, cpu_count() - 1))):
         Parallel()(
@@ -1218,6 +1223,7 @@ def calculate_correlations(binned: pd.DataFrame, corr_cols: Iterable[str] | None
     which are then ordered with respect to
     hierarchical linkage based on training data.
     """
+    _LOG.info("calculate correlations")
 
     tgt_cols = [c for c in binned.columns if c.startswith(TGT_COLUMN_PREFIX)]
     # calculate correlation matrices

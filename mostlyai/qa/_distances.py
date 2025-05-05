@@ -43,9 +43,9 @@ def calculate_dcrs_nndrs(
     """
     if data is None or query is None:
         return None, None
+    _LOG.info(f"calculate DCRs for {data.shape=} and {query.shape=}")
     t0 = time.time()
-    # sort data by first dimension to enforce deterministic results
-    data = data[data[:, 0].argsort()]
+    data = data[data[:, 0].argsort()]  # sort data by first dimension to enforce deterministic results
     index = NearestNeighbors(n_neighbors=2, algorithm="auto", metric="cosine", n_jobs=min(16, max(1, cpu_count() - 1)))
     index.fit(data)
     dcrs, _ = index.kneighbors(query)
