@@ -280,6 +280,9 @@ def pull_data_for_embeddings(
 
 
 def stringify_sequences(df: pd.DataFrame, tgt_context_key: str) -> pd.Series:
+    if len(df) == 0:
+        return pd.Series(dtype="string[pyarrow]")
+
     def row_to_string(row: pd.Series) -> str:
         # we concatenate all values as strings rather than convert to
         # JSON to keep the string length for faster speed short
