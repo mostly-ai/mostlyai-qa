@@ -31,7 +31,7 @@ def calculate_distinct_categories_per_sequence_accuracy(
     ori_binned_cats_per_seq: pd.DataFrame, syn_binned_cats_per_seq: pd.DataFrame
 ) -> pd.DataFrame:
     acc_cats_per_seq = pd.DataFrame({"column": ori_binned_cats_per_seq.columns})
-    with parallel_config("loky", n_jobs=min(8, max(1, cpu_count() - 1))):
+    with parallel_config("loky", n_jobs=min(16, max(1, cpu_count() - 1))):
         results = Parallel()(
             delayed(calculate_accuracy)(
                 ori_bin_cols=ori_binned_cats_per_seq[[row["column"]]],
@@ -51,7 +51,7 @@ def plot_store_distinct_categories_per_sequence(
     acc_cats_per_seq: pd.DataFrame,
     workspace: TemporaryWorkspace,
 ) -> None:
-    with parallel_config("loky", n_jobs=min(8, max(1, cpu_count() - 1))):
+    with parallel_config("loky", n_jobs=min(16, max(1, cpu_count() - 1))):
         Parallel()(
             delayed(plot_store_single_distinct_categories_per_sequence)(
                 row["column"],
@@ -133,7 +133,7 @@ def calculate_sequences_per_distinct_category_accuracy(
     syn_seqs_per_top_cat_cnts: dict[str, pd.Series],
 ) -> pd.DataFrame:
     acc_seq_per_cat = pd.DataFrame({"column": ori_seqs_per_top_cat_cnts.keys()})
-    with parallel_config("loky", n_jobs=min(8, max(1, cpu_count() - 1))):
+    with parallel_config("loky", n_jobs=min(16, max(1, cpu_count() - 1))):
         results = Parallel()(
             delayed(calculate_accuracy_cnts)(
                 ori_seqs_per_top_cat_cnts[row["column"]],
@@ -155,7 +155,7 @@ def plot_store_sequences_per_distinct_category(
     acc_seqs_per_cat: pd.DataFrame,
     workspace: TemporaryWorkspace,
 ) -> None:
-    with parallel_config("loky", n_jobs=min(8, max(1, cpu_count() - 1))):
+    with parallel_config("loky", n_jobs=min(16, max(1, cpu_count() - 1))):
         Parallel()(
             delayed(plot_store_single_sequences_per_distinct_category)(
                 row["column"],

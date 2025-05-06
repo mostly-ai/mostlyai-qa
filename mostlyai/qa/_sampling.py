@@ -267,7 +267,7 @@ def pull_data_for_embeddings(
     df_tgt[num_cols] = df_tgt[num_cols].astype("Float64")
 
     # split into chunks while keeping groups together and process in parallel
-    n_jobs = min(8, max(1, cpu_count() - 1))
+    n_jobs = min(16, max(1, cpu_count() - 1))
     hash_ids = df_tgt[tgt_context_key].apply(lambda x: xxhash.xxh32_intdigest(str(x))) % n_jobs
     with parallel_config("loky", n_jobs=n_jobs):
         strings = Parallel()(
