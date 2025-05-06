@@ -245,14 +245,6 @@ def report(
             hol_sample_size or float("inf"),
         )
 
-        if max_sample_size_embeddings_final > 50_000 and max_sample_size_embeddings is None:
-            warnings.warn(
-                UserWarning(
-                    "More than 50k embeddings will be calculated per dataset, which may take a long time. "
-                    "Consider setting a limit via `max_sample_size_embeddings` to speed up the process."
-                )
-            )
-
         # do coherence analysis only if there are non-fk columns in the target data
         do_coherence = setup == "1:N" and len(trn_tgt_data.columns) > 1
         if do_coherence:
