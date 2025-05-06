@@ -28,6 +28,7 @@
 import logging
 import random
 import time
+import xxhash
 from typing import Any
 from pandas.core.dtypes.common import is_numeric_dtype, is_datetime64_dtype
 
@@ -45,6 +46,7 @@ from mostlyai.qa._common import (
     ProgressCallbackWrapper,
 )
 from mostlyai.qa.assets import load_tokenizer
+from joblib import Parallel, cpu_count, delayed, parallel_config
 
 
 _LOG = logging.getLogger(__name__)
@@ -227,6 +229,7 @@ def pull_data_for_embeddings(
     tgt_context_key: str | None = None,
     max_sample_size: int | None = None,
 ) -> list[str]:
+    _LOG.info("pulling data for embeddings")
     t0 = time.time()
 
     # keys must be provided if df_ctx provided
@@ -263,25 +266,42 @@ def pull_data_for_embeddings(
     num_cols = df_tgt.select_dtypes("number").columns.drop(tgt_context_key, errors="ignore")
     df_tgt[num_cols] = df_tgt[num_cols].astype("Float64")
 
+    # split into chunks while keeping groups together and process in parallel
+    n_jobs = min(16, max(1, cpu_count() - 1))
+    hash_ids = df_tgt[tgt_context_key].apply(lambda x: xxhash.xxh32_intdigest(str(x))) % n_jobs
+    with parallel_config("loky", n_jobs=n_jobs):
+        strings = Parallel()(
+            delayed(stringify_sequences)(df_tgt.loc[hash_ids == i], tgt_context_key) for i in range(n_jobs)
+        )
+    # flatten results
+    strings = pd.concat(strings).sample(frac=1).reset_index(drop=True)
+    _LOG.info(f"pulled data {strings.shape} for embeddings in {time.time() - t0:.2f}s")
+    return strings.to_list()
+
+
+def stringify_sequences(df: pd.DataFrame, tgt_context_key: str) -> pd.Series:
+    if len(df) == 0:
+        return pd.Series(dtype="string[pyarrow]")
+
     def row_to_string(row: pd.Series) -> str:
         # we concatenate all values as strings rather than convert to
         # JSON to keep the string length for faster speed short
-        return " ".join(row.values.astype(str))
+        values = []
+        for val in row.values:
+            if pd.api.types.is_datetime64_dtype(type(val)) or isinstance(val, pd.Timestamp):
+                # Format datetimes consistently
+                values.append(pd.Timestamp(val).strftime("%Y-%m-%dT%H:%M:%S.%f000"))
+            else:
+                values.append(str(val))
+        return " ".join(values)
 
     def sequence_to_string(sequence: pd.DataFrame) -> str:
         return ", ".join(sequence.apply(row_to_string, axis=1))
 
-    strings = (
-        df_tgt.set_index(tgt_context_key)
-        .groupby(tgt_context_key)
-        .apply(sequence_to_string)
-        .sample(frac=1)
-        .reset_index(drop=True)
-    )
+    strings = df.set_index(tgt_context_key).groupby(tgt_context_key).apply(sequence_to_string)
     # cap at 1k chars, as encoder truncates anyway; still it speeds things up by truncating beforehand
     strings = strings.astype("string[pyarrow]").str[:1_000]
-    _LOG.info(f"pulled data {strings.shape} for embeddings in {time.time() - t0:.2f}s")
-    return strings.to_list()
+    return strings
 
 
 def calculate_embeddings(

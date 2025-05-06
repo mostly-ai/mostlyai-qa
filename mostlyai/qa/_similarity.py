@@ -98,7 +98,7 @@ def calculate_discriminator_auc(
                 auc_score = roc_auc_score(y_holdout, y_holdout_pred)
                 auc_scores.append(round(auc_score, 4))
 
-            _LOG.info(f"{auc_scores=}")
+            _LOG.info(f"auc_scores={[float(auc) for auc in auc_scores]}")
 
             # calculate the mean AUC score
             mean_auc_score = np.mean(auc_scores)
