@@ -13,6 +13,8 @@
 # limitations under the License.
 
 import pandas as pd
+import numpy as np
+from datetime import datetime
 
 from mostlyai.qa._sampling import pull_data_for_embeddings
 
@@ -27,5 +29,20 @@ def test_pull_data_for_embeddings_groupby(tmp_path):
 
 def test_pull_data_for_embeddings_large_int(tmp_path):
     # regression test for issue with overly large integers
-    df = pd.DataFrame({"cc": [123, 1800218404984585216]}, dtype="Int64")
-    pull_data_for_embeddings(df_tgt=df)
+    df = pd.DataFrame(
+        {"cc": list(np.random.randint(100, 200, size=1000)) + [1800218404984585216] + [pd.NA]}, dtype="Int64"
+    )
+    percentiles = {"cc": [100, 200]}
+    pull_data_for_embeddings(df_tgt=df, percentiles=percentiles)
+
+
+def test_pull_data_for_embeddings_dates(tmp_path):
+    n = 1000
+    dates = pd.to_datetime(np.random.randint(pd.Timestamp("2020-01-01").value, pd.Timestamp("2025-01-01").value, n))
+    df = pd.DataFrame({"x": dates, "y": dates.date})
+    df.loc[0] = pd.NaT
+    percentiles = {
+        "x": [datetime(2020, 2, 1), datetime(2024, 1, 1)],
+        "y": [datetime(2020, 2, 1), datetime(2024, 1, 1)],
+    }
+    pull_data_for_embeddings(df_tgt=df, percentiles=percentiles)

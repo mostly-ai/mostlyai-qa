@@ -28,6 +28,7 @@
 import logging
 import random
 import time
+import string
 import xxhash
 from typing import Any
 from pandas.core.dtypes.common import is_numeric_dtype, is_datetime64_dtype
@@ -228,6 +229,7 @@ def pull_data_for_embeddings(
     ctx_primary_key: str | None = None,
     tgt_context_key: str | None = None,
     max_sample_size: int | None = None,
+    percentiles: dict[str, list] | None = None,
 ) -> list[str]:
     _LOG.info("pulling data for embeddings")
     t0 = time.time()
@@ -262,9 +264,16 @@ def pull_data_for_embeddings(
     df_tgt = df_tgt.rename(columns={tgt_context_key: key})
     tgt_context_key = key
 
-    # harmonize numerical columns to double precision
-    num_cols = df_tgt.select_dtypes("number").columns.drop(tgt_context_key, errors="ignore")
-    df_tgt[num_cols] = df_tgt[num_cols].astype("Float64")
+    # bin numeric and datetime columns into percentiles; partly also to prevent
+    # embedding distortion by adding extra precision to values
+    num_dat_cols = [
+        c
+        for c in df_tgt.select_dtypes(include=["number", "datetime"]).columns
+        if percentiles and c in percentiles.keys()
+    ]
+    prefixes = string.ascii_lowercase + string.ascii_uppercase
+    for i, col in enumerate(num_dat_cols):
+        df_tgt[col] = bin_num_dat(values=df_tgt[col], bins=percentiles[col], prefix=prefixes[i % len(prefixes)])
 
     # split into chunks while keeping groups together and process in parallel
     n_jobs = min(16, max(1, cpu_count() - 1))
@@ -273,6 +282,7 @@ def pull_data_for_embeddings(
         strings = Parallel()(
             delayed(stringify_sequences)(df_tgt.loc[hash_ids == i], tgt_context_key) for i in range(n_jobs)
         )
+
     # flatten results
     strings = pd.concat(strings).sample(frac=1).reset_index(drop=True)
     _LOG.info(f"pulled data {strings.shape} for embeddings in {time.time() - t0:.2f}s")
@@ -286,14 +296,7 @@ def stringify_sequences(df: pd.DataFrame, tgt_context_key: str) -> pd.Series:
     def row_to_string(row: pd.Series) -> str:
         # we concatenate all values as strings rather than convert to
         # JSON to keep the string length for faster speed short
-        values = []
-        for val in row.values:
-            if pd.api.types.is_datetime64_dtype(type(val)) or isinstance(val, pd.Timestamp):
-                # Format datetimes consistently
-                values.append(pd.Timestamp(val).strftime("%Y-%m-%dT%H:%M:%S.%f000"))
-            else:
-                values.append(str(val))
-        return " ".join(values)
+        return " ".join(str(val) for val in row.values)
 
     def sequence_to_string(sequence: pd.DataFrame) -> str:
         return ", ".join(sequence.apply(row_to_string, axis=1))
@@ -302,6 +305,14 @@ def stringify_sequences(df: pd.DataFrame, tgt_context_key: str) -> pd.Series:
     # cap at 1k chars, as encoder truncates anyway; still it speeds things up by truncating beforehand
     strings = strings.astype("string[pyarrow]").str[:1_000]
     return strings
+
+
+def bin_num_dat(values: pd.Series, bins: list, prefix: str) -> pd.Series:
+    binned = pd.cut(values, bins=bins, labels=bins[:-1], include_lowest=True).astype(str)
+    binned[values <= min(bins)] = str(bins[0])
+    binned[values >= max(bins)] = str(bins[-1])
+    binned[values.isna()] = "NA"
+    return prefix + binned
 
 
 def calculate_embeddings(
