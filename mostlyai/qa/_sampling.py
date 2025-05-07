@@ -264,7 +264,7 @@ def pull_data_for_embeddings(
     df_tgt = df_tgt.rename(columns={tgt_context_key: key})
     tgt_context_key = key
 
-    # bin numeric and datetime columns into deciles; partly also to prevent
+    # bin numeric and datetime columns into percentiles; partly also to prevent
     # embedding distortion by adding extra precision to values
     num_dat_cols = [
         c

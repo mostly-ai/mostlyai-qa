@@ -285,7 +285,7 @@ def report(
 
         _LOG.info("load embedder")
         embedder = load_embedder()
-        _LOG.info("calculate deciles")
+        _LOG.info("calculate percentiles")
         percentiles = {
             col.replace(TGT_COLUMN_PREFIX, ""): list(
                 sorted(set(ori[col].dropna().quantile(np.linspace(0, 1, 101), interpolation="nearest")))
