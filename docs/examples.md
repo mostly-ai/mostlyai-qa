@@ -12,12 +12,12 @@ hide:
 ```python
 import pandas as pd
 import webbrowser
-from mostlyai.qa import report
+from mostlyai import qa
 
 repo = "https://github.com/mostly-ai/mostlyai-qa"
 path = "/raw/refs/heads/main/examples/baseball-players"
 
-report_path, metrics = report(
+report_path, metrics = qa.report(
     syn_tgt_data=pd.read_parquet(f"{repo}/{path}/synthetic-target.pqt"),
     trn_tgt_data=pd.read_parquet(f"{repo}/{path}/training-target.pqt"),
     hol_tgt_data=pd.read_parquet(f"{repo}/{path}/holdout-target.pqt"),
@@ -36,12 +36,12 @@ webbrowser.open(f"file://{report_path.absolute()}")
 ```python
 import pandas as pd
 import webbrowser
-from mostlyai.qa import report
+from mostlyai import qa
 
 repo = "https://github.com/mostly-ai/mostlyai-qa"
 path = "/raw/refs/heads/main/examples/baseball-players"
 
-report_path, metrics = report(
+report_path, metrics = qa.report(
     syn_tgt_data=pd.read_parquet(f"{repo}/{path}/synthetic-target.pqt"),
     syn_ctx_data=pd.read_parquet(f"{repo}/{path}/synthetic-context.pqt"),
     trn_tgt_data=pd.read_parquet(f"{repo}/{path}/training-target.pqt"),
@@ -66,12 +66,12 @@ webbrowser.open(f"file://{report_path.absolute()}")
 ```python
 import pandas as pd
 import webbrowser
-from mostlyai.qa import report
+from mostlyai import qa
 
 repo = "https://github.com/mostly-ai/mostlyai-qa"
 path = "/raw/refs/heads/main/examples/baseball-seasons"
 
-report_path, metrics = report(
+report_path, metrics = qa.report(
     syn_tgt_data=pd.read_parquet(f"{repo}/{path}/synthetic-target.pqt"),
     trn_tgt_data=pd.read_parquet(f"{repo}/{path}/training-target.pqt"),
     hol_tgt_data=pd.read_parquet(f"{repo}/{path}/holdout-target.pqt"),
@@ -91,12 +91,12 @@ webbrowser.open(f"file://{report_path.absolute()}")
 ```python
 import pandas as pd
 import webbrowser
-from mostlyai.qa import report
+from mostlyai import qa
 
 repo = "https://github.com/mostly-ai/mostlyai-qa"
 path = "/raw/refs/heads/main/examples/baseball-seasons"
 
-report_path, metrics = report(
+report_path, metrics = qa.report(
     syn_tgt_data=pd.read_parquet(f"{repo}/{path}/synthetic-target.pqt"),
     syn_ctx_data=pd.read_parquet(f"{repo}/{path}/synthetic-context.pqt"),
     trn_tgt_data=pd.read_parquet(f"{repo}/{path}/training-target.pqt"),
