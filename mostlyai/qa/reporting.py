@@ -288,9 +288,10 @@ def report(
         _LOG.info("calculate deciles")
         deciles = {
             col.replace(TGT_COLUMN_PREFIX, ""): list(
-                sorted(set(ori[col].quantile(np.linspace(0, 1, 11), interpolation="nearest")))
+                sorted(set(ori[col].dropna().quantile(np.linspace(0, 1, 11), interpolation="nearest")))
             )
             for col in ori.select_dtypes(include=["number", "datetime"]).columns
+            if len(ori[col].dropna()) > 0
         }
 
         _LOG.info("calculate embeddings for synthetic")
