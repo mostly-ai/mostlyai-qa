@@ -266,7 +266,9 @@ def pull_data_for_embeddings(
 
     # bin numeric and datetime columns into deciles; partly also to prevent
     # embedding distortion by adding extra precision to values
-    num_dat_cols = [c for c in df_tgt.select_dtypes(include=["number", "datetime"]).columns if c in deciles.keys()]
+    num_dat_cols = [
+        c for c in df_tgt.select_dtypes(include=["number", "datetime"]).columns if deciles and c in deciles.keys()
+    ]
     prefixes = string.ascii_lowercase + string.ascii_uppercase
     for i, col in enumerate(num_dat_cols):
         df_tgt[col] = bin_num_dat(values=df_tgt[col], bins=deciles[col], prefix=prefixes[i % len(prefixes)])
