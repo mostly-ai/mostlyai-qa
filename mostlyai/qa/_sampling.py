@@ -229,7 +229,7 @@ def pull_data_for_embeddings(
     ctx_primary_key: str | None = None,
     tgt_context_key: str | None = None,
     max_sample_size: int | None = None,
-    bins: dict[str, list] | None = None,
+    deciles: dict[str, list] | None = None,
 ) -> list[str]:
     _LOG.info("pulling data for embeddings")
     t0 = time.time()
@@ -241,15 +241,6 @@ def pull_data_for_embeddings(
     df_tgt = df_tgt[sorted(df_tgt.columns)]
     if df_ctx is not None:
         df_ctx = df_ctx[sorted(df_ctx.columns)]
-
-    # add column prefixes to match names in bins
-    df_tgt = df_tgt.add_prefix("tgt::")
-    if df_ctx is not None:
-        df_ctx = df_ctx.add_prefix("ctx::")
-    if tgt_context_key is not None:
-        tgt_context_key = "tgt::" + tgt_context_key
-    if ctx_primary_key is not None:
-        ctx_primary_key = "ctx::" + ctx_primary_key
 
     key = "__KEY"
 
@@ -273,12 +264,12 @@ def pull_data_for_embeddings(
     df_tgt = df_tgt.rename(columns={tgt_context_key: key})
     tgt_context_key = key
 
-    # bin numeric and datetime columns
-    num_dat_cols = [c for c in df_tgt.select_dtypes(include=["number", "datetime"]).columns if c in bins.keys()]
+    # bin numeric and datetime columns into deciles; partly also to prevent
+    # embedding distortion by adding extra precision to values
+    num_dat_cols = [c for c in df_tgt.select_dtypes(include=["number", "datetime"]).columns if c in deciles.keys()]
     prefixes = string.ascii_lowercase + string.ascii_uppercase
     for i, col in enumerate(num_dat_cols):
-        binned = bin_numeric(values=df_tgt[col], bins=bins[col])
-        df_tgt[col] = prefixes[i % len(prefixes)] + binned  # prefix with letter to help embedding distinguish
+        df_tgt[col] = bin_num_dat(values=df_tgt[col], bins=deciles[col], prefix=prefixes[i % len(prefixes)])
 
     # split into chunks while keeping groups together and process in parallel
     n_jobs = min(16, max(1, cpu_count() - 1))
@@ -312,12 +303,13 @@ def stringify_sequences(df: pd.DataFrame, tgt_context_key: str) -> pd.Series:
     return strings
 
 
-def bin_numeric(values: pd.Series, bins: list) -> pd.Series:
-    binned = pd.cut(values, bins=bins, labels=False, include_lowest=True).astype("Int64").astype(str)
-    binned[values < min(bins)] = 0
-    binned[values > max(bins)] = len(bins)
+def bin_num_dat(values: pd.Series, bins: list, prefix: str) -> pd.Series:
+    binned = pd.cut(values, bins=bins + [np.inf], labels=bins, include_lowest=True).astype(str)
+    binned[values <= min(bins)] = bins[0]
+    binned[values >= max(bins)] = bins[-1]
+    binned = binned.astype(str)
     binned[values.isna()] = "NA"
-    return binned
+    return prefix + binned
 
 
 def calculate_embeddings(

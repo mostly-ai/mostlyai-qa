@@ -285,9 +285,13 @@ def report(
 
         _LOG.info("load embedder")
         embedder = load_embedder()
-        _LOG.info("load bins")
-        bins = statistics.load_bins()
-        _LOG.info(f"bins: {bins}")
+        _LOG.info("calculate deciles")
+        deciles = {
+            col.replace(TGT_COLUMN_PREFIX, ""): list(
+                sorted(set(ori[col].quantile(np.linspace(0, 1, 11), interpolation="nearest")))
+            )
+            for col in ori.select_dtypes(include=["number", "datetime"]).columns
+        }
 
         _LOG.info("calculate embeddings for synthetic")
         syn_embeds = calculate_embeddings(
@@ -297,7 +301,7 @@ def report(
                 ctx_primary_key=ctx_primary_key,
                 tgt_context_key=tgt_context_key,
                 max_sample_size=max_sample_size_embeddings_final,
-                bins=bins,
+                deciles=deciles,
             ),
             progress=progress,
             progress_from=25,
@@ -312,7 +316,7 @@ def report(
                 ctx_primary_key=ctx_primary_key,
                 tgt_context_key=tgt_context_key,
                 max_sample_size=max_sample_size_embeddings_final,
-                bins=bins,
+                deciles=deciles,
             ),
             progress=progress,
             progress_from=45,
@@ -328,7 +332,7 @@ def report(
                     ctx_primary_key=ctx_primary_key,
                     tgt_context_key=tgt_context_key,
                     max_sample_size=max_sample_size_embeddings_final,
-                    bins=bins,
+                    deciles=deciles,
                 ),
                 progress=progress,
                 progress_from=65,
