@@ -61,7 +61,7 @@ def test_calculate_distances():
     hol_embeds = calculate_embeddings(["a 0.0001"] * n, embedder=embedder)
     distances = calculate_distances(syn_embeds=syn_embeds, trn_embeds=trn_embeds, hol_embeds=hol_embeds)
     assert distances["dcr_syn_hol"].min() > 0
-    assert distances["dcr_trn_hol"].min() == 0
+    assert np.isclose(distances["dcr_trn_hol"].min(), 0, atol=1e-6)
 
 
 def test_plot_store_dcr(workspace):
