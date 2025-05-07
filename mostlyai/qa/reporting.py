@@ -286,9 +286,9 @@ def report(
         _LOG.info("load embedder")
         embedder = load_embedder()
         _LOG.info("calculate deciles")
-        deciles = {
+        percentiles = {
             col.replace(TGT_COLUMN_PREFIX, ""): list(
-                sorted(set(ori[col].dropna().quantile(np.linspace(0, 1, 11), interpolation="nearest")))
+                sorted(set(ori[col].dropna().quantile(np.linspace(0, 1, 101), interpolation="nearest")))
             )
             for col in ori.select_dtypes(include=["number", "datetime"]).columns
             if len(ori[col].dropna()) > 0
@@ -302,7 +302,7 @@ def report(
                 ctx_primary_key=ctx_primary_key,
                 tgt_context_key=tgt_context_key,
                 max_sample_size=max_sample_size_embeddings_final,
-                deciles=deciles,
+                percentiles=percentiles,
             ),
             progress=progress,
             progress_from=25,
@@ -317,7 +317,7 @@ def report(
                 ctx_primary_key=ctx_primary_key,
                 tgt_context_key=tgt_context_key,
                 max_sample_size=max_sample_size_embeddings_final,
-                deciles=deciles,
+                percentiles=percentiles,
             ),
             progress=progress,
             progress_from=45,
@@ -333,7 +333,7 @@ def report(
                     ctx_primary_key=ctx_primary_key,
                     tgt_context_key=tgt_context_key,
                     max_sample_size=max_sample_size_embeddings_final,
-                    deciles=deciles,
+                    percentiles=percentiles,
                 ),
                 progress=progress,
                 progress_from=65,

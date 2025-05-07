@@ -29,4 +29,4 @@ def test_pull_data_for_embeddings_groupby(tmp_path):
 def test_pull_data_for_embeddings_large_int(tmp_path):
     # regression test for issue with overly large integers
     df = pd.DataFrame({"cc": list(np.random.randint(100, 200, size=1000)) + [1800218404984585216]}, dtype="Int64")
-    pull_data_for_embeddings(df_tgt=df, deciles={"cc": [100, 200]})
+    pull_data_for_embeddings(df_tgt=df, percentiles={"cc": [100, 200]})
