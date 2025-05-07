@@ -48,7 +48,7 @@ def calculate_dcrs_nndrs(
     index = faiss.IndexFlatIP(data.shape[1])  # Inner product for cosine similarity
     index.add(data)
     similarities, _ = index.search(query, 2)
-    dcrs = 1 - similarities
+    dcrs = np.clip(1 - similarities, 0, 1)
     dcr = dcrs[:, 0]
     nndr = (dcrs[:, 0] + 1e-8) / (dcrs[:, 1] + 1e-8)
     _LOG.info(f"calculated DCRs for {data.shape=} and {query.shape=} in {time.time() - t0:.2f}s")
