@@ -314,8 +314,8 @@ def stringify_sequences(df: pd.DataFrame, tgt_context_key: str) -> pd.Series:
 
 def bin_numeric(values: pd.Series, bins: list) -> pd.Series:
     binned = pd.cut(values, bins=bins, labels=False, include_lowest=True).astype("Int64").astype(str)
-    binned[values < min(bins)] = "LOW"
-    binned[values > max(bins)] = "HIGH"
+    binned[values < min(bins)] = 0
+    binned[values > max(bins)] = len(bins)
     binned[values.isna()] = "NA"
     return binned
 
