@@ -270,7 +270,6 @@ def pull_data_for_embeddings(
     tgt_num_dat_bins = tgt_num_dat_bins or {}
     for i, col in enumerate(tgt_num_dat_bins.keys()):
         df_tgt[col] = bin_num_dat(values=df_tgt[col], bins=tgt_num_dat_bins[col], prefix=prefixes[i % len(prefixes)])
-    print(df_tgt)
 
     # split into chunks while keeping groups together and process in parallel
     n_jobs = min(16, max(1, cpu_count() - 1))
