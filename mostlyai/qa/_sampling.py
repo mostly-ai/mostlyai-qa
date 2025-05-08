@@ -229,7 +229,7 @@ def pull_data_for_embeddings(
     ctx_primary_key: str | None = None,
     tgt_context_key: str | None = None,
     max_sample_size: int | None = None,
-    percentiles: dict[str, list] | None = None,
+    bins: dict[str, list] | None = None,
 ) -> list[str]:
     _LOG.info("pulling data for embeddings")
     t0 = time.time()
@@ -264,16 +264,14 @@ def pull_data_for_embeddings(
     df_tgt = df_tgt.rename(columns={tgt_context_key: key})
     tgt_context_key = key
 
-    # bin numeric and datetime columns into percentiles; partly also to prevent
+    # bin numeric and datetime columns; partly also to prevent
     # embedding distortion by adding extra precision to values
     num_dat_cols = [
-        c
-        for c in df_tgt.select_dtypes(include=["number", "datetime"]).columns
-        if percentiles and c in percentiles.keys()
+        c for c in df_tgt.select_dtypes(include=["number", "datetime"]).columns if bins and c in bins.keys()
     ]
     prefixes = string.ascii_lowercase + string.ascii_uppercase
     for i, col in enumerate(num_dat_cols):
-        df_tgt[col] = bin_num_dat(values=df_tgt[col], bins=percentiles[col], prefix=prefixes[i % len(prefixes)])
+        df_tgt[col] = bin_num_dat(values=df_tgt[col], bins=bins[col], prefix=prefixes[i % len(prefixes)])
 
     # split into chunks while keeping groups together and process in parallel
     n_jobs = min(16, max(1, cpu_count() - 1))
