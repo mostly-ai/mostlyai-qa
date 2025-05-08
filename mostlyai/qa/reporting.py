@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import datetime
 import logging
 import warnings
 from pathlib import Path
@@ -285,13 +286,13 @@ def report(
 
         _LOG.info("load embedder")
         embedder = load_embedder()
-        _LOG.info("calculate percentiles")
-        percentiles = {
-            col.replace(TGT_COLUMN_PREFIX, ""): list(
-                sorted(set(ori[col].dropna().quantile(np.linspace(0, 1, 101), interpolation="nearest")))
-            )
-            for col in ori.select_dtypes(include=["number", "datetime"]).columns
-            if len(ori[col].dropna()) > 0
+        _LOG.info("load tgt bins")
+        bins = statistics.load_bins()
+        tgt_num_dat_bins = {
+            c.replace(TGT_COLUMN_PREFIX, ""): bins[c]
+            for c in bins.keys()
+            if c.replace(TGT_COLUMN_PREFIX, "") in trn_tgt_data.columns
+            and isinstance(bins[c][0], (int, float, datetime.date, datetime.datetime))
         }
 
         _LOG.info("calculate embeddings for synthetic")
@@ -302,7 +303,7 @@ def report(
                 ctx_primary_key=ctx_primary_key,
                 tgt_context_key=tgt_context_key,
                 max_sample_size=max_sample_size_embeddings_final,
-                percentiles=percentiles,
+                tgt_num_dat_bins=tgt_num_dat_bins,
             ),
             progress=progress,
             progress_from=25,
@@ -317,7 +318,7 @@ def report(
                 ctx_primary_key=ctx_primary_key,
                 tgt_context_key=tgt_context_key,
                 max_sample_size=max_sample_size_embeddings_final,
-                percentiles=percentiles,
+                tgt_num_dat_bins=tgt_num_dat_bins,
             ),
             progress=progress,
             progress_from=45,
@@ -333,7 +334,7 @@ def report(
                     ctx_primary_key=ctx_primary_key,
                     tgt_context_key=tgt_context_key,
                     max_sample_size=max_sample_size_embeddings_final,
-                    percentiles=percentiles,
+                    tgt_num_dat_bins=tgt_num_dat_bins,
                 ),
                 progress=progress,
                 progress_from=65,

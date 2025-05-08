@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import datetime
 import logging
 from pathlib import Path
 
@@ -27,6 +28,7 @@ from mostlyai.qa._coherence import (
 )
 from mostlyai.qa._sampling import pull_data_for_embeddings, calculate_embeddings, pull_data_for_coherence
 from mostlyai.qa._common import (
+    TGT_COLUMN_PREFIX,
     ProgressCallback,
     PrerequisiteNotMetError,
     check_min_sample_size,
@@ -165,6 +167,14 @@ def report_from_statistics(
 
         _LOG.info("load embedder")
         embedder = load_embedder()
+        _LOG.info("load bins")
+        bins = statistics.load_bins()
+        tgt_num_dat_bins = {
+            c.replace(TGT_COLUMN_PREFIX, ""): bins[c]
+            for c in bins.keys()
+            if c.replace(TGT_COLUMN_PREFIX, "") in syn_tgt_data.columns
+            and isinstance(bins[c][0], (int, float, datetime.date, datetime.datetime))
+        }
 
         _LOG.info("calculate embeddings for synthetic")
         syn_embeds = calculate_embeddings(
@@ -174,6 +184,7 @@ def report_from_statistics(
                 ctx_primary_key=ctx_primary_key,
                 tgt_context_key=tgt_context_key,
                 max_sample_size=max_sample_size_embeddings,
+                tgt_num_dat_bins=tgt_num_dat_bins,
             ),
             progress=progress,
             progress_from=40,
