@@ -75,15 +75,20 @@
                 <table class='table'>
                   <tr><td>Univariate</td>
                     <td align="right">
-                      {{ "{:.1%}".format(metrics.accuracy.univariate) }}<br />
-                      <small class="muted-text">({{ "{:.1%}".format(metrics.accuracy.univariate_max) }})</small>
+                      {{ "{:.1%}".format(metrics.accuracy.univariate) }}
                     </td>
                   </tr>
                   {% if 'bivariate' in accuracy_table_by_column %}
                   <tr><td>Bivariate</td>
                     <td align="right">
-                      {{ "{:.1%}".format(metrics.accuracy.bivariate) }}<br />
-                      <small class="muted-text">({{ "{:.1%}".format(metrics.accuracy.bivariate_max) }})</small>
+                      {{ "{:.1%}".format(metrics.accuracy.bivariate) }}
+                    </td>
+                  </tr>
+                  {% endif %}
+                  {% if 'trivariate' in accuracy_table_by_column %}
+                  <tr><td>Trivariate</td>
+                    <td align="right">
+                      {{ "{:.1%}".format(metrics.accuracy.trivariate) }}
                     </td>
                   </tr>
                   {% endif %}
@@ -91,8 +96,7 @@
                   <tr>
                     <td>Coherence</td>
                     <td align="right">
-                      {{ "{:.1%}".format(metrics.accuracy.coherence).replace('nan%', '-') }}<br />
-                      <small class="muted-text">({{ "{:.1%}".format(metrics.accuracy.coherence_max).replace('nan%', '-') }})</small>
+                      {{ "{:.1%}".format(metrics.accuracy.coherence).replace('nan%', '-') }}
                     </td>
                   </tr>
                   {% endif %}
@@ -305,6 +309,9 @@
             {% if 'bivariate' in accuracy_table_by_column %}
             <th>Bivariate</th>
             {% endif %}
+            {% if 'trivariate' in accuracy_table_by_column %}
+            <th>Trivariate</th>
+            {% endif %}
             {% if 'coherence' in accuracy_table_by_column %}
             <th>Coherence</th>
             {% endif %}
@@ -318,6 +325,9 @@
             {% if 'bivariate' in accuracy_table_by_column %}
             <td>{{ "{:.1%}".format(row['bivariate']) }}</td>
             {% endif %}
+            {% if 'trivariate' in accuracy_table_by_column %}
+            <td>{{ "{:.1%}".format(row['trivariate']) }}</td>
+            {% endif %}
             {% if 'coherence' in accuracy_table_by_column %}
             <td>{{ "{:.1%}".format(row['coherence']).replace('nan%', '-') }}</td>
             {% endif %}
@@ -327,12 +337,15 @@
           <thead>
           <tr>
             <th>Total</th>
-            <th>{{ "{:.1%}".format(metrics.accuracy.univariate) }}</th>
+            <th>{{ "{:.1%}".format(metrics.accuracy.univariate) }} <small class="muted-text">({{ "{:.1%}".format(metrics.accuracy.univariate_max) }})</small></th>
             {% if 'bivariate' in accuracy_table_by_column %}
-            <th>{{ "{:.1%}".format(metrics.accuracy.bivariate) }}</th>
+            <th>{{ "{:.1%}".format(metrics.accuracy.bivariate) }} <small class="muted-text">({{ "{:.1%}".format(metrics.accuracy.bivariate_max) }})</small></th>
+            {% endif %}
+            {% if 'trivariate' in accuracy_table_by_column %}
+            <th>{{ "{:.1%}".format(metrics.accuracy.trivariate) }} <small class="muted-text">({{ "{:.1%}".format(metrics.accuracy.trivariate_max) }})</small></th>
             {% endif %}
             {% if 'coherence' in accuracy_table_by_column %}
-            <th>{{ "{:.1%}".format(metrics.accuracy.coherence) }}</th>
+            <th>{{ "{:.1%}".format(metrics.accuracy.coherence) }} <small class="muted-text">({{ "{:.1%}".format(metrics.accuracy.coherence_max) }})</small></th>
             {% endif %}
           </tr>
           </thead>

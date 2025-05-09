@@ -73,6 +73,7 @@ def store_report(
     meta: dict,
     acc_uni: pd.DataFrame,
     acc_biv: pd.DataFrame,
+    acc_triv: pd.DataFrame,
     acc_cats_per_seq: pd.DataFrame,
     acc_seqs_per_cat: pd.DataFrame,
     corr_trn: pd.DataFrame,
@@ -82,7 +83,9 @@ def store_report(
     """
 
     # summarize accuracies by column for overview table
-    accuracy_table_by_column = summarize_accuracies_by_column(acc_uni, acc_biv, acc_cats_per_seq, acc_seqs_per_cat)
+    accuracy_table_by_column = summarize_accuracies_by_column(
+        acc_uni, acc_biv, acc_triv, acc_cats_per_seq, acc_seqs_per_cat
+    )
     accuracy_table_by_column = accuracy_table_by_column.sort_values("univariate", ascending=False)
 
     acc_uni = filter_uni_acc_for_plotting(acc_uni)
@@ -131,27 +134,45 @@ def store_report(
 
 
 def summarize_accuracies_by_column(
-    acc_uni: pd.DataFrame, acc_biv: pd.DataFrame, acc_cats_per_seq: pd.DataFrame, acc_seqs_per_cat: pd.DataFrame
+    acc_uni: pd.DataFrame,
+    acc_biv: pd.DataFrame,
+    acc_triv: pd.DataFrame,
+    acc_cats_per_seq: pd.DataFrame,
+    acc_seqs_per_cat: pd.DataFrame,
 ) -> pd.DataFrame:
     """
-    Calculates DataFrame that stores per-column univariate, bivariate and coherence accuracies.
+    Calculates DataFrame that stores per-column univariate, bivariate, trivariate and coherence accuracies.
     """
 
     tbl_acc_uni = acc_uni.rename(columns={"accuracy": "univariate", "accuracy_max": "univariate_max"})
+
     tbl_acc_biv = (
-        acc_biv.loc[acc_biv.type != "nxt"]
-        .groupby("col1")
-        .mean(["accuracy", "accuracy_max"])
+        acc_biv.melt(value_vars=["col1", "col2"], value_name="column", id_vars=["accuracy", "accuracy_max"])
+        .groupby("column")[["accuracy", "accuracy_max"]]
+        .mean()
         .reset_index()
         .rename(
             columns={
-                "col1": "column",
                 "accuracy": "bivariate",
                 "accuracy_max": "bivariate_max",
             }
         )
     )
     tbl_acc = tbl_acc_uni.merge(tbl_acc_biv, how="left")
+
+    tbl_acc_triv = (
+        acc_triv.melt(value_vars=["col1", "col2", "col3"], value_name="column", id_vars=["accuracy", "accuracy_max"])
+        .groupby("column")[["accuracy", "accuracy_max"]]
+        .mean()
+        .reset_index()
+        .rename(
+            columns={
+                "accuracy": "trivariate",
+                "accuracy_max": "trivariate_max",
+            }
+        )
+    )
+    tbl_acc = tbl_acc.merge(tbl_acc_triv, how="left")
 
     acc_nxt = acc_biv.loc[acc_biv.type == "nxt"]
     if not all((acc_nxt.empty, acc_cats_per_seq.empty, acc_seqs_per_cat.empty)):

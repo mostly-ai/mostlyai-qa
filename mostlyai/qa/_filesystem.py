@@ -110,6 +110,7 @@ class Statistics:
         self.bins_dir = self.path / "bins"
         self.univariate_accuracies_path = self.path / "univariate_accuracies.parquet"
         self.bivariate_accuracies_path = self.path / "bivariate_accuracies.parquet"
+        self.trivariate_accuracies_path = self.path / "trivariate_accuracies.parquet"
         self.numeric_kdes_uni_dir = self.path / "numeric_kdes_uni"
         self.categorical_counts_uni_dir = self.path / "categorical_counts_uni"
         self.bin_counts_uni_path = self.path / "bin_counts_uni.parquet"
@@ -201,6 +202,15 @@ class Statistics:
         # harmonise older prefix formats to <prefix>:: for compatibility with older versions
         df["col1"] = df["col1"].str.replace(_OLD_COL_PREFIX, _NEW_COL_PREFIX, regex=True)
         df["col2"] = df["col2"].str.replace(_OLD_COL_PREFIX, _NEW_COL_PREFIX, regex=True)
+        return df
+
+    def store_trivariate_accuracies(self, trivariates: pd.DataFrame) -> None:
+        trivariates.to_parquet(self.trivariate_accuracies_path)
+
+    def load_trivariate_accuracies(self) -> pd.DataFrame:
+        if not self.trivariate_accuracies_path.exists():
+            return pd.DataFrame(columns=["col1", "col2", "col3", "accuracy", "accuracy_max"])
+        df = pd.read_parquet(self.trivariate_accuracies_path)
         return df
 
     def store_numeric_uni_kdes(self, trn_kdes: dict[str, pd.Series]) -> None:

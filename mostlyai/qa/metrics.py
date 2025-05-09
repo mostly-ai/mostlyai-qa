@@ -27,7 +27,8 @@ class Accuracy(CustomBaseModel):
     1. **Univariate Accuracy**: The accuracy of the univariate distributions for all target columns.
     2. **Bivariate Accuracy**: The accuracy of all pair-wise distributions for target columns, as well as for target
     columns with respect to the context columns.
-    3. **Coherence Accuracy**: The accuracy of the auto-correlation for all target columns.
+    3. **Trivariate Accuracy**: The accuracy of all three-way distributions for target columns.
+    4. **Coherence Accuracy**: The accuracy of the auto-correlation for all target columns.
 
     Accuracy is defined as 100% - [Total Variation Distance](https://en.wikipedia.org/wiki/Total_variation_distance_of_probability_measures) (TVD),
     whereas TVD is half the sum of the absolute differences of the relative frequencies of the corresponding
@@ -60,6 +61,12 @@ class Accuracy(CustomBaseModel):
         ge=0.0,
         le=1.0,
     )
+    trivariate: float | None = Field(
+        default=None,
+        description="Average accuracy of discretized trivariate distributions.",
+        ge=0.0,
+        le=1.0,
+    )
     coherence: float | None = Field(
         default=None,
         description="Average accuracy of discretized coherence distributions. Only applicable for sequential data.",
@@ -84,6 +91,13 @@ class Accuracy(CustomBaseModel):
         default=None,
         alias="bivariateMax",
         description="Expected bivariate accuracy of a same-sized holdout. Serves as a reference for `bivariate`.",
+        ge=0.0,
+        le=1.0,
+    )
+    trivariate_max: float | None = Field(
+        default=None,
+        alias="trivariateMax",
+        description="Expected trivariate accuracy of a same-sized holdout. Serves as a reference for `trivariate`.",
         ge=0.0,
         le=1.0,
     )
