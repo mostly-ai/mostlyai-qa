@@ -16,6 +16,7 @@ import functools
 import hashlib
 import logging
 import math
+import time
 from typing import Any, Literal
 from collections.abc import Callable, Iterable
 
@@ -30,6 +31,7 @@ from mostlyai.qa._common import (
     CHARTS_COLORS,
     CHARTS_FONTS,
     EMPTY_BIN,
+    MAX_TRIVARIATES,
     NA_BIN,
     MIN_RARE_CAT_PROTECTION,
     OTHER_BIN,
@@ -58,9 +60,9 @@ def calculate_univariates(
     """
     Calculates univariate accuracies for all target columns.
     """
-    _LOG.info("calculate univariates")
-
+    t0 = time.time()
     tgt_cols = [c for c in ori_bin.columns if c.startswith(TGT_COLUMN)]
+
     accuracies = pd.DataFrame({"column": tgt_cols})
     with parallel_config("loky", n_jobs=min(16, max(1, cpu_count() - 1))):
         results = Parallel()(
@@ -71,6 +73,9 @@ def calculate_univariates(
             for _, row in accuracies.iterrows()
         )
         accuracies["accuracy"], accuracies["accuracy_max"] = zip(*results)
+
+    _LOG.info(f"calculated univariates for {len(tgt_cols)} columns in {time.time() - t0:.2f} seconds")
+
     return accuracies
 
 
@@ -87,7 +92,7 @@ def calculate_bivariates(
     For each such column pair, value pair frequencies
     are calculated both for training and synthetic data.
     """
-    _LOG.info("calculate bivariates")
+    t0 = time.time()
 
     # the result for symmetric pairs is the same, so we only calculate one of them
     # later, we append copy results for symmetric pairs
@@ -107,7 +112,6 @@ def calculate_bivariates(
     else:
         # enforce consistent columns
         accuracies[["accuracy", "accuracy_max"]] = None
-        # ensure required number of progress messages are sent
 
     accuracies = pd.concat(
         [
@@ -116,6 +120,8 @@ def calculate_bivariates(
         ],
         axis=0,
     ).reset_index(drop=True)
+
+    _LOG.info(f"calculated bivariate accuracies for {len(accuracies)} combinations in {time.time() - t0:.2f} seconds")
 
     return accuracies
 
@@ -166,6 +172,49 @@ def calculate_bivariate_columns(ori_bin: pd.DataFrame, append_symetric: bool = T
             axis=0,
         ).reset_index(drop=True)
 
+    return columns_df
+
+
+def calculate_trivariates(ori_bin: pd.DataFrame, syn_bin: pd.DataFrame) -> pd.DataFrame:
+    """
+    Calculates trivariate accuracies.
+    """
+    t0 = time.time()
+
+    accuracies = calculate_trivariate_columns(ori_bin)
+
+    # calculate trivariates if there is at least one pair
+    if len(accuracies) > 0:
+        with parallel_config("loky", n_jobs=min(16, max(1, cpu_count() - 1))):
+            results = Parallel()(
+                delayed(calculate_accuracy)(
+                    ori_bin_cols=ori_bin[[row["col1"], row["col2"], row["col3"]]],
+                    syn_bin_cols=syn_bin[[row["col1"], row["col2"], row["col3"]]],
+                )
+                for _, row in accuracies.iterrows()
+            )
+            accuracies["accuracy"], accuracies["accuracy_max"] = zip(*results)
+    else:
+        # enforce consistent columns
+        accuracies[["accuracy", "accuracy_max"]] = None
+
+    _LOG.info(f"calculated trivariate accuracies for {len(accuracies)} combinations in {time.time() - t0:.2f} seconds")
+
+    return accuracies
+
+
+def calculate_trivariate_columns(ori_bin: pd.DataFrame) -> pd.DataFrame:
+    """
+    Creates DataFrame with all column-triples subject to trivariate analysis.
+    """
+    tgt_cols = [c for c in ori_bin.columns if c.startswith(TGT_COLUMN_PREFIX)]
+    columns_df = pd.DataFrame({"col1": tgt_cols})
+    columns_df = pd.merge(columns_df, pd.DataFrame({"col2": tgt_cols}), how="cross")
+    columns_df = pd.merge(columns_df, pd.DataFrame({"col3": tgt_cols}), how="cross")
+    columns_df = columns_df.loc[columns_df.col1 < columns_df.col2]
+    columns_df = columns_df.loc[columns_df.col1 < columns_df.col3]
+    columns_df = columns_df.loc[columns_df.col2 < columns_df.col3]
+    columns_df = columns_df.sample(frac=1).head(n=MAX_TRIVARIATES)
     return columns_df
 
 
@@ -349,7 +398,7 @@ def calculate_bin_counts(
     """
     Calculates counts of unique values in each bin.
     """
-    _LOG.info("calculate bin counts")
+    t0 = time.time()
     with parallel_config("loky", n_jobs=min(16, max(1, cpu_count() - 1))):
         results = Parallel()(
             delayed(bin_count_uni)(
@@ -359,8 +408,10 @@ def calculate_bin_counts(
             for col, values in binned.items()
         )
         bin_cnts_uni = dict(results)
+    _LOG.info(f"calculated univariate bin counts for {len(binned.columns)} columns in {time.time() - t0:.2f} seconds")
 
-    biv_cols = calculate_bivariate_columns(binned)
+    t0 = time.time()
+    biv_cols = calculate_bivariate_columns(binned, append_symetric=True)
     with parallel_config("loky", n_jobs=min(16, max(1, cpu_count() - 1))):
         results = Parallel()(
             delayed(bin_count_biv)(
@@ -372,6 +423,7 @@ def calculate_bin_counts(
             for _, row in biv_cols.iterrows()
         )
         bin_cnts_biv = dict(results)
+    _LOG.info(f"calculated bivariate bin counts for {len(biv_cols)} combinations in {time.time() - t0:.2f} seconds")
 
     return bin_cnts_uni, bin_cnts_biv
 

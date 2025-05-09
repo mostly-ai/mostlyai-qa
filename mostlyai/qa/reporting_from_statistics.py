@@ -130,7 +130,7 @@ def report_from_statistics(
         progress.update(completed=20, total=100)
 
         # calculate and plot accuracy and correlations
-        acc_uni, acc_biv, corr_trn = _report_accuracy_and_correlations_from_statistics(
+        acc_uni, acc_biv, acc_triv, corr_trn = _report_accuracy_and_correlations_from_statistics(
             syn=syn,
             statistics=statistics,
             workspace=workspace,
@@ -216,6 +216,7 @@ def report_from_statistics(
             meta=meta,
             acc_uni=acc_uni,
             acc_biv=acc_biv,
+            acc_triv=acc_triv,
             corr_trn=corr_trn,
             acc_cats_per_seq=acc_cats_per_seq,
             acc_seqs_per_cat=acc_seqs_per_cat,
@@ -237,9 +238,10 @@ def _report_accuracy_and_correlations_from_statistics(
     _LOG.info("calculate synthetic bins")
     syn_bin, _ = _accuracy.bin_data(syn, bins)
 
-    _LOG.info("load univariates and bivariates")
+    _LOG.info("load univariates, bivariates, trivariates")
     acc_uni = statistics.load_univariate_accuracies()
     acc_biv = statistics.load_bivariate_accuracies()
+    acc_triv = statistics.load_trivariate_accuracies()
 
     _LOG.info("load numeric KDEs")
     ori_num_kdes = statistics.load_numeric_uni_kdes()
@@ -301,7 +303,7 @@ def _report_accuracy_and_correlations_from_statistics(
         show_accuracy=False,
     )
 
-    return acc_uni, acc_biv, corr_ori
+    return acc_uni, acc_biv, acc_triv, corr_ori
 
 
 def _report_coherence_distinct_categories_per_sequence(

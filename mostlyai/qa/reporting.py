@@ -29,6 +29,7 @@ from mostlyai.qa._accuracy import (
     plot_store_correlation_matrices,
     calculate_univariates,
     calculate_bivariates,
+    calculate_trivariates,
     plot_store_accuracy_matrix,
     filter_uni_acc_for_plotting,
     filter_biv_acc_for_plotting,
@@ -230,7 +231,7 @@ def report(
         progress.update(completed=10, total=100)
 
         _LOG.info("report accuracy and correlations")
-        acc_uni, acc_biv, corr_trn = _report_accuracy_and_correlations(
+        acc_uni, acc_biv, acc_triv, corr_trn = _report_accuracy_and_correlations(
             ori=ori,
             syn=syn,
             statistics=statistics,
@@ -367,6 +368,7 @@ def report(
         metrics = _calculate_metrics(
             acc_uni=acc_uni,
             acc_biv=acc_biv,
+            acc_triv=acc_triv,
             dcr_syn_trn=distances["dcr_syn_trn"],
             dcr_syn_hol=distances["dcr_syn_hol"],
             dcr_trn_hol=distances["dcr_trn_hol"],
@@ -401,9 +403,10 @@ def report(
             metrics=metrics,
             meta=meta,
             acc_uni=acc_uni,
+            acc_biv=acc_biv,
+            acc_triv=acc_triv,
             acc_cats_per_seq=acc_cats_per_seq,
             acc_seqs_per_cat=acc_seqs_per_cat,
-            acc_biv=acc_biv,
             corr_trn=corr_trn,
         )
         progress.update(completed=100, total=100)
@@ -437,6 +440,7 @@ def _calculate_metrics(
     *,
     acc_uni: pd.DataFrame,
     acc_biv: pd.DataFrame,
+    acc_triv: pd.DataFrame,
     dcr_syn_trn: np.ndarray,
     dcr_syn_hol: np.ndarray | None,
     dcr_trn_hol: np.ndarray | None,
@@ -460,6 +464,12 @@ def _calculate_metrics(
         acc_bivariate_max = acc_tgt_ctx.accuracy_max.mean()
     else:
         acc_bivariate = acc_bivariate_max = None
+    # trivariates
+    if not acc_triv.empty:
+        acc_trivariate = acc_triv.accuracy.mean()
+        acc_trivariate_max = acc_triv.accuracy_max.mean()
+    else:
+        acc_trivariate = acc_trivariate_max = None
     # coherence
     acc_nxt = acc_biv.loc[acc_biv.type == NXT_COLUMN]
     nxt_col_coherence = nxt_col_coherence_max = None
@@ -483,16 +493,20 @@ def _calculate_metrics(
     acc_coherence = np.mean(coherence_metrics) if coherence_metrics else None
     acc_coherence_max = np.mean(coherence_max_metrics) if coherence_max_metrics else None
     # calculate overall accuracy
-    acc_overall = np.mean([m for m in (acc_univariate, acc_bivariate, acc_coherence) if m is not None])
-    acc_overall_max = np.mean([m for m in (acc_univariate_max, acc_bivariate_max, acc_coherence_max) if m is not None])
+    acc_overall = np.mean([m for m in (acc_univariate, acc_bivariate, acc_trivariate, acc_coherence) if m is not None])
+    acc_overall_max = np.mean(
+        [m for m in (acc_univariate_max, acc_bivariate_max, acc_trivariate_max, acc_coherence_max) if m is not None]
+    )
     accuracy = Accuracy(
         overall=acc_overall,
         univariate=acc_univariate,
         bivariate=acc_bivariate,
+        trivariate=acc_trivariate,
         coherence=acc_coherence,
         overall_max=acc_overall_max,
         univariate_max=acc_univariate_max,
         bivariate_max=acc_bivariate_max,
+        trivariate_max=acc_trivariate_max,
         coherence_max=acc_coherence_max,
     )
     similarity = Similarity(
@@ -554,6 +568,9 @@ def _report_accuracy_and_correlations(
     # calculate bivariate accuracies
     acc_biv = calculate_bivariates(ori_bin, syn_bin)
 
+    # calculate trivariate accuracies
+    acc_triv = calculate_trivariates(ori_bin, syn_bin)
+
     # plot and store accuracy matrix
     plot_store_accuracy_matrix(
         acc_uni=acc_uni,
@@ -573,6 +590,7 @@ def _report_accuracy_and_correlations(
     # store univariate and bivariate accuracies
     statistics.store_univariate_accuracies(acc_uni)
     statistics.store_bivariate_accuracies(acc_biv)
+    statistics.store_trivariate_accuracies(acc_triv)
 
     # calculate KDEs for original
     ori_num_kdes = calculate_numeric_uni_kdes(ori)
@@ -629,7 +647,7 @@ def _report_accuracy_and_correlations(
         show_accuracy=True,
     )
 
-    return acc_uni, acc_biv, corr_ori
+    return acc_uni, acc_biv, acc_triv, corr_ori
 
 
 def _report_coherence_distinct_categories_per_sequence(
