@@ -115,7 +115,6 @@ def calculate_bivariates(
     else:
         # enforce consistent columns
         accuracies[["accuracy", "accuracy_max"]] = None
-        # ensure required number of progress messages are sent
 
     accuracies = pd.concat(
         [
@@ -188,15 +187,20 @@ def calculate_trivariates(ori_bin: pd.DataFrame, syn_bin: pd.DataFrame) -> pd.Da
     accuracies = calculate_trivariate_columns(ori_bin)
     _LOG.info(f"calculate trivariate accuracies for {len(accuracies)} combinations")
 
-    with parallel_config("loky", n_jobs=min(16, max(1, cpu_count() - 1))):
-        results = Parallel()(
-            delayed(calculate_accuracy)(
-                ori_bin_cols=ori_bin[[row["col1"], row["col2"], row["col3"]]],
-                syn_bin_cols=syn_bin[[row["col1"], row["col2"], row["col3"]]],
+    # calculate trivariates if there is at least one pair
+    if len(accuracies) > 0:
+        with parallel_config("loky", n_jobs=min(16, max(1, cpu_count() - 1))):
+            results = Parallel()(
+                delayed(calculate_accuracy)(
+                    ori_bin_cols=ori_bin[[row["col1"], row["col2"], row["col3"]]],
+                    syn_bin_cols=syn_bin[[row["col1"], row["col2"], row["col3"]]],
+                )
+                for _, row in accuracies.iterrows()
             )
-            for _, row in accuracies.iterrows()
-        )
-        accuracies["accuracy"], accuracies["accuracy_max"] = zip(*results)
+            accuracies["accuracy"], accuracies["accuracy_max"] = zip(*results)
+    else:
+        # enforce consistent columns
+        accuracies[["accuracy", "accuracy_max"]] = None
 
     _LOG.info(f"calculated trivariate accuracies in {time.time() - t0:.2f} seconds")
 

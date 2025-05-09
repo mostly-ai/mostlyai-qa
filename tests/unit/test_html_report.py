@@ -31,6 +31,7 @@ def test_generate_store_report(tmp_path, cols, workspace):
     acc_syn, _ = _accuracy.bin_data(syn, bins)
     acc_uni = _accuracy.calculate_univariates(acc_trn, acc_syn)
     acc_biv = _accuracy.calculate_bivariates(acc_trn, acc_syn)
+    acc_triv = _accuracy.calculate_trivariates(acc_trn, acc_syn)
     acc_cats_per_seq = pd.DataFrame({"column": acc_uni["column"], "accuracy": 0.5, "accuracy_max": 0.5})
     acc_seqs_per_cat = pd.DataFrame({"column": acc_uni["column"], "accuracy": 0.5, "accuracy_max": 0.5})
     corr_trn = _accuracy.calculate_correlations(acc_trn)
@@ -69,6 +70,7 @@ def test_generate_store_report(tmp_path, cols, workspace):
     metrics = _calculate_metrics(
         acc_uni=acc_uni,
         acc_biv=acc_biv,
+        acc_triv=acc_triv,
         dcr_syn_trn=distances["dcr_syn_trn"],
         dcr_syn_hol=distances["dcr_syn_hol"],
         dcr_trn_hol=distances["dcr_trn_hol"],
@@ -99,6 +101,7 @@ def test_generate_store_report(tmp_path, cols, workspace):
         meta=meta,
         acc_uni=acc_uni,
         acc_biv=acc_biv,
+        acc_triv=acc_triv,
         corr_trn=corr_trn,
         acc_cats_per_seq=acc_cats_per_seq,
         acc_seqs_per_cat=acc_seqs_per_cat,
@@ -117,10 +120,14 @@ def test_summarize_accuracies_by_column(tmp_path, cols):
     syn, _ = _accuracy.bin_data(syn, bins)
     uni_acc = _accuracy.calculate_univariates(trn, syn)
     biv_acc = _accuracy.calculate_bivariates(trn, syn)
+    acc_triv = _accuracy.calculate_trivariates(trn, syn)
     acc_cats_per_seq = pd.DataFrame({"column": uni_acc["column"], "accuracy": 0.5, "accuracy_max": 0.5})
     acc_seqs_per_cat = pd.DataFrame({"column": uni_acc["column"], "accuracy": 0.5, "accuracy_max": 0.5})
-    tbl_acc = _html_report.summarize_accuracies_by_column(uni_acc, biv_acc, acc_cats_per_seq, acc_seqs_per_cat)
+    tbl_acc = _html_report.summarize_accuracies_by_column(
+        uni_acc, biv_acc, acc_triv, acc_cats_per_seq, acc_seqs_per_cat
+    )
     assert (tbl_acc["univariate"] >= 0.5).all()
     assert (tbl_acc["bivariate"] >= 0.5).all()
+    assert (tbl_acc["trivariate"] >= 0.5).all()
     assert (tbl_acc["coherence"] >= 0.5).all()
     assert tbl_acc.shape[0] == len([c for c in trn if c.startswith("tgt::")])
