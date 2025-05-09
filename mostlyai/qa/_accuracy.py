@@ -61,9 +61,7 @@ def calculate_univariates(
     Calculates univariate accuracies for all target columns.
     """
     t0 = time.time()
-
     tgt_cols = [c for c in ori_bin.columns if c.startswith(TGT_COLUMN)]
-    _LOG.info(f"calculate univariates for {len(tgt_cols)} columns")
 
     accuracies = pd.DataFrame({"column": tgt_cols})
     with parallel_config("loky", n_jobs=min(16, max(1, cpu_count() - 1))):
@@ -76,7 +74,7 @@ def calculate_univariates(
         )
         accuracies["accuracy"], accuracies["accuracy_max"] = zip(*results)
 
-    _LOG.info(f"calculated univariates in {time.time() - t0:.2f} seconds")
+    _LOG.info(f"calculated univariates for {len(tgt_cols)} columns in {time.time() - t0:.2f} seconds")
 
     return accuracies
 
@@ -99,7 +97,6 @@ def calculate_bivariates(
     # the result for symmetric pairs is the same, so we only calculate one of them
     # later, we append copy results for symmetric pairs
     accuracies = calculate_bivariate_columns(ori_bin, append_symetric=False)
-    _LOG.info(f"calculate bivariate accuracies for {len(accuracies)} combinations")
 
     # calculate bivariates if there is at least one pair
     if len(accuracies) > 0:
@@ -124,7 +121,7 @@ def calculate_bivariates(
         axis=0,
     ).reset_index(drop=True)
 
-    _LOG.info(f"calculated bivariate accuracies in {time.time() - t0:.2f} seconds")
+    _LOG.info(f"calculated bivariate accuracies for {len(accuracies)} combinations in {time.time() - t0:.2f} seconds")
 
     return accuracies
 
@@ -185,7 +182,6 @@ def calculate_trivariates(ori_bin: pd.DataFrame, syn_bin: pd.DataFrame) -> pd.Da
     t0 = time.time()
 
     accuracies = calculate_trivariate_columns(ori_bin)
-    _LOG.info(f"calculate trivariate accuracies for {len(accuracies)} combinations")
 
     # calculate trivariates if there is at least one pair
     if len(accuracies) > 0:
@@ -202,7 +198,7 @@ def calculate_trivariates(ori_bin: pd.DataFrame, syn_bin: pd.DataFrame) -> pd.Da
         # enforce consistent columns
         accuracies[["accuracy", "accuracy_max"]] = None
 
-    _LOG.info(f"calculated trivariate accuracies in {time.time() - t0:.2f} seconds")
+    _LOG.info(f"calculated trivariate accuracies for {len(accuracies)} combinations in {time.time() - t0:.2f} seconds")
 
     return accuracies
 
@@ -398,12 +394,11 @@ def bin_count_biv(col1: str, col2: str, x: pd.Series, y: pd.Series) -> tuple[tup
 
 def calculate_bin_counts(
     binned: pd.DataFrame,
-) -> tuple[dict[str, pd.Series], dict[tuple[str, str], pd.Series], dict[tuple[str, str, str], pd.Series]]:
+) -> tuple[dict[str, pd.Series], dict[tuple[str, str], pd.Series]]:
     """
     Calculates counts of unique values in each bin.
     """
     t0 = time.time()
-    _LOG.info(f"calculate univariate bin counts for {len(binned.columns)} columns")
     with parallel_config("loky", n_jobs=min(16, max(1, cpu_count() - 1))):
         results = Parallel()(
             delayed(bin_count_uni)(
@@ -413,11 +408,10 @@ def calculate_bin_counts(
             for col, values in binned.items()
         )
         bin_cnts_uni = dict(results)
-    _LOG.info(f"calculated univariate bin counts in {time.time() - t0:.2f} seconds")
+    _LOG.info(f"calculated univariate bin counts for {len(binned.columns)} columns in {time.time() - t0:.2f} seconds")
 
     t0 = time.time()
     biv_cols = calculate_bivariate_columns(binned, append_symetric=True)
-    _LOG.info(f"calculate bivariate bin counts for {len(biv_cols)} combinations")
     with parallel_config("loky", n_jobs=min(16, max(1, cpu_count() - 1))):
         results = Parallel()(
             delayed(bin_count_biv)(
@@ -429,7 +423,7 @@ def calculate_bin_counts(
             for _, row in biv_cols.iterrows()
         )
         bin_cnts_biv = dict(results)
-    _LOG.info(f"calculated bivariate bin counts in {time.time() - t0:.2f} seconds")
+    _LOG.info(f"calculated bivariate bin counts for {len(biv_cols)} combinations in {time.time() - t0:.2f} seconds")
 
     return bin_cnts_uni, bin_cnts_biv
 
