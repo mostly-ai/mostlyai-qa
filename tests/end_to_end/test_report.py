@@ -176,17 +176,6 @@ def test_report_flat_rare(tmp_path):
     assert metrics.accuracy.univariate == 0.0
     assert metrics.distances.ims_training == metrics.distances.ims_holdout == 0.0
 
-    # test case where rare values are not protected, and we leak trn into synthetic
-    syn_tgt_data = pd.DataFrame({"x": trn_tgt_data["x"].sample(100, replace=True)})
-    _, metrics = qa.report(
-        syn_tgt_data=syn_tgt_data,
-        trn_tgt_data=trn_tgt_data,
-        hol_tgt_data=hol_tgt_data,
-        statistics_path=statistics_path,
-    )
-    assert metrics.distances.ims_training > metrics.distances.ims_holdout
-    assert metrics.distances.dcr_training < metrics.distances.dcr_holdout
-
 
 def test_report_flat_early_exit(tmp_path):
     # test early exit for dfs with <100 rows

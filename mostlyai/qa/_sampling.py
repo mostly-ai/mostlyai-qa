@@ -266,6 +266,7 @@ def pull_data_for_embeddings(
     tgt_context_key = key
 
     # bin columns; also to prevent distortion of embeddings by adding extra precision or unknown values
+    bins = bins or {}
     df_tgt.columns = [TGT_COLUMN_PREFIX + c if c != key else c for c in df_tgt.columns]
     df_tgt, _ = bin_data(df_tgt, bins=bins, non_categorical_label_style="lower")
     # add some prefix to make numeric and date values unique in the embedding space

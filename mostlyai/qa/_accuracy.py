@@ -1051,15 +1051,13 @@ def bin_data(
     # replace hundreds of columns of a large dataset
     cols, bins_dct = {}, {}
     if isinstance(bins, int):
-        num_cols = [c for c in df.columns if pd.api.types.is_numeric_dtype(df[c])]
-        dat_cols = [c for c in df.columns if pd.api.types.is_datetime64_any_dtype(df[c])]
-        cat_cols = [c for c in df.columns if c not in num_cols + dat_cols]
-        for col in num_cols:
-            cols[col], bins_dct[col] = bin_numeric(df[col], bins, label_style=non_categorical_label_style)
-        for col in dat_cols:
-            cols[col], bins_dct[col] = bin_datetime(df[col], bins, label_style=non_categorical_label_style)
-        for col in cat_cols:
-            cols[col], bins_dct[col] = bin_categorical(df[col], bins)
+        for col in df.columns:
+            if pd.api.types.is_numeric_dtype(df[col]):
+                cols[col], bins_dct[col] = bin_numeric(df[col], bins, label_style=non_categorical_label_style)
+            elif pd.api.types.is_datetime64_any_dtype(df[col]):
+                cols[col], bins_dct[col] = bin_datetime(df[col], bins, label_style=non_categorical_label_style)
+            else:
+                cols[col], bins_dct[col] = bin_categorical(df[col], bins)
     else:  # bins is a dict
         for col in df.columns:
             if col in bins:

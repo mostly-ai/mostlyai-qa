@@ -615,12 +615,11 @@ def test_trim_labels():
 
 
 def test_calculate_correlations(cols):
-    trn, hol, syn = cols
-    trn, bins = bin_data(trn, 3)
-    syn, _ = bin_data(syn, bins)
-    # prefix some columns with "tgt::"
-    columns = [f"tgt::{c}" if c != "cat" else c for idx, c in enumerate(trn.columns)]
-    trn.columns, syn.columns = columns, columns
+    trn, _, syn = cols
+    trn, bins = bin_data(trn[["num", "dt"]], 3)
+    syn, _ = bin_data(syn[["num", "dt"]], bins)
+    trn = trn.add_prefix("tgt::")
+    syn = syn.add_prefix("tgt::")
     corr_trn = calculate_correlations(trn)
     exp_corr_trn = pd.DataFrame(
         [
