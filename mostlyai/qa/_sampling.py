@@ -25,6 +25,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+import datetime
 import logging
 import random
 import time
@@ -229,7 +230,7 @@ def pull_data_for_embeddings(
     ctx_primary_key: str | None = None,
     tgt_context_key: str | None = None,
     max_sample_size: int | None = None,
-    tgt_num_dat_bins: dict[str, list] | None = None,
+    bins: dict[str, list] | None = None,
 ) -> list[str]:
     _LOG.info("pulling data for embeddings")
     t0 = time.time()
@@ -264,12 +265,19 @@ def pull_data_for_embeddings(
     df_tgt = df_tgt.rename(columns={tgt_context_key: key})
     tgt_context_key = key
 
-    # bin numeric and datetime columns; partly also to prevent
-    # embedding distortion by adding extra precision to values
-    prefixes = string.ascii_lowercase + string.ascii_uppercase
-    tgt_num_dat_bins = tgt_num_dat_bins or {}
-    for i, col in enumerate(tgt_num_dat_bins.keys()):
-        df_tgt[col] = bin_num_dat(values=df_tgt[col], bins=tgt_num_dat_bins[col], prefix=prefixes[i % len(prefixes)])
+    # bin columns; also to prevent distortion of embeddings by adding extra precision or unknown values
+    bins = bins or {}
+    df_tgt.columns = [TGT_COLUMN_PREFIX + c if c != key else c for c in df_tgt.columns]
+    df_tgt, _ = bin_data(df_tgt, bins=bins, non_categorical_label_style="lower")
+    # add some prefix to make numeric and date values unique in the embedding space
+    for col in df_tgt.columns:
+        if col in bins:
+            if isinstance(
+                bins[col][0], (int, float, np.integer, np.floating, datetime.date, datetime.datetime, np.datetime64)
+            ):
+                prefixes = string.ascii_lowercase + string.ascii_uppercase
+                prefix = prefixes[xxhash.xxh32_intdigest(col) % len(prefixes)]
+                df_tgt[col] = prefix + df_tgt[col].astype(str)
 
     # split into chunks while keeping groups together and process in parallel
     n_jobs = min(16, max(1, cpu_count() - 1))
@@ -301,15 +309,6 @@ def stringify_sequences(df: pd.DataFrame, tgt_context_key: str) -> pd.Series:
     # cap at 1k chars, as encoder truncates anyway; still it speeds things up by truncating beforehand
     strings = strings.astype("string[pyarrow]").str[:1_000]
     return strings
-
-
-def bin_num_dat(values: pd.Series, bins: list, prefix: str) -> pd.Series:
-    bins = sorted(set(bins))
-    binned = pd.cut(values, bins=bins, labels=bins[:-1], include_lowest=True).astype(str)
-    binned[values <= min(bins)] = str(bins[0])
-    binned[values >= max(bins)] = str(bins[-1])
-    binned[values.isna()] = "NA"
-    return prefix + binned
 
 
 def calculate_embeddings(
