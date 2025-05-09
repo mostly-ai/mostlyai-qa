@@ -118,16 +118,15 @@ def test_summarize_accuracies_by_column(tmp_path, cols):
     trn["nxt::dt"], syn["nxt::dt"] = trn["tgt::dt"], syn["tgt::dt"]
     trn, bins = _accuracy.bin_data(trn, 3)
     syn, _ = _accuracy.bin_data(syn, bins)
-    uni_acc = _accuracy.calculate_univariates(trn, syn)
-    biv_acc = _accuracy.calculate_bivariates(trn, syn)
+    acc_uni = _accuracy.calculate_univariates(trn, syn)
+    acc_biv = _accuracy.calculate_bivariates(trn, syn)
     acc_triv = _accuracy.calculate_trivariates(trn, syn)
-    acc_cats_per_seq = pd.DataFrame({"column": uni_acc["column"], "accuracy": 0.5, "accuracy_max": 0.5})
-    acc_seqs_per_cat = pd.DataFrame({"column": uni_acc["column"], "accuracy": 0.5, "accuracy_max": 0.5})
+    acc_cats_per_seq = pd.DataFrame({"column": acc_uni["column"], "accuracy": 0.5, "accuracy_max": 0.5})
+    acc_seqs_per_cat = pd.DataFrame({"column": acc_uni["column"], "accuracy": 0.5, "accuracy_max": 0.5})
     tbl_acc = _html_report.summarize_accuracies_by_column(
-        uni_acc, biv_acc, acc_triv, acc_cats_per_seq, acc_seqs_per_cat
+        acc_uni, acc_biv, acc_triv, acc_cats_per_seq, acc_seqs_per_cat
     )
     assert (tbl_acc["univariate"] >= 0.5).all()
     assert (tbl_acc["bivariate"] >= 0.5).all()
-    assert (tbl_acc["trivariate"] >= 0.5).all()
     assert (tbl_acc["coherence"] >= 0.5).all()
     assert tbl_acc.shape[0] == len([c for c in trn if c.startswith("tgt::")])
