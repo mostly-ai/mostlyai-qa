@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import logging
+import platform
 import time
 
 import numpy as np
@@ -23,7 +24,6 @@ from mostlyai.qa._common import (
 )
 from mostlyai.qa._filesystem import TemporaryWorkspace
 from plotly import graph_objs as go
-import faiss
 
 _LOG = logging.getLogger(__name__)
 
@@ -45,11 +45,35 @@ def calculate_dcrs_nndrs(
     _LOG.info(f"calculate DCRs for {data.shape=} and {query.shape=}")
     t0 = time.time()
     data = data[data[:, 0].argsort()]  # sort data by first dimension to enforce deterministic results
-    index = faiss.IndexFlatIP(data.shape[1])  # inner product for cosine similarity with normalized vectors
-    index.add(data)
-    similarities, _ = index.search(query, 2)
-    dcrs = np.clip(1 - similarities, 0, 1)
-    dcr = dcrs[:, 0]
+    if platform.system() == "Linux":
+        # use FAISS on Linux for best performance
+        import faiss  # type: ignore
+
+        index = faiss.IndexFlatIP(data.shape[1])  # inner product for cosine similarity with normalized vectors
+        index.add(data)
+        similarities, _ = index.search(query, 2)
+        dcrs = np.clip(1 - similarities, 0, 1)
+    else:
+        # use sklearn as a fallback on non-Linux systems to avoid segfaults; these occurred when using QA as part of SDK
+        from sklearn.neighbors import NearestNeighbors  # type: ignore
+        from joblib import cpu_count  # type: ignore
+
+        index = NearestNeighbors(
+            n_neighbors=2, algorithm="auto", metric="cosine", n_jobs=min(16, max(1, cpu_count() - 1))
+        )
+        index.fit(data)
+        dcrs, _ = index.kneighbors(query)
+
+    if platform.system() == "Linux":
+        # use FAISS on Linux
+        index = faiss.IndexFlatIP(data.shape[1])  # inner product for cosine similarity with normalized vectors
+        index.add(data)
+        similarities, _ = index.search(query, 2)
+        dcrs = np.clip(1 - similarities, 0, 1)
+    else:
+        # use scipy on non-Linux systems;
+        # for some reason, FAISS sgefaults is not deterministic on macOS
+        dcr = dcrs[:, 0]
     nndr = (dcrs[:, 0] + 1e-8) / (dcrs[:, 1] + 1e-8)
     _LOG.info(f"calculated DCRs for {data.shape=} and {query.shape=} in {time.time() - t0:.2f}s")
     return dcr, nndr
