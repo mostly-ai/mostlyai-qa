@@ -269,7 +269,7 @@ def pull_data_for_embeddings(
     df_tgt.columns = [TGT_COLUMN_PREFIX + c if c != key else c for c in df_tgt.columns]
     df_tgt, _ = bin_data(df_tgt, bins=bins, non_categorical_label_style="lower")
     # add some prefix to make numeric and date values unique in the embedding space
-    for col in bins.keys():
+    for col in df_tgt.columns:
         if isinstance(bins[col][0], (int, float, datetime.date, datetime.datetime)):
             prefixes = string.ascii_lowercase + string.ascii_uppercase
             prefix = prefixes[xxhash.xxh32_intdigest(col) % len(prefixes)]
