@@ -145,6 +145,7 @@ def summarize_accuracies_by_column(
     """
 
     tbl_acc_uni = acc_uni.rename(columns={"accuracy": "univariate", "accuracy_max": "univariate_max"})
+    tbl_acc = tbl_acc_uni
 
     tbl_acc_biv = (
         acc_biv.melt(value_vars=["col1", "col2"], value_name="column", id_vars=["accuracy", "accuracy_max"])
@@ -158,7 +159,8 @@ def summarize_accuracies_by_column(
             }
         )
     )
-    tbl_acc = tbl_acc_uni.merge(tbl_acc_biv, how="left")
+    if not tbl_acc_biv.empty:
+        tbl_acc = tbl_acc_uni.merge(tbl_acc_biv, how="left")
 
     tbl_acc_triv = (
         acc_triv.melt(value_vars=["col1", "col2", "col3"], value_name="column", id_vars=["accuracy", "accuracy_max"])
@@ -172,7 +174,8 @@ def summarize_accuracies_by_column(
             }
         )
     )
-    tbl_acc = tbl_acc.merge(tbl_acc_triv, how="left")
+    if not tbl_acc_triv.empty:
+        tbl_acc = tbl_acc.merge(tbl_acc_triv, how="left")
 
     acc_nxt = acc_biv.loc[acc_biv.type == "nxt"]
     if not all((acc_nxt.empty, acc_cats_per_seq.empty, acc_seqs_per_cat.empty)):
