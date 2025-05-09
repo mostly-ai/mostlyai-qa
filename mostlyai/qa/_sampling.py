@@ -270,10 +270,13 @@ def pull_data_for_embeddings(
     df_tgt, _ = bin_data(df_tgt, bins=bins, non_categorical_label_style="lower")
     # add some prefix to make numeric and date values unique in the embedding space
     for col in df_tgt.columns:
-        if isinstance(bins[col][0], (int, float, datetime.date, datetime.datetime)):
-            prefixes = string.ascii_lowercase + string.ascii_uppercase
-            prefix = prefixes[xxhash.xxh32_intdigest(col) % len(prefixes)]
-            df_tgt[col] = prefix + df_tgt[col].astype(str)
+        if col in bins:
+            if isinstance(
+                bins[col][0], (int, float, np.integer, np.floating, datetime.date, datetime.datetime, np.datetime64)
+            ):
+                prefixes = string.ascii_lowercase + string.ascii_uppercase
+                prefix = prefixes[xxhash.xxh32_intdigest(col) % len(prefixes)]
+                df_tgt[col] = prefix + df_tgt[col].astype(str)
 
     # split into chunks while keeping groups together and process in parallel
     n_jobs = min(16, max(1, cpu_count() - 1))
