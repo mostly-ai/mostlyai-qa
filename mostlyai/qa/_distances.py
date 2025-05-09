@@ -63,17 +63,7 @@ def calculate_dcrs_nndrs(
         )
         index.fit(data)
         dcrs, _ = index.kneighbors(query)
-
-    if platform.system() == "Linux":
-        # use FAISS on Linux
-        index = faiss.IndexFlatIP(data.shape[1])  # inner product for cosine similarity with normalized vectors
-        index.add(data)
-        similarities, _ = index.search(query, 2)
-        dcrs = np.clip(1 - similarities, 0, 1)
-    else:
-        # use scipy on non-Linux systems;
-        # for some reason, FAISS sgefaults is not deterministic on macOS
-        dcr = dcrs[:, 0]
+    dcr = dcrs[:, 0]
     nndr = (dcrs[:, 0] + 1e-8) / (dcrs[:, 1] + 1e-8)
     _LOG.info(f"calculated DCRs for {data.shape=} and {query.shape=} in {time.time() - t0:.2f}s")
     return dcr, nndr
