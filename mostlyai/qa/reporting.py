@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import datetime
 import logging
 import warnings
 from pathlib import Path
@@ -289,12 +288,6 @@ def report(
         embedder = load_embedder()
         _LOG.info("load tgt bins")
         bins = statistics.load_bins()
-        tgt_num_dat_bins = {
-            c.replace(TGT_COLUMN_PREFIX, ""): bins[c]
-            for c in bins.keys()
-            if c.replace(TGT_COLUMN_PREFIX, "") in trn_tgt_data.columns
-            and isinstance(bins[c][0], (int, float, datetime.date, datetime.datetime))
-        }
 
         _LOG.info("calculate embeddings for synthetic")
         syn_embeds = calculate_embeddings(
@@ -304,7 +297,7 @@ def report(
                 ctx_primary_key=ctx_primary_key,
                 tgt_context_key=tgt_context_key,
                 max_sample_size=max_sample_size_embeddings_final,
-                tgt_num_dat_bins=tgt_num_dat_bins,
+                bins=bins,
             ),
             progress=progress,
             progress_from=25,
@@ -319,7 +312,7 @@ def report(
                 ctx_primary_key=ctx_primary_key,
                 tgt_context_key=tgt_context_key,
                 max_sample_size=max_sample_size_embeddings_final,
-                tgt_num_dat_bins=tgt_num_dat_bins,
+                bins=bins,
             ),
             progress=progress,
             progress_from=45,
@@ -335,7 +328,7 @@ def report(
                     ctx_primary_key=ctx_primary_key,
                     tgt_context_key=tgt_context_key,
                     max_sample_size=max_sample_size_embeddings_final,
-                    tgt_num_dat_bins=tgt_num_dat_bins,
+                    bins=bins,
                 ),
                 progress=progress,
                 progress_from=65,

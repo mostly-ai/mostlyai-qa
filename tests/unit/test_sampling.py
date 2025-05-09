@@ -33,7 +33,7 @@ def test_pull_data_for_embeddings_large_int(tmp_path):
         {"cc": list(np.random.randint(100, 200, size=1000)) + [1800218404984585216] + [pd.NA]}, dtype="Int64"
     )
     bins = {"cc": [100, 200]}
-    pull_data_for_embeddings(df_tgt=df, tgt_num_dat_bins=bins)
+    pull_data_for_embeddings(df_tgt=df, bins=bins)
 
 
 def test_pull_data_for_embeddings_dates(tmp_path):
@@ -48,4 +48,4 @@ def test_pull_data_for_embeddings_dates(tmp_path):
         "y": [datetime(2020, 2, 1), datetime(2024, 1, 1)],
         "z": [datetime(2020, 2, 1), datetime(2024, 1, 1)],
     }
-    pull_data_for_embeddings(df_tgt=df, tgt_num_dat_bins=bins)
+    pull_data_for_embeddings(df_tgt=df, bins=bins)

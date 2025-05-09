@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import datetime
 import functools
 import hashlib
 import logging
@@ -1048,13 +1049,11 @@ def bin_data(
 
     # Note, that we create a new pd.DataFrame to avoid fragmentation warning messages that can occur if we try to
     # replace hundreds of columns of a large dataset
-    cols = {}
-
-    bins_dct = {}
-    num_cols = [c for c in df.columns if pd.api.types.is_numeric_dtype(df[c])]
-    dat_cols = [c for c in df.columns if pd.api.types.is_datetime64_any_dtype(df[c])]
-    cat_cols = [c for c in df.columns if c not in num_cols + dat_cols]
+    cols, bins_dct = {}, {}
     if isinstance(bins, int):
+        num_cols = [c for c in df.columns if pd.api.types.is_numeric_dtype(df[c])]
+        dat_cols = [c for c in df.columns if pd.api.types.is_datetime64_any_dtype(df[c])]
+        cat_cols = [c for c in df.columns if c not in num_cols + dat_cols]
         for col in num_cols:
             cols[col], bins_dct[col] = bin_numeric(df[col], bins, label_style=non_categorical_label_style)
         for col in dat_cols:
@@ -1062,27 +1061,22 @@ def bin_data(
         for col in cat_cols:
             cols[col], bins_dct[col] = bin_categorical(df[col], bins)
     else:  # bins is a dict
-        for col in num_cols:
+        for col in df.columns:
             if col in bins:
-                cols[col], _ = bin_numeric(df[col], bins[col], label_style=non_categorical_label_style)
+                if isinstance(bins[col][0], (int, float)):
+                    cols[col], _ = bin_numeric(df[col], bins[col], label_style=non_categorical_label_style)
+                elif isinstance(bins[col][0], (datetime.date, datetime.datetime)):
+                    cols[col], _ = bin_datetime(df[col], bins[col], label_style=non_categorical_label_style)
+                else:
+                    cols[col], _ = bin_categorical(df[col], bins[col])
             else:
-                _LOG.warning(f"'{col}' is missing in bins")
-        for col in dat_cols:
-            if col in bins:
-                cols[col], _ = bin_datetime(df[col], bins[col], label_style=non_categorical_label_style)
-            else:
-                _LOG.warning(f"'{col}' is missing in bins")
-        for col in cat_cols:
-            if col in bins:
-                cols[col], _ = bin_categorical(df[col], bins[col])
-            else:
-                _LOG.warning(f"'{col}' is missing in bins")
+                cols[col] = df[col]
         bins_dct = bins
     return pd.DataFrame(cols), bins_dct
 
 
 def bin_numeric(
-    col: pd.Series, bins: int | list[str], label_style: Literal["bounded", "unbounded"] = "unbounded"
+    col: pd.Series, bins: int | list[str], label_style: Literal["bounded", "unbounded", "lower"] = "unbounded"
 ) -> tuple[pd.Categorical, list]:
     def _clip(col, bins):
         if isinstance(bins, list):
@@ -1131,7 +1125,7 @@ def bin_numeric(
 
 
 def bin_datetime(
-    col: pd.Series, bins: int | list[str], label_style: Literal["bounded", "unbounded"] = "unbounded"
+    col: pd.Series, bins: int | list[str], label_style: Literal["bounded", "unbounded", "lower"] = "unbounded"
 ) -> tuple[pd.Categorical, list]:
     def _clip(col, bins):
         if isinstance(bins, list):
@@ -1184,7 +1178,7 @@ def bin_non_categorical(
     clip_and_breaks: Callable,
     create_labels: Callable,
     adjust_breaks: Callable,
-    label_style: Literal["bounded", "unbounded"] = "unbounded",
+    label_style: Literal["bounded", "unbounded", "lower"] = "unbounded",
 ) -> tuple[pd.Categorical, list]:
     col = col.fillna(np.nan).infer_objects(copy=False)
 
@@ -1203,7 +1197,9 @@ def bin_non_categorical(
         )
         labels = [str(b) for b in breaks[:-1]]
 
-    if label_style == "unbounded":
+    if label_style == "lower":
+        new_labels_map = {label: f"{label}" for label in labels}
+    elif label_style == "unbounded":
         new_labels_map = {label: f"⪰ {label}" for label in labels}
     else:  # label_style == "bounded"
         new_labels_map = {label: f"⪰ {label} ≺ {next_label}" for label, next_label in zip(labels, labels[1:] + ["∞"])}
