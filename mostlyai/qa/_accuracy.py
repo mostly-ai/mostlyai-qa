@@ -214,7 +214,7 @@ def calculate_trivariate_columns(ori_bin: pd.DataFrame) -> pd.DataFrame:
     columns_df = columns_df.loc[columns_df.col1 < columns_df.col2]
     columns_df = columns_df.loc[columns_df.col1 < columns_df.col3]
     columns_df = columns_df.loc[columns_df.col2 < columns_df.col3]
-    columns_df = columns_df.sample(frac=1, random_state=42).head(n=MAX_TRIVARIATES)
+    columns_df = columns_df.sample(frac=1).head(n=MAX_TRIVARIATES)
     return columns_df
 
 
