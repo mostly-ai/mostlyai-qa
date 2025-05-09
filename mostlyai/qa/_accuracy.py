@@ -1035,7 +1035,7 @@ def binning_data(
 def bin_data(
     df: pd.DataFrame,
     bins: int | dict[str, list],
-    non_categorical_label_style: Literal["bounded", "unbounded"] = "unbounded",
+    non_categorical_label_style: Literal["bounded", "unbounded", "lower"] = "unbounded",
 ) -> tuple[pd.DataFrame, dict[str, list]]:
     """
     Splits data into bins.
@@ -1063,9 +1063,9 @@ def bin_data(
     else:  # bins is a dict
         for col in df.columns:
             if col in bins:
-                if isinstance(bins[col][0], (int, float)):
+                if isinstance(bins[col][0], (int, float, np.integer, np.floating)):
                     cols[col], _ = bin_numeric(df[col], bins[col], label_style=non_categorical_label_style)
-                elif isinstance(bins[col][0], (datetime.date, datetime.datetime)):
+                elif isinstance(bins[col][0], (datetime.date, datetime.datetime, np.datetime64)):
                     cols[col], _ = bin_datetime(df[col], bins[col], label_style=non_categorical_label_style)
                 else:
                     cols[col], _ = bin_categorical(df[col], bins[col])
