@@ -57,7 +57,8 @@ def encode_numerics(
             random_state=42,
             n_quantiles=min(100, len(trn) + len(hol)),
         )
-        qt_scaler.fit(pd.concat([trn_num[col], hol_num[col]]).values.reshape(-1, 1))
+        ori_num = pd.concat([trn_num[col], hol_num[col]]) if len(hol) > 0 else pd.DataFrame(trn_num[col])
+        qt_scaler.fit(ori_num.values.reshape(-1, 1))
         syn_num[col] = qt_scaler.transform(syn_num[col].values.reshape(-1, 1))[:, 0]
         trn_num[col] = qt_scaler.transform(trn_num[col].values.reshape(-1, 1))[:, 0]
         hol_num[col] = qt_scaler.transform(hol_num[col].values.reshape(-1, 1))[:, 0] if len(hol) > 0 else None
