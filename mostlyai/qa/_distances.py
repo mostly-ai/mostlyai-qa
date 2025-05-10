@@ -162,18 +162,15 @@ def calculate_dcrs_nndrs(
         # use FAISS on Linux for best performance
         import faiss  # type: ignore
 
-        index = faiss.IndexFlatIP(data.shape[1])  # inner product for cosine similarity with normalized vectors
+        index = faiss.IndexFlatL2(data.shape[1])
         index.add(data)
-        similarities, _ = index.search(query, 2)
-        dcrs = np.clip(1 - similarities, 0, 1)
+        dcrs, _ = index.search(query, 2)
     else:
         # use sklearn as a fallback on non-Linux systems to avoid segfaults; these occurred when using QA as part of SDK
         from sklearn.neighbors import NearestNeighbors  # type: ignore
         from joblib import cpu_count  # type: ignore
 
-        index = NearestNeighbors(
-            n_neighbors=2, algorithm="auto", metric="cosine", n_jobs=min(16, max(1, cpu_count() - 1))
-        )
+        index = NearestNeighbors(n_neighbors=2, algorithm="auto", metric="l2", n_jobs=min(16, max(1, cpu_count() - 1)))
         index.fit(data)
         dcrs, _ = index.kneighbors(query)
     dcr = dcrs[:, 0]
