@@ -68,25 +68,25 @@
                   </div>
                 </div>
                 <div class="result-box-large-title">{{ "{:.1%}".format(metrics.accuracy.overall) }}</div>
-                <div class="muted-text">({{ "{:.1%}".format(metrics.accuracy.overall_max) }})</div>
+                <div class="ref-metric">({{ "{:.1%}".format(metrics.accuracy.overall_max) }})</div>
               </td>
               <td><div class="result-box-separator"></div></td>
               <td>
                 <table class='table'>
                   <tr><td>Univariate</td>
                     <td align="right">
-                      {{ "{:.1%}".format(metrics.accuracy.univariate) }}<br />
+                      {{ "{:.1%}".format(metrics.accuracy.univariate) }}
                       {% if metrics.accuracy.univariate_max is not none %}
-                      <small class="muted-text">({{ "{:.1%}".format(metrics.accuracy.univariate_max) }})</small>
+                      <div class="ref-metric">({{ "{:.1%}".format(metrics.accuracy.univariate_max) }})</div>
                       {% endif %}
                     </td>
                   </tr>
                   {% if 'bivariate' in accuracy_table_by_column %}
                   <tr><td>Bivariate</td>
                     <td align="right">
-                      {{ "{:.1%}".format(metrics.accuracy.bivariate) }}<br />
+                      {{ "{:.1%}".format(metrics.accuracy.bivariate) }}
                       {% if metrics.accuracy.bivariate_max is not none %}
-                      <small class="muted-text">({{ "{:.1%}".format(metrics.accuracy.bivariate_max) }})</small>
+                      <div class="ref-metric">({{ "{:.1%}".format(metrics.accuracy.bivariate_max) }})</div>
                       {% endif %}
                     </td>
                   </tr>
@@ -94,9 +94,9 @@
                   {% if 'trivariate' in accuracy_table_by_column %}
                   <tr><td>Trivariate</td>
                     <td align="right">
-                      {{ "{:.1%}".format(metrics.accuracy.trivariate) }}<br />
+                      {{ "{:.1%}".format(metrics.accuracy.trivariate) }}
                       {% if metrics.accuracy.trivariate_max is not none %}
-                      <small class="muted-text">({{ "{:.1%}".format(metrics.accuracy.trivariate_max) }})</small>
+                      <div class="ref-metric">({{ "{:.1%}".format(metrics.accuracy.trivariate_max) }})</div>
                       {% endif %}
                     </td>
                   </tr>
@@ -133,19 +133,17 @@
                   <tr>
                     <td>Cosine Similarity</td>
                     <td align="left">
-                      {{ "{:.5f}".format(metrics.similarity.cosine_similarity_training_synthetic) }}<br />
+                      {{ "{:.5f}".format(metrics.similarity.cosine_similarity_training_synthetic) }}
                       {% if metrics.similarity.cosine_similarity_training_holdout is not none %}
-                      <small class="muted-text">({{ "{:.5f}".format(metrics.similarity.cosine_similarity_training_holdout) }})</small>
+                      <div class="ref-metric">({{ "{:.5f}".format(metrics.similarity.cosine_similarity_training_holdout) }})</div>
                       {% endif %}
                     </td>
                   </tr>
                   <tr>
                     <td>Discriminator AUC</td>
                     <td align="left">
-                      {{ "{:.1%}".format(metrics.similarity.discriminator_auc_training_synthetic) }}<br />
-                      {% if metrics.similarity.discriminator_auc_training_holdout is not none %}
-                      <small class="muted-text">({{ "{:.1%}".format(metrics.similarity.discriminator_auc_training_holdout) }})</small>
-                      {% endif %}
+                      {{ "{:.1%}".format(metrics.similarity.discriminator_auc_training_synthetic) }}
+                      <div class="ref-metric">(50.0%)</div>
                     </td>
                   </tr>
                 </table>
@@ -174,18 +172,18 @@
                   <tr>
                     <td>Identical Matches</td>
                     <td align="left">
-                      {{ "{:.1%}".format(metrics.distances.ims_training) }}<br />
+                      {{ "{:.1%}".format(metrics.distances.ims_training) }}
                       {% if metrics.distances.ims_holdout is not none %}
-                      <small class="muted-text">({{ "{:.1%}".format(metrics.distances.ims_holdout) }})</small>
+                      <div class="ref-metric">({{ "{:.1%}".format(metrics.distances.ims_holdout) }})</div>
                       {% endif %}
                     </td>
                   </tr>
                   <tr>
                     <td>Average Distances</td>
                     <td align="left">
-                      {{ "{:.3f}".format(metrics.distances.dcr_training) }}<br />
+                      {{ "{:.3f}".format(metrics.distances.dcr_training) }}
                       {% if metrics.distances.dcr_holdout is not none %}
-                      <small class="muted-text">({{ "{:.3f}".format(metrics.distances.dcr_holdout) }})</small>
+                      <div class="ref-metric">({{ "{:.3f}".format(metrics.distances.dcr_holdout) }})</div>
                       {% endif %}
                     </td>
                   </tr>
@@ -194,6 +192,7 @@
                     <td>DCR Share</td>
                     <td align="left">
                       {{ "{:.1%}".format(metrics.distances.dcr_share) }}
+                      <div class="ref-metric">(50.0%)</div>
                     </td>
                   </tr>
                   {% endif %}
@@ -202,6 +201,7 @@
                     <td>NNDR Ratio</td>
                     <td align="left">
                       {{ "{:.3f}".format(metrics.distances.nndr_training / metrics.distances.nndr_holdout) }}
+                      <div class="ref-metric">(1.000)</div>
                     </td>
                   </tr>
                   {% endif %}
@@ -361,16 +361,16 @@
           </tbody>
           <thead>
           <tr>
-            <th>Total</th>
-            <th>{{ "{:.1%}".format(metrics.accuracy.univariate) }} <small class="muted-text">({{ "{:.1%}".format(metrics.accuracy.univariate_max) }})</small></th>
+            <th>Total<div class="ref-metric">&nbsp;</div></th>
+            <th>{{ "{:.1%}".format(metrics.accuracy.univariate) }} <div class="ref-metric">({{ "{:.1%}".format(metrics.accuracy.univariate_max) }})</div></th>
             {% if 'bivariate' in accuracy_table_by_column %}
-            <th>{{ "{:.1%}".format(metrics.accuracy.bivariate) }} <small class="muted-text">({{ "{:.1%}".format(metrics.accuracy.bivariate_max) }})</small></th>
+            <th>{{ "{:.1%}".format(metrics.accuracy.bivariate) }} <div class="ref-metric">({{ "{:.1%}".format(metrics.accuracy.bivariate_max) }})</div></th>
             {% endif %}
             {% if 'trivariate' in accuracy_table_by_column %}
-            <th>{{ "{:.1%}".format(metrics.accuracy.trivariate) }} <small class="muted-text">({{ "{:.1%}".format(metrics.accuracy.trivariate_max) }})</small></th>
+            <th>{{ "{:.1%}".format(metrics.accuracy.trivariate) }} <div class="ref-metric">({{ "{:.1%}".format(metrics.accuracy.trivariate_max) }})</div></th>
             {% endif %}
             {% if 'coherence' in accuracy_table_by_column %}
-            <th>{{ "{:.1%}".format(metrics.accuracy.coherence) }} <small class="muted-text">({{ "{:.1%}".format(metrics.accuracy.coherence_max) }})</small></th>
+            <th>{{ "{:.1%}".format(metrics.accuracy.coherence) }} <div class="ref-metric">({{ "{:.1%}".format(metrics.accuracy.coherence_max) }})</div></th>
             {% endif %}
           </tr>
           </thead>
