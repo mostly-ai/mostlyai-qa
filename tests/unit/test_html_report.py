@@ -50,7 +50,7 @@ def test_generate_store_report(tmp_path, cols, workspace):
         trn_embeds=trn_embeds,
         hol_embeds=hol_embeds,
     )
-    distances = _distances.calculate_distances(syn_embeds=syn_embeds, trn_embeds=trn_embeds, hol_embeds=hol_embeds)
+    distances = _distances.calculate_distances(syn_encoded=syn_embeds, trn_encoded=trn_embeds, hol_encoded=hol_embeds)
 
     # simulate created plots
     plot_paths = (

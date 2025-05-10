@@ -75,20 +75,29 @@
                 <table class='table'>
                   <tr><td>Univariate</td>
                     <td align="right">
-                      {{ "{:.1%}".format(metrics.accuracy.univariate) }}
+                      {{ "{:.1%}".format(metrics.accuracy.univariate) }}<br />
+                      {% if metrics.accuracy.univariate_max is not none %}
+                      <small class="muted-text">({{ "{:.1%}".format(metrics.accuracy.univariate_max) }})</small>
+                      {% endif %}
                     </td>
                   </tr>
                   {% if 'bivariate' in accuracy_table_by_column %}
                   <tr><td>Bivariate</td>
                     <td align="right">
-                      {{ "{:.1%}".format(metrics.accuracy.bivariate) }}
+                      {{ "{:.1%}".format(metrics.accuracy.bivariate) }}<br />
+                      {% if metrics.accuracy.bivariate_max is not none %}
+                      <small class="muted-text">({{ "{:.1%}".format(metrics.accuracy.bivariate_max) }})</small>
+                      {% endif %}
                     </td>
                   </tr>
                   {% endif %}
                   {% if 'trivariate' in accuracy_table_by_column %}
                   <tr><td>Trivariate</td>
                     <td align="right">
-                      {{ "{:.1%}".format(metrics.accuracy.trivariate) }}
+                      {{ "{:.1%}".format(metrics.accuracy.trivariate) }}<br />
+                      {% if metrics.accuracy.trivariate_max is not none %}
+                      <small class="muted-text">({{ "{:.1%}".format(metrics.accuracy.trivariate_max) }})</small>
+                      {% endif %}
                     </td>
                   </tr>
                   {% endif %}
@@ -180,6 +189,22 @@
                       {% endif %}
                     </td>
                   </tr>
+                  {% if metrics.distances.dcr_share is not none %}
+                  <tr>
+                    <td>DCR Share</td>
+                    <td align="left">
+                      {{ "{:.1%}".format(metrics.distances.dcr_share) }}
+                    </td>
+                  </tr>
+                  {% endif %}
+                  {% if metrics.distances.nndr_holdout is not none %}
+                  <tr>
+                    <td>NNDR Ratio</td>
+                    <td align="left">
+                      {{ "{:.3f}".format(metrics.distances.nndr_training / metrics.distances.nndr_holdout) }}
+                    </td>
+                  </tr>
+                  {% endif %}
                 </table>
               </td>
             </tr>

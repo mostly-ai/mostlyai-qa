@@ -176,14 +176,14 @@ class Similarity(CustomBaseModel):
 
 class Distances(CustomBaseModel):
     """
-    Metrics regarding the nearest neighbor distances between training, holdout, and synthetic samples in an embedding
-    space. Useful for assessing the novelty / privacy of synthetic data.
+    Metrics regarding the nearest neighbor distances between training, holdout, and synthetic samples in an numerically
+    encoded space. Useful for assessing the novelty / privacy of synthetic data.
 
     The provided data is first down-sampled, so that the number of samples match across all datasets. Note, that for
     an optimal sensitivity of this privacy assessment it is recommended to use a 50/50 split between training and
     holdout data, and then generate synthetic data of the same size.
 
-    The embeddings of these samples are then computed, and the nearest neighbor distances are calculated for each
+    The numerical encodings of these samples are then computed, and the nearest neighbor distances are calculated for each
     synthetic sample to the training and holdout samples. Based on these nearest neighbor distances the following
     metrics are calculated:
     - Identical Match Share (IMS): The share of synthetic samples that are identical to a training or holdout sample.

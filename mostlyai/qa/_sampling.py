@@ -25,11 +25,9 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-import datetime
 import logging
 import random
 import time
-import string
 import xxhash
 from typing import Any
 from pandas.core.dtypes.common import is_numeric_dtype, is_datetime64_dtype
@@ -230,7 +228,6 @@ def pull_data_for_embeddings(
     ctx_primary_key: str | None = None,
     tgt_context_key: str | None = None,
     max_sample_size: int | None = None,
-    bins: dict[str, list] | None = None,
 ) -> list[str]:
     _LOG.info("pulling data for embeddings")
     t0 = time.time()
@@ -264,20 +261,6 @@ def pull_data_for_embeddings(
     # consistently use "__KEY" as key column
     df_tgt = df_tgt.rename(columns={tgt_context_key: key})
     tgt_context_key = key
-
-    # bin columns; also to prevent distortion of embeddings by adding extra precision or unknown values
-    bins = bins or {}
-    df_tgt.columns = [TGT_COLUMN_PREFIX + c if c != key else c for c in df_tgt.columns]
-    df_tgt, _ = bin_data(df_tgt, bins=bins, non_categorical_label_style="lower")
-    # add some prefix to make numeric and date values unique in the embedding space
-    for col in df_tgt.columns:
-        if col in bins:
-            if isinstance(
-                bins[col][0], (int, float, np.integer, np.floating, datetime.date, datetime.datetime, np.datetime64)
-            ):
-                prefixes = string.ascii_lowercase + string.ascii_uppercase
-                prefix = prefixes[xxhash.xxh32_intdigest(col) % len(prefixes)]
-                df_tgt[col] = prefix + df_tgt[col].astype(str)
 
     # split into chunks while keeping groups together and process in parallel
     n_jobs = min(16, max(1, cpu_count() - 1))
