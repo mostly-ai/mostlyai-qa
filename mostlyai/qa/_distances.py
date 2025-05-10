@@ -39,6 +39,9 @@ _LOG = logging.getLogger(__name__)
 def encode_numerics(
     syn: pd.DataFrame, trn: pd.DataFrame, hol: pd.DataFrame | None = None
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame | None]:
+    """
+    Encode numeric features by mapping this via QuantileTransformer to a uniform distribution from [-0.5, 0.5].
+    """
     syn_num, trn_num, hol_num = {}, {}, {}
     if hol is None:
         hol = pd.DataFrame(columns=trn.columns)
@@ -59,27 +62,31 @@ def encode_numerics(
         )
         ori_num = pd.concat([trn_num[col], hol_num[col]]) if len(hol) > 0 else pd.DataFrame(trn_num[col])
         qt_scaler.fit(ori_num.values.reshape(-1, 1))
-        syn_num[col] = qt_scaler.transform(syn_num[col].values.reshape(-1, 1))[:, 0]
-        trn_num[col] = qt_scaler.transform(trn_num[col].values.reshape(-1, 1))[:, 0]
-        hol_num[col] = qt_scaler.transform(hol_num[col].values.reshape(-1, 1))[:, 0] if len(hol) > 0 else None
-        # replace NAs with 0.5
-        syn_num[col] = np.nan_to_num(syn_num[col], nan=0.5)
-        trn_num[col] = np.nan_to_num(trn_num[col], nan=0.5)
-        hol_num[col] = np.nan_to_num(hol_num[col], nan=0.5)
+        syn_num[col] = qt_scaler.transform(syn_num[col].values.reshape(-1, 1))[:, 0] - 0.5
+        trn_num[col] = qt_scaler.transform(trn_num[col].values.reshape(-1, 1))[:, 0] - 0.5
+        hol_num[col] = qt_scaler.transform(hol_num[col].values.reshape(-1, 1))[:, 0] - 0.5 if len(hol) > 0 else None
+        # replace NAs with 0.0
+        syn_num[col] = np.nan_to_num(syn_num[col], nan=0.0)
+        trn_num[col] = np.nan_to_num(trn_num[col], nan=0.0)
+        hol_num[col] = np.nan_to_num(hol_num[col], nan=0.0)
         # add extra columns for NAs
-        syn_num[col + " - N/A"] = syn[col].isna().astype(float)
-        trn_num[col + " - N/A"] = trn[col].isna().astype(float)
-        hol_num[col + " - N/A"] = hol[col].isna().astype(float)
+        if trn[col].isna().any() or hol[col].isna().any():
+            syn_num[col + " - N/A"] = syn[col].isna().astype(float)
+            trn_num[col + " - N/A"] = trn[col].isna().astype(float)
+            hol_num[col + " - N/A"] = hol[col].isna().astype(float)
     syn_num = pd.DataFrame(syn_num, index=syn.index)
     trn_num = pd.DataFrame(trn_num, index=trn.index)
     hol_num = pd.DataFrame(hol_num, index=hol.index) if len(hol) > 0 else None
     return syn_num, trn_num, hol_num
 
 
-def encode_categoricals(
+def encode_strings(
     syn: pd.DataFrame, trn: pd.DataFrame, hol: pd.DataFrame | None = None
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame | None]:
-    trn_cat, syn_cat, hol_cat = {}, {}, {}
+    """
+    Encode string features by mapping them to a low-dimensional space using PCA of their embeddings.
+    """
+    trn_str, syn_str, hol_str = {}, {}, {}
     if hol is None:
         hol = pd.DataFrame(columns=trn.columns)
     for col in trn.columns:
@@ -102,40 +109,43 @@ def encode_categoricals(
         embeds = pd.DataFrame(embeds)
         embeds.index = uvals + [RARE_BIN]
         # map values to PCA
-        syn_cat[col] = embeds.reindex(syn_col.values).reset_index(drop=True)
-        trn_cat[col] = embeds.reindex(trn_col.values).reset_index(drop=True)
-        hol_cat[col] = embeds.reindex(hol_col.values).reset_index(drop=True)
+        syn_str[col] = embeds.reindex(syn_col.values).reset_index(drop=True)
+        trn_str[col] = embeds.reindex(trn_col.values).reset_index(drop=True)
+        hol_str[col] = embeds.reindex(hol_col.values).reset_index(drop=True)
         # assign column names
         columns = [f"{col} - PCA {i + 1}" for i in range(dims)]
-        syn_cat[col].columns = columns
-        trn_cat[col].columns = columns
-        hol_cat[col].columns = columns
-    syn_cat = pd.concat(syn_cat.values(), axis=1) if syn_cat else pd.DataFrame()
-    syn_cat.index = syn.index
-    trn_cat = pd.concat(trn_cat.values(), axis=1) if trn_cat else pd.DataFrame()
-    trn_cat.index = trn.index
+        syn_str[col].columns = columns
+        trn_str[col].columns = columns
+        hol_str[col].columns = columns
+    syn_str = pd.concat(syn_str.values(), axis=1) if syn_str else pd.DataFrame()
+    syn_str.index = syn.index
+    trn_str = pd.concat(trn_str.values(), axis=1) if trn_str else pd.DataFrame()
+    trn_str.index = trn.index
     if len(hol) > 0:
-        hol_cat = pd.concat(hol_cat.values(), axis=1) if hol_cat else pd.DataFrame()
-        hol_cat.index = hol.index
+        hol_str = pd.concat(hol_str.values(), axis=1) if hol_str else pd.DataFrame()
+        hol_str.index = hol.index
     else:
-        hol_cat = None
-    return syn_cat, trn_cat, hol_cat
+        hol_str = None
+    return syn_str, trn_str, hol_str
 
 
 def encode_data(
     syn: pd.DataFrame, trn: pd.DataFrame, hol: pd.DataFrame | None = None
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame | None]:
+    """
+    Encode all columns corresponding to their data type.
+    """
     num_dat_cols = trn.select_dtypes(include=["number", "datetime"]).columns
-    other_cols = [col for col in trn.columns if col not in num_dat_cols]
+    string_cols = [col for col in trn.columns if col not in num_dat_cols]
     syn_num, trn_num, hol_num = encode_numerics(
         syn[num_dat_cols], trn[num_dat_cols], hol[num_dat_cols] if hol is not None else None
     )
-    syn_cat, trn_cat, hol_cat = encode_categoricals(
-        syn[other_cols], trn[other_cols], hol[other_cols] if hol is not None else None
+    syn_str, trn_str, hol_str = encode_strings(
+        syn[string_cols], trn[string_cols], hol[string_cols] if hol is not None else None
     )
-    syn_encoded = pd.concat([syn_num, syn_cat], axis=1)
-    trn_encoded = pd.concat([trn_num, trn_cat], axis=1)
-    hol_encoded = pd.concat([hol_num, hol_cat], axis=1) if hol is not None else None
+    syn_encoded = pd.concat([syn_num, syn_str], axis=1)
+    trn_encoded = pd.concat([trn_num, trn_str], axis=1)
+    hol_encoded = pd.concat([hol_num, hol_str], axis=1) if hol is not None else None
     return syn_encoded, trn_encoded, hol_encoded
 
 
@@ -144,20 +154,13 @@ def calculate_dcrs_nndrs(
 ) -> tuple[np.ndarray | None, np.ndarray | None]:
     """
     Calculate Distance to Closest Records (DCRs) and Nearest Neighbor Distance Ratios (NNDRs).
-
-    Args:
-        data: numeric base data
-        query: numeric query data
-
-    Returns:
-        dcr: Distance to closest record
-        nndr: Nearest neighbor distance ratio
     """
     if data is None or query is None or data.shape[0] == 0 or query.shape[0] == 0:
         return None, None
     _LOG.info(f"calculate DCRs for {data.shape=} and {query.shape=}")
     t0 = time.time()
     data = data[data[:, 0].argsort()]  # sort data by first dimension to enforce deterministic results
+
     if platform.system() == "Linux":
         # use FAISS on Linux for best performance
         import faiss  # type: ignore
@@ -165,6 +168,7 @@ def calculate_dcrs_nndrs(
         index = faiss.IndexFlatL2(data.shape[1])
         index.add(data)
         dcrs, _ = index.search(query, 2)
+        dcrs = np.sqrt(dcrs)  # FAISS returns squared distances
     else:
         # use sklearn as a fallback on non-Linux systems to avoid segfaults; these occurred when using QA as part of SDK
         from sklearn.neighbors import NearestNeighbors  # type: ignore
@@ -184,24 +188,20 @@ def calculate_distances(
 ) -> dict[str, np.ndarray]:
     """
     Calculates distances to the closest records (DCR).
-
-    Args:
-        syn_encoded: Encoded synthetic data.
-        trn_encoded: Encoded training data.
-        hol_encoded: Encoded holdout data.
-
-    Returns:
-        Dictionary containing:
-            - dcr_syn_trn: DCR for synthetic to training.
-            - dcr_syn_hol: DCR for synthetic to holdout.
-            - dcr_trn_hol: DCR for training to holdout.
-            - nndr_syn_trn: NNDR for synthetic to training.
-            - nndr_syn_hol: NNDR for synthetic to holdout.
-            - nndr_trn_hol: NNDR for training to holdout.
     """
     assert syn_encoded.shape == trn_encoded.shape
     if hol_encoded is not None and hol_encoded.shape[0] > 0:
         assert trn_encoded.shape == hol_encoded.shape
+
+    # cap dimensionality of encoded data
+    max_dims = 256
+    if trn_encoded.shape[1] > max_dims:
+        _LOG.info(f"capping dimensionality of encoded data from {trn_encoded.shape[1]} to {max_dims}")
+        pca_model = PCA(n_components=max_dims)
+        pca_model.fit(np.vstack((trn_encoded, hol_encoded)))
+        trn_encoded = pca_model.transform(trn_encoded)
+        hol_encoded = pca_model.transform(hol_encoded)
+        syn_encoded = pca_model.transform(syn_encoded)
 
     # calculate DCR / NNDR for synthetic to training
     dcr_syn_trn, nndr_syn_trn = calculate_dcrs_nndrs(data=trn_encoded, query=syn_encoded)
