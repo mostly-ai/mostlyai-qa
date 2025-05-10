@@ -38,7 +38,7 @@ _LOG = logging.getLogger(__name__)
 
 def encode_numerics(
     syn: pd.DataFrame, trn: pd.DataFrame, hol: pd.DataFrame | None = None
-) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame | None]:
     syn_num, trn_num, hol_num = {}, {}, {}
     if hol is None:
         hol = pd.DataFrame(columns=trn.columns)
@@ -60,7 +60,7 @@ def encode_numerics(
         qt_scaler.fit(pd.concat([trn_num[col], hol_num[col]]).values.reshape(-1, 1))
         syn_num[col] = qt_scaler.transform(syn_num[col].values.reshape(-1, 1))[:, 0]
         trn_num[col] = qt_scaler.transform(trn_num[col].values.reshape(-1, 1))[:, 0]
-        hol_num[col] = qt_scaler.transform(hol_num[col].values.reshape(-1, 1))[:, 0]
+        hol_num[col] = qt_scaler.transform(hol_num[col].values.reshape(-1, 1))[:, 0] if len(hol) > 0 else None
         # replace NAs with 0.5
         syn_num[col] = np.nan_to_num(syn_num[col], nan=0.5)
         trn_num[col] = np.nan_to_num(trn_num[col], nan=0.5)
@@ -69,12 +69,15 @@ def encode_numerics(
         syn_num[col + " - N/A"] = syn[col].isna().astype(float)
         trn_num[col + " - N/A"] = trn[col].isna().astype(float)
         hol_num[col + " - N/A"] = hol[col].isna().astype(float)
-    return pd.DataFrame(syn_num), pd.DataFrame(trn_num), pd.DataFrame(hol_num)
+    syn_num = pd.DataFrame(syn_num)
+    trn_num = pd.DataFrame(trn_num)
+    hol_num = pd.DataFrame(hol_num) if len(hol) > 0 else None
+    return syn_num, trn_num, hol_num
 
 
 def encode_categoricals(
     syn: pd.DataFrame, trn: pd.DataFrame, hol: pd.DataFrame | None = None
-) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame | None]:
     trn_cat, syn_cat, hol_cat = {}, {}, {}
     if hol is None:
         hol = pd.DataFrame(columns=trn.columns)
@@ -106,22 +109,26 @@ def encode_categoricals(
         syn_cat[col].columns = columns
         trn_cat[col].columns = columns
         hol_cat[col].columns = columns
-    syn_cat = pd.concat(syn_cat.values(), axis=1)
-    trn_cat = pd.concat(trn_cat.values(), axis=1)
-    hol_cat = pd.concat(hol_cat.values(), axis=1)
+    syn_cat = pd.concat(syn_cat.values(), axis=1, ignore_index=True)
+    trn_cat = pd.concat(trn_cat.values(), axis=1, ignore_index=True)
+    hol_cat = pd.concat(hol_cat.values(), axis=1, ignore_index=True) if len(hol) > 0 else None
     return syn_cat, trn_cat, hol_cat
 
 
 def encode_data(
     syn: pd.DataFrame, trn: pd.DataFrame, hol: pd.DataFrame | None = None
-) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame | None]:
     num_dat_cols = trn.select_dtypes(include=["number", "datetime"]).columns
     other_cols = [col for col in trn.columns if col not in num_dat_cols]
-    syn_num, trn_num, hol_num = encode_numerics(syn[num_dat_cols], trn[num_dat_cols], hol[num_dat_cols])
-    syn_cat, trn_cat, hol_cat = encode_categoricals(syn[other_cols], trn[other_cols], hol[other_cols])
-    syn_encoded = pd.concat([syn_num, syn_cat], axis=1)
-    trn_encoded = pd.concat([trn_num, trn_cat], axis=1)
-    hol_encoded = pd.concat([hol_num, hol_cat], axis=1)
+    syn_num, trn_num, hol_num = encode_numerics(
+        syn[num_dat_cols], trn[num_dat_cols], hol[num_dat_cols] if hol is not None else None
+    )
+    syn_cat, trn_cat, hol_cat = encode_categoricals(
+        syn[other_cols], trn[other_cols], hol[other_cols] if hol is not None else None
+    )
+    syn_encoded = pd.concat([syn_num, syn_cat], axis=1, ignore_index=True)
+    trn_encoded = pd.concat([trn_num, trn_cat], axis=1, ignore_index=True)
+    hol_encoded = pd.concat([hol_num, hol_cat], axis=1, ignore_index=True) if hol is not None else None
     return syn_encoded, trn_encoded, hol_encoded
 
 
@@ -169,7 +176,7 @@ def calculate_dcrs_nndrs(
 
 
 def calculate_distances(
-    *, syn_encoded: np.ndarray, trn_encoded: np.ndarray, hol_encoded: np.ndarray
+    *, syn_encoded: np.ndarray, trn_encoded: np.ndarray, hol_encoded: np.ndarray | None
 ) -> dict[str, np.ndarray]:
     """
     Calculates distances to the closest records (DCR).
@@ -189,7 +196,7 @@ def calculate_distances(
             - nndr_trn_hol: NNDR for training to holdout.
     """
     assert syn_encoded.shape == trn_encoded.shape
-    if hol_encoded.shape[0] > 0:
+    if hol_encoded is not None and hol_encoded.shape[0] > 0:
         assert trn_encoded.shape == hol_encoded.shape
 
     # calculate DCR / NNDR for synthetic to training

@@ -229,9 +229,10 @@ def report(
                 setup=setup,
                 ori_dtypes=trn.dtypes.to_dict(),
             )
+            ori = pd.concat([trn, hol], axis=0, ignore_index=True)
         else:
-            hol = pd.DataFrame(columns=trn.columns, dtype=trn.dtypes.to_dict())
-        ori = pd.concat([trn, hol], axis=0, ignore_index=True)
+            hol = None
+            ori = trn
         progress.update(completed=5, total=100)
 
         _LOG.info("prepare synthetic data for accuracy")
@@ -374,7 +375,7 @@ def report(
         syn_encoded, trn_encoded, hol_encoded = _distances.encode_data(
             syn=syn.head(max_sample_size_distances),
             trn=trn.head(max_sample_size_distances),
-            hol=hol.head(max_sample_size_distances),
+            hol=hol.head(max_sample_size_distances) if hol is not None else None,
         )
         progress.update(completed=80, total=100)
 
@@ -382,7 +383,7 @@ def report(
         distances = _report_distances(
             syn_encoded=syn_encoded.values,
             trn_encoded=trn_encoded.values,
-            hol_encoded=hol_encoded.values,
+            hol_encoded=hol_encoded.values if hol_encoded is not None else None,
             workspace=workspace,
         )
         progress.update(completed=90, total=100)
@@ -827,7 +828,7 @@ def _report_distances(
     *,
     syn_encoded: np.ndarray,
     trn_encoded: np.ndarray,
-    hol_encoded: np.ndarray,
+    hol_encoded: np.ndarray | None,
     workspace: TemporaryWorkspace,
 ) -> dict[str, np.ndarray]:
     distances = _distances.calculate_distances(
