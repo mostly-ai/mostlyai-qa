@@ -69,9 +69,9 @@ def encode_numerics(
         syn_num[col + " - N/A"] = syn[col].isna().astype(float)
         trn_num[col + " - N/A"] = trn[col].isna().astype(float)
         hol_num[col + " - N/A"] = hol[col].isna().astype(float)
-    syn_num = pd.DataFrame(syn_num)
-    trn_num = pd.DataFrame(trn_num)
-    hol_num = pd.DataFrame(hol_num) if len(hol) > 0 else None
+    syn_num = pd.DataFrame(syn_num, index=syn.index)
+    trn_num = pd.DataFrame(trn_num, index=trn.index)
+    hol_num = pd.DataFrame(hol_num, index=hol.index) if len(hol) > 0 else None
     return syn_num, trn_num, hol_num
 
 
@@ -109,9 +109,15 @@ def encode_categoricals(
         syn_cat[col].columns = columns
         trn_cat[col].columns = columns
         hol_cat[col].columns = columns
-    syn_cat = pd.concat(syn_cat.values(), axis=1, ignore_index=True)
-    trn_cat = pd.concat(trn_cat.values(), axis=1, ignore_index=True)
-    hol_cat = pd.concat(hol_cat.values(), axis=1, ignore_index=True) if len(hol) > 0 else None
+    syn_cat = pd.concat(syn_cat.values(), axis=1) if syn_cat else pd.DataFrame()
+    syn_cat.index = syn.index
+    trn_cat = pd.concat(trn_cat.values(), axis=1) if trn_cat else pd.DataFrame()
+    trn_cat.index = trn.index
+    if len(hol) > 0:
+        hol_cat = pd.concat(hol_cat.values(), axis=1) if hol_cat else pd.DataFrame()
+        hol_cat.index = hol.index
+    else:
+        hol_cat = None
     return syn_cat, trn_cat, hol_cat
 
 
@@ -126,9 +132,9 @@ def encode_data(
     syn_cat, trn_cat, hol_cat = encode_categoricals(
         syn[other_cols], trn[other_cols], hol[other_cols] if hol is not None else None
     )
-    syn_encoded = pd.concat([syn_num, syn_cat], axis=1, ignore_index=True)
-    trn_encoded = pd.concat([trn_num, trn_cat], axis=1, ignore_index=True)
-    hol_encoded = pd.concat([hol_num, hol_cat], axis=1, ignore_index=True) if hol is not None else None
+    syn_encoded = pd.concat([syn_num, syn_cat], axis=1)
+    trn_encoded = pd.concat([trn_num, trn_cat], axis=1)
+    hol_encoded = pd.concat([hol_num, hol_cat], axis=1) if hol is not None else None
     return syn_encoded, trn_encoded, hol_encoded
 
 
