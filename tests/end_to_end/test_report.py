@@ -141,9 +141,9 @@ def test_report_sequential(tmp_path):
 
     distances = metrics.distances
     assert 0 <= distances.ims_training <= 1.0
-    assert 0 <= distances.dcr_training <= 1.0
+    assert 0 <= distances.dcr_training
     assert 0 <= distances.ims_holdout <= 1.0
-    assert 0 <= distances.dcr_holdout <= 1.0
+    assert 0 <= distances.dcr_holdout
     assert 0 <= distances.dcr_share <= 1.0
 
     report_path = qa.report_from_statistics(

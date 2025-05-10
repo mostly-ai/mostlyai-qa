@@ -377,9 +377,6 @@ def report(
             trn=trn.head(max_sample_size_distances),
             hol=hol.head(max_sample_size_distances) if hol is not None else None,
         )
-        syn_encoded.to_csv("syn_encoded.csv", index=False)
-        trn_encoded.to_csv("trn_encoded.csv", index=False)
-        hol_encoded.to_csv("hol_encoded.csv", index=False)
         progress.update(completed=80, total=100)
 
         _LOG.info("calculate and plot distances")
