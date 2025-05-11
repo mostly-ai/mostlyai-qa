@@ -184,31 +184,31 @@ def calculate_dcrs_nndrs(
 
 
 def calculate_distances(
-    *, syn_encoded: np.ndarray, trn_encoded: np.ndarray, hol_encoded: np.ndarray | None
+    *, syn_embeds: np.ndarray, trn_embeds: np.ndarray, hol_embeds: np.ndarray | None
 ) -> dict[str, np.ndarray]:
     """
     Calculates distances to the closest records (DCR).
     """
-    assert syn_encoded.shape == trn_encoded.shape
-    if hol_encoded is not None and hol_encoded.shape[0] > 0:
-        assert trn_encoded.shape == hol_encoded.shape
+    assert syn_embeds.shape == trn_embeds.shape
+    if hol_embeds is not None and hol_embeds.shape[0] > 0:
+        assert trn_embeds.shape == hol_embeds.shape
 
     # cap dimensionality of encoded data
     max_dims = 256
-    if trn_encoded.shape[1] > max_dims:
-        _LOG.info(f"capping dimensionality of encoded data from {trn_encoded.shape[1]} to {max_dims}")
+    if trn_embeds.shape[1] > max_dims:
+        _LOG.info(f"capping dimensionality of encoded data from {trn_embeds.shape[1]} to {max_dims}")
         pca_model = PCA(n_components=max_dims)
-        pca_model.fit(np.vstack((trn_encoded, hol_encoded)))
-        trn_encoded = pca_model.transform(trn_encoded)
-        hol_encoded = pca_model.transform(hol_encoded)
-        syn_encoded = pca_model.transform(syn_encoded)
+        pca_model.fit(np.vstack((trn_embeds, hol_embeds)))
+        trn_embeds = pca_model.transform(trn_embeds)
+        hol_embeds = pca_model.transform(hol_embeds)
+        syn_embeds = pca_model.transform(syn_embeds)
 
     # calculate DCR / NNDR for synthetic to training
-    dcr_syn_trn, nndr_syn_trn = calculate_dcrs_nndrs(data=trn_encoded, query=syn_encoded)
+    dcr_syn_trn, nndr_syn_trn = calculate_dcrs_nndrs(data=trn_embeds, query=syn_embeds)
     # calculate DCR / NNDR for synthetic to holdout
-    dcr_syn_hol, nndr_syn_hol = calculate_dcrs_nndrs(data=hol_encoded, query=syn_encoded)
+    dcr_syn_hol, nndr_syn_hol = calculate_dcrs_nndrs(data=hol_embeds, query=syn_embeds)
     # calculate DCR / NNDR for holdout to training
-    dcr_trn_hol, nndr_trn_hol = calculate_dcrs_nndrs(data=trn_encoded, query=hol_encoded)
+    dcr_trn_hol, nndr_trn_hol = calculate_dcrs_nndrs(data=trn_embeds, query=hol_embeds)
 
     # log statistics
     def deciles(x):

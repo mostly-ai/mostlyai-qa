@@ -14,9 +14,7 @@
 
 from mostlyai.qa import _accuracy, _html_report, _distances, _similarity
 from mostlyai.qa._common import CTX_COLUMN_PREFIX, TGT_COLUMN_PREFIX
-from mostlyai.qa.assets import load_embedder
 from mostlyai.qa.reporting import _calculate_metrics
-from mostlyai.qa._sampling import calculate_embeddings, pull_data_for_embeddings
 import pandas as pd
 
 
@@ -35,22 +33,22 @@ def test_generate_store_report(tmp_path, cols, workspace):
     acc_cats_per_seq = pd.DataFrame({"column": acc_uni["column"], "accuracy": 0.5, "accuracy_max": 0.5})
     acc_seqs_per_cat = pd.DataFrame({"column": acc_uni["column"], "accuracy": 0.5, "accuracy_max": 0.5})
     corr_trn = _accuracy.calculate_correlations(acc_trn)
-    embedder = load_embedder()
-    syn_embeds = calculate_embeddings(pull_data_for_embeddings(df_tgt=syn), embedder=embedder)
-    trn_embeds = calculate_embeddings(pull_data_for_embeddings(df_tgt=trn), embedder=embedder)
-    hol_embeds = calculate_embeddings(pull_data_for_embeddings(df_tgt=hol), embedder=embedder)
-
+    syn_embeds, trn_embeds, hol_embeds = _distances.encode_data(
+        syn=syn,
+        trn=trn,
+        hol=hol,
+    )
     sim_cosine_trn_hol, sim_cosine_trn_syn = _similarity.calculate_cosine_similarities(
-        syn_embeds=syn_embeds,
-        trn_embeds=trn_embeds,
-        hol_embeds=hol_embeds,
+        syn_embeds=syn_embeds.values,
+        trn_embeds=trn_embeds.values,
+        hol_embeds=hol_embeds.values,
     )
     sim_auc_trn_hol, sim_auc_trn_syn = _similarity.calculate_discriminator_auc(
-        syn_embeds=syn_embeds,
-        trn_embeds=trn_embeds,
-        hol_embeds=hol_embeds,
+        syn_embeds=syn_embeds.values,
+        trn_embeds=trn_embeds.values,
+        hol_embeds=hol_embeds.values,
     )
-    distances = _distances.calculate_distances(syn_encoded=syn_embeds, trn_encoded=trn_embeds, hol_encoded=hol_embeds)
+    distances = _distances.calculate_distances(syn_embeds=syn_embeds, trn_embeds=trn_embeds, hol_embeds=hol_embeds)
 
     # simulate created plots
     plot_paths = (

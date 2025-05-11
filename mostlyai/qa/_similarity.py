@@ -177,35 +177,22 @@ def make_contour_and_centroid_traces(
 def plot_store_similarity_contours(
     *,
     syn_embeds: np.ndarray,
-    pca_model: PCA | None = None,
-    trn_embeds: np.ndarray | None = None,
-    ori_pca: np.ndarray | None = None,
+    trn_embeds: np.ndarray,
     hol_embeds: np.ndarray | None = None,
-    hol_pca: np.ndarray | None = None,
     workspace: TemporaryWorkspace = None,
-) -> tuple[PCA, np.ndarray, np.ndarray, np.ndarray | None]:
-    # either PCA model + trn/hol PCA-transformed embeddings or trn/hol embeddings must be provided
-    if pca_model is None:
-        assert trn_embeds is not None and ori_pca is None
-    else:
-        assert trn_embeds is None and ori_pca is not None
-
+):
     # perform PCA on trn embeddings
-    if pca_model is None:
-        pca_model = PCA(n_components=8)
-        pca_model.fit_transform(trn_embeds)
+    pca_model = PCA(n_components=8)
+    pca_model.fit_transform(trn_embeds)
 
     # transform embeddings to PCA space
     syn_pca = pca_model.transform(syn_embeds)
-    if ori_pca is None:
-        ori_pca = pca_model.transform(trn_embeds)
-    if hol_embeds is not None and hol_pca is None:
+    trn_pca = pca_model.transform(trn_embeds)
+    if hol_embeds is not None:
         hol_pca = pca_model.transform(hol_embeds)
-    pcas = [ori_pca, syn_pca]
-    if hol_pca is not None:
-        pcas.append(hol_pca)
 
     # calculate percentiles to make axis ranges resilient towards outliers
+    pcas = [syn_pca, trn_pca] + ([hol_pca] if hol_pca is not None else [])
     pca_min = np.quantile(np.vstack(pcas), 0.01, axis=0)
     pca_max = np.quantile(np.vstack(pcas), 0.99, axis=0)
 
@@ -263,5 +250,3 @@ def plot_store_similarity_contours(
 
     # store the figure
     workspace.store_figure_html(fig, "similarity_pca")
-
-    return pca_model, syn_pca, ori_pca, hol_pca

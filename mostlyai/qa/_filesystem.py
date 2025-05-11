@@ -17,12 +17,10 @@ import json
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import Literal
-import skops.io as sio
 
 import numpy as np
 import pandas as pd
 from plotly import graph_objs as go
-from sklearn.decomposition import PCA
 
 _OLD_COL_PREFIX = r"^(tgt|ctx|nxt)(\.|⁝)"
 _NEW_COL_PREFIX = r"\1::"
@@ -135,7 +133,6 @@ class Statistics:
         )
 
         # similarity
-        self.pca_model_path = self.path / "pca_model.skops"
         self.ori_pca_path = self.path / "trn_pca.npy"
         self.hol_pca_path = self.path / "hol_pca.npy"
 
@@ -318,30 +315,6 @@ class Statistics:
             for _, row in trn_cnts_biv.iterrows()
         }
         return trn_cnts_uni, trn_cnts_biv
-
-    def store_pca_model(self, pca_model: PCA):
-        sio.dump(pca_model, self.pca_model_path)
-
-    def load_pca_model(self) -> PCA | None:
-        if not self.pca_model_path.exists():
-            return None
-        unknown_types = sio.get_untrusted_types(file=self.pca_model_path)
-        if unknown_types:
-            raise ValueError(f"Unknown types found in file {self.pca_model_path}: {unknown_types}")
-        return sio.load(self.pca_model_path)
-
-    def store_trn_hol_pcas(self, trn_pca: np.ndarray, hol_pca: np.ndarray | None):
-        np.save(self.ori_pca_path, trn_pca)
-        if hol_pca is not None:
-            np.save(self.hol_pca_path, hol_pca)
-
-    def load_ori_hol_pcas(self) -> tuple[np.ndarray, np.ndarray | None]:
-        ori_pca = np.load(self.ori_pca_path)
-        if self.hol_pca_path.exists():
-            hol_pca = np.load(self.hol_pca_path)
-        else:
-            hol_pca = None
-        return ori_pca, hol_pca
 
     def store_coherence_bins(self, bins: dict[str, list]) -> None:
         df = pd.Series(bins).to_frame("bins").reset_index().rename(columns={"index": "column"})
