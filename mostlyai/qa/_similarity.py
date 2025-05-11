@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import logging
+import time
 
 import numpy as np
 import plotly.graph_objects as go
@@ -26,7 +27,7 @@ from mostlyai.qa._common import (
 from mostlyai.qa._filesystem import TemporaryWorkspace
 import scipy.stats
 from sklearn.model_selection import StratifiedKFold
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import HistGradientBoostingClassifier
 from sklearn.metrics import roc_auc_score
 
 _LOG = logging.getLogger(__name__)
@@ -48,10 +49,11 @@ def calculate_cosine_similarities(
     # calculate centroid similarities
     if hol_centroid is not None:
         sim_cosine_trn_hol = np.clip(cosine_similarity(trn_centroid, hol_centroid)[0][0], 0.0, 1.0)
+        _LOG.info(f"calculated cosine similarity for trn and hol: {sim_cosine_trn_hol:.7f}")
     else:
         sim_cosine_trn_hol = None
     sim_cosine_trn_syn = np.clip(cosine_similarity(trn_centroid, syn_centroid)[0][0], 0.0, 1.0)
-    _LOG.info(f"{sim_cosine_trn_hol=}, {sim_cosine_trn_syn=}")
+    _LOG.info(f"calculated cosine similarity for trn and syn: {sim_cosine_trn_syn:.7f}")
     return sim_cosine_trn_hol, sim_cosine_trn_syn
 
 
@@ -64,7 +66,7 @@ def calculate_discriminator_auc(
     def calculate_mean_auc(embeds1, embeds2):
         """
         Calculate the mean AUC score using 10-fold cross-validation with a 90/10 split
-        for random forest to discriminate between two embedding arrays.
+        for a ML model to discriminate between two embedding arrays.
         """
 
         # create labels for the data
@@ -87,16 +89,13 @@ def calculate_discriminator_auc(
                 X_train, X_holdout = X[train_index], X[test_index]
                 y_train, y_holdout = y[train_index], y[test_index]
 
-                # train a random forest classifier
-                clf = RandomForestClassifier(
-                    n_estimators=100,
-                    n_jobs=-1,
-                    max_depth=10,  # limit tree depth
-                    min_samples_split=5,  # require more samples to split a node
-                    min_samples_leaf=3,  # require more samples in leaf nodes
-                    max_features="sqrt",  # use sqrt of features for each split
-                    bootstrap=True,  # use bootstrapping
-                    random_state=42,  # for reproducibility
+                # train a ML classifier
+                clf = HistGradientBoostingClassifier(
+                    max_iter=50,
+                    max_depth=10,
+                    min_samples_leaf=5,
+                    max_features=0.5,
+                    random_state=42,
                 )
                 clf.fit(X_train, y_train)
 
@@ -119,12 +118,14 @@ def calculate_discriminator_auc(
         return mean_auc_score
 
     if hol_embeds is not None:
+        t0 = time.time()
         sim_auc_trn_hol = calculate_mean_auc(trn_embeds, hol_embeds)
-        _LOG.info(f"calculated AUC for trn and hol: {sim_auc_trn_hol:.7f}")
+        _LOG.info(f"calculated AUC for trn and hol: {sim_auc_trn_hol:.1%} in {time.time() - t0:.2f} seconds")
     else:
         sim_auc_trn_hol = None
+    t0 = time.time()
     sim_auc_trn_syn = calculate_mean_auc(trn_embeds, syn_embeds)
-    _LOG.info(f"calculated AUC for trn and syn: {sim_auc_trn_syn:.7f}")
+    _LOG.info(f"calculated AUC for trn and syn: {sim_auc_trn_syn:.1%} in {time.time() - t0:.2f} seconds")
     return sim_auc_trn_hol, sim_auc_trn_syn
 
 
