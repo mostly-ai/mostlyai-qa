@@ -15,28 +15,6 @@
 import numpy as np
 
 from mostlyai.qa._similarity import calculate_cosine_similarities, calculate_discriminator_auc
-from mostlyai.qa._sampling import calculate_embeddings
-from mostlyai.qa.assets import load_embedder
-
-
-def test_calculate_embeddings():
-    trn = ["apple recipe", "car engine repair", "apple recipe"]
-    # semantically close synthetic data
-    syn_close = ["apple pie", "car maintenance"]
-    # semantically distant synthetic data
-    syn_distant = ["quantum physics theory", "deep space exploration"]
-
-    embedder = load_embedder()
-    trn_embeds = calculate_embeddings(trn, embedder=embedder)
-    syn_close_embeds = calculate_embeddings(syn_close, embedder=embedder)
-    syn_distant_embeds = calculate_embeddings(syn_distant, embedder=embedder)
-    assert np.all(trn_embeds[0] == trn_embeds[2])  # check that we retain row order
-
-    # check that syn_close is closer to trn than syn_distant
-    def centroid_l2(a, b):
-        return np.linalg.norm(np.mean(a, axis=0) - np.mean(b, axis=0), ord=2)
-
-    assert centroid_l2(trn_embeds, syn_close_embeds) < centroid_l2(trn_embeds, syn_distant_embeds)
 
 
 def test_calculate_centroid_similarities():

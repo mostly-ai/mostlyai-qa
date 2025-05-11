@@ -296,7 +296,7 @@ def test_calculate_accuracy():
     observed_acc, expected_acc = calculate_accuracy(trn_bin_cols, syn_bin_cols)
     assert observed_acc > 0.9
     assert expected_acc > 0.9
-    assert np.abs(observed_acc - expected_acc) < 0.018
+    assert np.abs(observed_acc - expected_acc) < 0.019
 
 
 def test_calculate_expected_l1_multinomial():

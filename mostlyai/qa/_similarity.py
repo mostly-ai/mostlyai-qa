@@ -181,15 +181,17 @@ def plot_store_similarity_contours(
     hol_embeds: np.ndarray | None = None,
     workspace: TemporaryWorkspace = None,
 ):
+    if trn_embeds.shape[1] < 3:
+        return
+
     # perform PCA on trn embeddings
-    pca_model = PCA(n_components=8)
+    pca_model = PCA(n_components=min(8, trn_embeds.shape[1]))
     pca_model.fit_transform(trn_embeds)
 
     # transform embeddings to PCA space
     syn_pca = pca_model.transform(syn_embeds)
     trn_pca = pca_model.transform(trn_embeds)
-    if hol_embeds is not None:
-        hol_pca = pca_model.transform(hol_embeds)
+    hol_pca = pca_model.transform(hol_embeds) if hol_embeds is not None else None
 
     # calculate percentiles to make axis ranges resilient towards outliers
     pcas = [syn_pca, trn_pca] + ([hol_pca] if hol_pca is not None else [])
