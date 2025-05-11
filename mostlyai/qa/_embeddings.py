@@ -143,9 +143,6 @@ def encode_data(
     syn_encoded = pd.concat([syn_num, syn_str], axis=1)
     trn_encoded = pd.concat([trn_num, trn_str], axis=1)
     hol_encoded = pd.concat([hol_num, hol_str], axis=1) if hol is not None else None
-    syn_encoded.to_csv("syn_encoded.csv")
-    trn_encoded.to_csv("trn_encoded.csv")
-    hol_encoded.to_csv("hol_encoded.csv")
     # normalize embeddings
     syn_encoded = normalize(syn_encoded.values, norm="l2")
     trn_encoded = normalize(trn_encoded.values, norm="l2")
