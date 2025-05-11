@@ -486,18 +486,18 @@ def _calculate_metrics(
         discriminator_auc_training_holdout=sim_auc_trn_hol if sim_auc_trn_hol is not None else None,
     )
     distances = Distances(
-        ims_training=(dcr_syn_trn <= 1e-6).mean(),
-        ims_holdout=(dcr_syn_hol <= 1e-6).mean() if dcr_syn_hol is not None else None,
-        ims_trn_hol=(dcr_trn_hol <= 1e-6).mean() if dcr_trn_hol is not None else None,
-        dcr_training=dcr_syn_trn.mean(),
-        dcr_holdout=dcr_syn_hol.mean() if dcr_syn_hol is not None else None,
-        dcr_trn_hol=dcr_trn_hol.mean() if dcr_trn_hol is not None else None,
-        dcr_share=np.mean(dcr_syn_trn < dcr_syn_hol) + np.mean(dcr_syn_trn == dcr_syn_hol) / 2
+        ims_training=_distances.calculate_ims(dcr_syn_trn),
+        ims_holdout=_distances.calculate_ims(dcr_syn_hol) if dcr_syn_hol is not None else None,
+        ims_trn_hol=_distances.calculate_ims(dcr_trn_hol) if dcr_trn_hol is not None else None,
+        dcr_training=_distances.calculate_dcr(dcr_syn_trn),
+        dcr_holdout=_distances.calculate_dcr(dcr_syn_hol) if dcr_syn_hol is not None else None,
+        dcr_trn_hol=_distances.calculate_dcr(dcr_trn_hol) if dcr_trn_hol is not None else None,
+        dcr_share=_distances.calculate_dcr_share(dcr_syn_trn=dcr_syn_trn, dcr_syn_hol=dcr_syn_hol)
         if dcr_syn_hol is not None
         else None,
-        nndr_training=np.sort(nndr_syn_trn)[9],
-        nndr_holdout=np.sort(nndr_syn_hol)[9] if nndr_syn_hol is not None else None,
-        nndr_trn_hol=np.sort(nndr_trn_hol)[9] if nndr_trn_hol is not None else None,
+        nndr_training=_distances.calculate_nndr(nndr_syn_trn),
+        nndr_holdout=_distances.calculate_nndr(nndr_syn_hol) if nndr_syn_hol is not None else None,
+        nndr_trn_hol=_distances.calculate_nndr(nndr_trn_hol) if nndr_trn_hol is not None else None,
     )
     return ModelMetrics(
         accuracy=accuracy,

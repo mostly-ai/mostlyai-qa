@@ -15,17 +15,17 @@
 import logging
 import platform
 import time
-
 import numpy as np
+import networkx as nx
 
 from mostlyai.qa._common import (
     CHARTS_COLORS,
     CHARTS_FONTS,
 )
+from sklearn.cluster import SpectralClustering
 from mostlyai.qa._filesystem import TemporaryWorkspace
 from plotly import graph_objs as go
 
-from sklearn.decomposition import PCA
 
 _LOG = logging.getLogger(__name__)
 
@@ -38,7 +38,6 @@ def calculate_dcrs_nndrs(
     """
     if data is None or query is None or data.shape[0] == 0 or query.shape[0] == 0:
         return None, None
-    _LOG.info(f"calculate DCRs for {data.shape=} and {query.shape=}")
     t0 = time.time()
     data = data[data[:, 0].argsort()]  # sort data by first dimension to enforce deterministic results
 
@@ -74,39 +73,51 @@ def calculate_distances(
     if hol_embeds is not None and hol_embeds.shape[0] > 0:
         assert trn_embeds.shape == hol_embeds.shape
 
-    # cap dimensionality of encoded data
-    max_dims = 256
-    if trn_embeds.shape[1] > max_dims:
-        _LOG.info(f"capping dimensionality of encoded data from {trn_embeds.shape[1]} to {max_dims}")
-        pca_model = PCA(n_components=max_dims)
-        pca_model.fit(np.vstack((trn_embeds, hol_embeds)))
-        trn_embeds = pca_model.transform(trn_embeds)
-        hol_embeds = pca_model.transform(hol_embeds)
-        syn_embeds = pca_model.transform(syn_embeds)
+    if hol_embeds is None:
+        # calculate DCR / NNDR for synthetic to training
+        dcr_syn_trn, nndr_syn_trn = calculate_dcrs_nndrs(data=trn_embeds, query=syn_embeds)
+    else:
+        # calculate DCR / NNDR for several (sub)sets of columns and keep the one with highest DCR share
+        ori_embeds = np.vstack((trn_embeds, hol_embeds))
+        groups = []
+        groups += [np.arange(ori_embeds.shape[1])]  # check all columns together
+        if ori_embeds.shape[1] > 10:
+            k = max(3, ori_embeds.shape[1] // 10)
+            groups += split_columns_into_correlated_groups(
+                ori_embeds, k=k
+            )  # check subsets of correlated columns together
+        dcr_share_max = 0
+        for columns in groups:
+            # calculate DCR / NNDR for synthetic to training
+            g_dcr_syn_trn, g_nndr_syn_trn = calculate_dcrs_nndrs(
+                data=trn_embeds[:, columns], query=syn_embeds[:, columns]
+            )
+            # calculate DCR / NNDR for synthetic to holdout
+            g_dcr_syn_hol, g_nndr_syn_hol = calculate_dcrs_nndrs(
+                data=hol_embeds[:, columns], query=syn_embeds[:, columns]
+            )
+            # calculate DCR / NNDR for holdout to training
+            g_dcr_trn_hol, g_nndr_trn_hol = calculate_dcrs_nndrs(
+                data=trn_embeds[:, columns], query=hol_embeds[:, columns]
+            )
+            # keep results if DCR share is MAX
+            dcr_share = calculate_dcr_share(g_dcr_syn_trn, g_dcr_syn_hol)
+            nndr_ratio = calculate_nndr_ratio(g_nndr_syn_trn, g_nndr_syn_hol)
+            _LOG.info(f"DCR Share: {dcr_share:.1%}, NNDR Ratio: {nndr_ratio:.1%} - {len(columns)} columns [{columns}]")
+            if dcr_share > dcr_share_max:
+                # keep results if DCR share is MAX
+                dcr_share_max = dcr_share
+                dcr_syn_trn, nndr_syn_trn = g_dcr_syn_trn, g_nndr_syn_trn
+                dcr_syn_hol, nndr_syn_hol = g_dcr_syn_hol, g_nndr_syn_hol
+                dcr_trn_hol, nndr_trn_hol = g_dcr_trn_hol, g_nndr_trn_hol
+        _LOG.info(f"DCR deciles for synthetic to training: {deciles(dcr_syn_trn)}")
+        _LOG.info(f"NNDR deciles for synthetic to training: {deciles(nndr_syn_trn)}")
+        if dcr_syn_hol is not None:
+            _LOG.info(f"DCR deciles for synthetic to holdout:  {deciles(dcr_syn_hol)}")
+            _LOG.info(f"NNDR deciles for synthetic to holdout: {deciles(nndr_syn_hol)}")
+            _LOG.info(f"share of dcr_syn_trn < dcr_syn_hol: {np.mean(dcr_syn_trn < dcr_syn_hol):.1%}")
+            _LOG.info(f"share of dcr_syn_trn > dcr_syn_hol: {np.mean(dcr_syn_trn > dcr_syn_hol):.1%}")
 
-    # calculate DCR / NNDR for synthetic to training
-    dcr_syn_trn, nndr_syn_trn = calculate_dcrs_nndrs(data=trn_embeds, query=syn_embeds)
-    # calculate DCR / NNDR for synthetic to holdout
-    dcr_syn_hol, nndr_syn_hol = calculate_dcrs_nndrs(data=hol_embeds, query=syn_embeds)
-    # calculate DCR / NNDR for holdout to training
-    dcr_trn_hol, nndr_trn_hol = calculate_dcrs_nndrs(data=trn_embeds, query=hol_embeds)
-
-    # log statistics
-    def deciles(x):
-        return np.round(np.quantile(x, np.linspace(0, 1, 11)), 3)
-
-    _LOG.info(f"DCR deciles for synthetic to training: {deciles(dcr_syn_trn)}")
-    _LOG.info(f"NNDR deciles for synthetic to training: {deciles(nndr_syn_trn)}")
-    if dcr_syn_hol is not None:
-        _LOG.info(f"DCR deciles for synthetic to holdout:  {deciles(dcr_syn_hol)}")
-        _LOG.info(f"NNDR deciles for synthetic to holdout: {deciles(nndr_syn_hol)}")
-        _LOG.info(f"share of dcr_syn_trn < dcr_syn_hol: {np.mean(dcr_syn_trn < dcr_syn_hol):.1%}")
-        _LOG.info(f"share of nndr_syn_trn < nndr_syn_hol: {np.mean(nndr_syn_trn < nndr_syn_hol):.1%}")
-        _LOG.info(f"share of dcr_syn_trn > dcr_syn_hol: {np.mean(dcr_syn_trn > dcr_syn_hol):.1%}")
-        _LOG.info(f"share of nndr_syn_trn > nndr_syn_hol: {np.mean(nndr_syn_trn > nndr_syn_hol):.1%}")
-    if dcr_trn_hol is not None:
-        _LOG.info(f"DCR deciles for training to holdout:  {deciles(dcr_trn_hol)}")
-        _LOG.info(f"NNDR deciles for training to holdout: {deciles(nndr_trn_hol)}")
     return {
         "dcr_syn_trn": dcr_syn_trn,
         "nndr_syn_trn": nndr_syn_trn,
@@ -115,6 +126,84 @@ def calculate_distances(
         "dcr_trn_hol": dcr_trn_hol,
         "nndr_trn_hol": nndr_trn_hol,
     }
+
+
+def deciles(x):
+    return np.round(np.quantile(x, np.linspace(0, 1, 11)), 3)
+
+
+def calculate_ims(dcr: np.ndarray) -> float:
+    return (dcr <= 1e-6).mean()
+
+
+def calculate_dcr(dcr: np.ndarray) -> float:
+    return dcr.mean()
+
+
+def calculate_dcr_share(dcr_syn_trn: np.ndarray, dcr_syn_hol: np.ndarray) -> float:
+    return np.mean(dcr_syn_trn < dcr_syn_hol) + np.mean(dcr_syn_trn == dcr_syn_hol) / 2
+
+
+def calculate_nndr(nndrs: np.ndarray) -> float:
+    return np.sort(nndrs)[9]
+
+
+def calculate_nndr_ratio(nndr_syn_trn: np.ndarray, nndr_syn_hol: np.ndarray) -> float:
+    return calculate_nndr(nndr_syn_trn) / calculate_nndr(nndr_syn_hol)
+
+
+def split_columns_into_correlated_groups(X, k):
+    """
+    Split the columns of input matrix X into k groups such that
+    intra-group correlation is high and cross-group correlation is minimized.
+    Uses spectral clustering on a correlation-weighted graph.
+
+    Parameters:
+        X (ndarray): Input data of shape (n_samples, n_features)
+        k (int): Number of desired column groups
+
+    Returns:
+        groups (list of lists): List containing k lists of column indices
+    """
+
+    def correlation_graph(X):
+        """
+        Constructs a graph where each node is a feature (column),
+        and edges are weighted by absolute Pearson correlation.
+
+        Returns:
+            G (networkx.Graph): Weighted undirected graph
+            corr_matrix (ndarray): Absolute correlation matrix
+        """
+        n = X.shape[1]
+        corr_matrix = np.abs(np.corrcoef(X, rowvar=False))
+        G = nx.Graph()
+        for i in range(n):
+            for j in range(i + 1, n):
+                G.add_edge(i, j, weight=corr_matrix[i, j])
+        return G, corr_matrix
+
+    # Step 1: Create correlation graph and matrix
+    G, corr_matrix = correlation_graph(X)
+
+    # Step 2: Convert graph to adjacency matrix (symmetric)
+    adj_matrix = np.zeros((X.shape[1], X.shape[1]))
+    for i, j, d in G.edges(data=True):
+        adj_matrix[i, j] = d["weight"]
+        adj_matrix[j, i] = d["weight"]
+
+    # Step 3: Apply spectral clustering to partition the graph
+    sc = SpectralClustering(
+        n_clusters=k,
+        affinity="precomputed",  # uses adj_matrix directly as similarity
+        assign_labels="kmeans",  # clustering on the embedding
+        random_state=42,
+    )
+    labels = sc.fit_predict(adj_matrix)
+
+    # Step 4: Group column indices by their cluster labels
+    groups = [np.where(labels == i)[0].tolist() for i in range(k)]
+    return groups
 
 
 def plot_distances(plot_title: str, distances: dict[str, np.ndarray]) -> go.Figure:
