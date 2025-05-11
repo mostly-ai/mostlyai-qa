@@ -82,9 +82,8 @@ def report(
     report_subtitle: str = "",
     report_credits: str = REPORT_CREDITS,
     max_sample_size_accuracy: int | None = None,
-    max_sample_size_embeddings: int | None = None,
     max_sample_size_coherence: int | None = None,
-    max_sample_size_distances: int | None = None,
+    max_sample_size_embeddings: int | None = None,
     statistics_path: str | Path | None = None,
     update_progress: ProgressCallback | None = None,
 ) -> tuple[Path, ModelMetrics | None]:

@@ -17,10 +17,11 @@ from mostlyai import qa
 repo = "https://github.com/mostly-ai/mostlyai-qa"
 path = "/raw/refs/heads/main/examples/baseball-players"
 
+cols = ["birthDate", "deathDate", "weight", "height", "bats", "throws"]
 report_path, metrics = qa.report(
-    syn_tgt_data=pd.read_parquet(f"{repo}/{path}/synthetic-target.pqt"),
-    trn_tgt_data=pd.read_parquet(f"{repo}/{path}/training-target.pqt"),
-    hol_tgt_data=pd.read_parquet(f"{repo}/{path}/holdout-target.pqt"),
+    syn_tgt_data=pd.read_parquet(f"{repo}/{path}/synthetic-target.pqt")[cols],
+    trn_tgt_data=pd.read_parquet(f"{repo}/{path}/training-target.pqt")[cols],
+    hol_tgt_data=pd.read_parquet(f"{repo}/{path}/holdout-target.pqt")[cols],
     report_subtitle=" for Baseball Players",
     report_path="baseball-players.html",
 )

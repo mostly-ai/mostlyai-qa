@@ -26,7 +26,7 @@ from mostlyai.qa._common import (
 from mostlyai.qa._filesystem import TemporaryWorkspace
 import scipy.stats
 from sklearn.model_selection import StratifiedKFold
-from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import roc_auc_score
 
 _LOG = logging.getLogger(__name__)
@@ -76,7 +76,7 @@ def calculate_discriminator_auc(
         y = np.hstack((labels1, labels2))
 
         # initialize the cross-validator
-        kf = StratifiedKFold(n_splits=10, shuffle=True)
+        kf = StratifiedKFold(n_splits=10, shuffle=True, random_state=42)
 
         # initialize a list to store AUC scores
         auc_scores = []
@@ -88,7 +88,16 @@ def calculate_discriminator_auc(
                 y_train, y_holdout = y[train_index], y[test_index]
 
                 # train a logistic regression classifier
-                clf = LogisticRegression(max_iter=1000)
+                clf = RandomForestClassifier(
+                    n_estimators=100,
+                    n_jobs=-1,
+                    max_depth=10,  # limit tree depth
+                    min_samples_split=5,  # require more samples to split a node
+                    min_samples_leaf=3,  # require more samples in leaf nodes
+                    max_features="sqrt",  # use sqrt of features for each split
+                    bootstrap=True,  # use bootstrapping
+                    random_state=42,  # for reproducibility
+                )
                 clf.fit(X_train, y_train)
 
                 # predict probabilities on the holdout set
@@ -111,10 +120,11 @@ def calculate_discriminator_auc(
 
     if hol_embeds is not None:
         sim_auc_trn_hol = calculate_mean_auc(trn_embeds, hol_embeds)
+        _LOG.info(f"calculated AUC for trn and hol: {sim_auc_trn_hol:.7f}")
     else:
         sim_auc_trn_hol = None
     sim_auc_trn_syn = calculate_mean_auc(trn_embeds, syn_embeds)
-    _LOG.info(f"{sim_auc_trn_hol=}, {sim_auc_trn_syn=}")
+    _LOG.info(f"calculated AUC for trn and syn: {sim_auc_trn_syn:.7f}")
     return sim_auc_trn_hol, sim_auc_trn_syn
 
 
@@ -186,7 +196,7 @@ def plot_store_similarity_contours(
 
     # perform PCA on trn embeddings
     pca_model = PCA(n_components=3)
-    pca_model.fit_transform(trn_embeds)
+    pca_model.fit(trn_embeds)
 
     # transform embeddings to PCA space
     syn_pca = pca_model.transform(syn_embeds)
@@ -194,9 +204,9 @@ def plot_store_similarity_contours(
     hol_pca = pca_model.transform(hol_embeds) if hol_embeds is not None else None
 
     # calculate percentiles to make axis ranges resilient towards outliers
-    pcas = [syn_pca, trn_pca] + ([hol_pca] if hol_pca is not None else [])
-    pca_min = np.quantile(np.vstack(pcas), 0.01, axis=0)
-    pca_max = np.quantile(np.vstack(pcas), 0.99, axis=0)
+    pcas = [trn_pca, syn_pca] + ([hol_pca] if hol_pca is not None else [])
+    pca_min = np.quantile(np.vstack(pcas), 0.02, axis=0)
+    pca_max = np.quantile(np.vstack(pcas), 0.98, axis=0)
 
     # make plots layout
     pca_combos = [(1, 0), (2, 0)]
