@@ -93,8 +93,8 @@ def calculate_distances(
         if ori_embeds.shape[1] > 10:
             k = max(3, ori_embeds.shape[1] // 10)
             groups += split_columns_into_random_groups(ori_embeds, k=k)
-        dcr_share = 0
-        nndr_ratio = None
+        dcr_share = 0.0
+        nndr_ratio = 1.0
         for columns in groups:
             # calculate DCR / NNDR for synthetic to training
             g_dcr_syn_trn, g_nndr_syn_trn = calculate_dcrs_nndrs(
