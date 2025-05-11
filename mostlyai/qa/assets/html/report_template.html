@@ -106,6 +106,9 @@
                     <td>Coherence</td>
                     <td align="right">
                       {{ "{:.1%}".format(metrics.accuracy.coherence).replace('nan%', '-') }}
+                      {% if metrics.accuracy.coherence_max is not none %}
+                      <div class="ref-metric">({{ "{:.1%}".format(metrics.accuracy.coherence_max) }})</div>
+                      {% endif %}
                     </td>
                   </tr>
                   {% endif %}
