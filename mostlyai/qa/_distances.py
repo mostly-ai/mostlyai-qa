@@ -42,7 +42,7 @@ def calculate_dcrs_nndrs(
     t0 = time.time()
     data = data[data[:, 0].argsort()]  # sort data by first dimension to enforce deterministic results
 
-    if platform.system() == "Linux":
+    if True or platform.system() == "Linux":
         # use FAISS on Linux for best performance
         import faiss  # type: ignore
 
