@@ -69,7 +69,6 @@ def report_from_statistics(
         report_credits: The credits of the report.
         max_sample_size_accuracy: The maximum sample size for accuracy calculations.
         max_sample_size_coherence: The maximum sample size for coherence calculations.
-        max_sample_size_embeddings: The maximum sample size for embedding calculations
         update_progress: The progress callback.
 
     Returns:

@@ -23,6 +23,7 @@ from sklearn.preprocessing import QuantileTransformer
 from mostlyai.qa._common import (
     CHARTS_COLORS,
     CHARTS_FONTS,
+    CTX_COLUMN_PREFIX,
     EMPTY_BIN,
     NA_BIN,
     RARE_BIN,
@@ -101,8 +102,13 @@ def encode_strings(
         # embed unique values into high-dimensional space
         embedder = load_embedder()
         embeds = embedder.encode(uvals + [RARE_BIN])
-        # project embeddings into a low-dimensional space
-        dims = 2  # potentially adapt to the number of unique values
+        # project embeddings into a low-dimensional space with dim depending on col cardinality
+        if len(uvals) <= 2:
+            dims = 1
+        elif len(uvals) <= 20:
+            dims = 2
+        else:
+            dims = 3
         pca_model = PCA(n_components=dims)
         embeds = pca_model.fit_transform(embeds)
         # create mapping from unique values to PCA
@@ -135,8 +141,11 @@ def encode_data(
     """
     Encode all columns corresponding to their data type.
     """
-    num_dat_cols = trn.select_dtypes(include=["number", "datetime"]).columns
-    string_cols = [col for col in trn.columns if col not in num_dat_cols]
+    tgt_cols = [c for c in trn.columns if not c.startswith(CTX_COLUMN_PREFIX)]
+    num_dat_cols = [
+        col for col in tgt_cols if pd.api.types.is_numeric_dtype(trn[col]) or pd.api.types.is_datetime64_dtype(trn[col])
+    ]
+    string_cols = [col for col in tgt_cols if col not in num_dat_cols]
     syn_num, trn_num, hol_num = encode_numerics(
         syn[num_dat_cols], trn[num_dat_cols], hol[num_dat_cols] if hol is not None else None
     )
