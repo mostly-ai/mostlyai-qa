@@ -112,11 +112,10 @@ def calculate_distances(
             g_dcr_share = calculate_dcr_share(g_dcr_syn_trn, g_dcr_syn_hol)
             g_nndr_ratio = calculate_nndr_ratio(g_nndr_syn_trn, g_nndr_syn_hol)
             if len(columns) == ori_embeds.shape[1]:
-                _LOG.info(f"DCR Share: {g_dcr_share:.1%}, NNDR Ratio: {g_nndr_ratio:.3f} - ALL columns")
+                suffix = "ALL columns"
             else:
-                _LOG.info(
-                    f"DCR Share: {g_dcr_share:.1%}, NNDR Ratio: {g_nndr_ratio:.3f} - {len(columns)} columns [{columns}]"
-                )
+                suffix = f"{len(columns)} columns [{columns}]"
+            _LOG.info(f"DCR Share: {g_dcr_share:.1%}, NNDR Ratio: {g_nndr_ratio:.3f} - {suffix}")
             if g_dcr_share > dcr_share:
                 # keep results if DCR share is MAX
                 dcr_share = g_dcr_share
@@ -125,8 +124,6 @@ def calculate_distances(
                 dcr_syn_hol, nndr_syn_hol = g_dcr_syn_hol, g_nndr_syn_hol
                 dcr_trn_hol, nndr_trn_hol = g_dcr_trn_hol, g_nndr_trn_hol
         _LOG.info(f"DCR Share: {dcr_share:.1%}, NNDR Ratio: {nndr_ratio:.3f} - FINAL")
-        _LOG.info(f"share of dcr_syn_trn < dcr_syn_hol: {np.mean(dcr_syn_trn < dcr_syn_hol):.1%}")
-        _LOG.info(f"share of dcr_syn_trn > dcr_syn_hol: {np.mean(dcr_syn_trn > dcr_syn_hol):.1%}")
 
     return {
         "dcr_syn_trn": dcr_syn_trn,
