@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import logging
 import numpy as np
 import pandas as pd
 from sklearn.decomposition import PCA
@@ -27,9 +26,6 @@ from mostlyai.qa._common import (
     TGT_COLUMN_PREFIX,
 )
 from mostlyai.qa.assets import load_embedder
-
-
-_LOG = logging.getLogger(__name__)
 
 
 def encode_numerics(
