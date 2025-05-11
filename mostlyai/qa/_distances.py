@@ -76,6 +76,8 @@ def calculate_distances(
     if hol_embeds is None:
         # calculate DCR / NNDR for synthetic to training
         dcr_syn_trn, nndr_syn_trn = calculate_dcrs_nndrs(data=trn_embeds, query=syn_embeds)
+        dcr_syn_hol, nndr_syn_hol = None, None
+        dcr_trn_hol, nndr_trn_hol = None, None
     else:
         # calculate DCR / NNDR for several (sub)sets of columns and keep the one with highest DCR share
         ori_embeds = np.vstack((trn_embeds, hol_embeds))
@@ -86,7 +88,7 @@ def calculate_distances(
             groups += split_columns_into_correlated_groups(
                 ori_embeds, k=k
             )  # check subsets of correlated columns together
-        dcr_share_max = 0
+        dcr_share = 0
         for columns in groups:
             # calculate DCR / NNDR for synthetic to training
             g_dcr_syn_trn, g_nndr_syn_trn = calculate_dcrs_nndrs(
@@ -101,22 +103,24 @@ def calculate_distances(
                 data=trn_embeds[:, columns], query=hol_embeds[:, columns]
             )
             # keep results if DCR share is MAX
-            dcr_share = calculate_dcr_share(g_dcr_syn_trn, g_dcr_syn_hol)
-            nndr_ratio = calculate_nndr_ratio(g_nndr_syn_trn, g_nndr_syn_hol)
-            _LOG.info(f"DCR Share: {dcr_share:.1%}, NNDR Ratio: {nndr_ratio:.1%} - {len(columns)} columns [{columns}]")
-            if dcr_share > dcr_share_max:
+            g_dcr_share = calculate_dcr_share(g_dcr_syn_trn, g_dcr_syn_hol)
+            g_nndr_ratio = calculate_nndr_ratio(g_nndr_syn_trn, g_nndr_syn_hol)
+            if len(columns) == ori_embeds.shape[1]:
+                _LOG.info(f"DCR Share: {g_dcr_share:.1%}, NNDR Ratio: {g_nndr_ratio:.3f} - ALL columns")
+            else:
+                _LOG.info(
+                    f"DCR Share: {g_dcr_share:.1%}, NNDR Ratio: {g_nndr_ratio:.3f} - {len(columns)} columns [{columns}]"
+                )
+            if g_dcr_share > dcr_share:
                 # keep results if DCR share is MAX
-                dcr_share_max = dcr_share
+                dcr_share = g_dcr_share
+                nndr_ratio = g_nndr_ratio
                 dcr_syn_trn, nndr_syn_trn = g_dcr_syn_trn, g_nndr_syn_trn
                 dcr_syn_hol, nndr_syn_hol = g_dcr_syn_hol, g_nndr_syn_hol
                 dcr_trn_hol, nndr_trn_hol = g_dcr_trn_hol, g_nndr_trn_hol
-        _LOG.info(f"DCR deciles for synthetic to training: {deciles(dcr_syn_trn)}")
-        _LOG.info(f"NNDR deciles for synthetic to training: {deciles(nndr_syn_trn)}")
-        if dcr_syn_hol is not None:
-            _LOG.info(f"DCR deciles for synthetic to holdout:  {deciles(dcr_syn_hol)}")
-            _LOG.info(f"NNDR deciles for synthetic to holdout: {deciles(nndr_syn_hol)}")
-            _LOG.info(f"share of dcr_syn_trn < dcr_syn_hol: {np.mean(dcr_syn_trn < dcr_syn_hol):.1%}")
-            _LOG.info(f"share of dcr_syn_trn > dcr_syn_hol: {np.mean(dcr_syn_trn > dcr_syn_hol):.1%}")
+        _LOG.info(f"DCR Share: {dcr_share:.1%}, NNDR Ratio: {nndr_ratio:.3f} - FINAL")
+        _LOG.info(f"share of dcr_syn_trn < dcr_syn_hol: {np.mean(dcr_syn_trn < dcr_syn_hol):.1%}")
+        _LOG.info(f"share of dcr_syn_trn > dcr_syn_hol: {np.mean(dcr_syn_trn > dcr_syn_hol):.1%}")
 
     return {
         "dcr_syn_trn": dcr_syn_trn,
