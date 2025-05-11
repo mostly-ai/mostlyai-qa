@@ -17,6 +17,7 @@ import platform
 import time
 import numpy as np
 import networkx as nx
+import xxhash
 
 from mostlyai.qa._common import (
     CHARTS_COLORS,
@@ -82,13 +83,18 @@ def calculate_distances(
         # calculate DCR / NNDR for several (sub)sets of columns and keep the one with highest DCR share
         ori_embeds = np.vstack((trn_embeds, hol_embeds))
         groups = []
-        groups += [np.arange(ori_embeds.shape[1])]  # check all columns together
+        # check all columns together
+        groups += [np.arange(ori_embeds.shape[1])]
+        # check subsets of correlated columns together
         if ori_embeds.shape[1] > 10:
             k = max(3, ori_embeds.shape[1] // 10)
-            groups += split_columns_into_correlated_groups(
-                ori_embeds, k=k
-            )  # check subsets of correlated columns together
+            groups += split_columns_into_correlated_groups(ori_embeds, k=k)
+        # check random subsets of columns
+        if ori_embeds.shape[1] > 10:
+            k = max(3, ori_embeds.shape[1] // 10)
+            groups += split_columns_into_random_groups(ori_embeds, k=k)
         dcr_share = 0
+        nndr_ratio = None
         for columns in groups:
             # calculate DCR / NNDR for synthetic to training
             g_dcr_syn_trn, g_nndr_syn_trn = calculate_dcrs_nndrs(
@@ -154,6 +160,42 @@ def calculate_nndr(nndrs: np.ndarray) -> float:
 
 def calculate_nndr_ratio(nndr_syn_trn: np.ndarray, nndr_syn_hol: np.ndarray) -> float:
     return calculate_nndr(nndr_syn_trn) / calculate_nndr(nndr_syn_hol)
+
+
+def split_columns_into_random_groups(X, k):
+    """
+    Split the columns of input matrix X into k non-overlapping, randomly ordered groups
+    with as even sizes as possible (difference ≤ 1).
+
+    Parameters:
+        X (ndarray): Input array of shape (n_samples, n_features)
+        k (int): Number of groups to split columns into
+
+    Returns:
+        List of lists: Each list contains column indices for one group
+    """
+    n_cols = X.shape[1]
+
+    # create a deterministic seed based on the input matrix
+    seed = xxhash.xxh32(X.sum()).intdigest()
+    rng = np.random.default_rng(seed)
+
+    # shuffle all column indices
+    all_indices = np.arange(n_cols)
+    rng.shuffle(all_indices)
+
+    # evenly divide shuffled indices into k groups
+    base_size = n_cols // k
+    remainder = n_cols % k
+    groups = []
+
+    start = 0
+    for i in range(k):
+        size = base_size + (1 if i < remainder else 0)
+        groups.append(all_indices[start : start + size].tolist())
+        start += size
+
+    return groups
 
 
 def split_columns_into_correlated_groups(X, k):

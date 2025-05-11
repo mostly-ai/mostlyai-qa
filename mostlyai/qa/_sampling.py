@@ -155,8 +155,6 @@ def sample_two_consecutive_rows(
     If a group has only one row, the second row will be missing.
     """
 
-    # TODO ???
-
     # enrich data with index column
     df["__IDX"] = df.groupby(col_by).cumcount()
 

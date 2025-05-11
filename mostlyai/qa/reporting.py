@@ -318,7 +318,7 @@ def report(
             hol_embeds=hol_embeds if hol_embeds is not None else None,
             workspace=workspace,
         )
-        progress.update(completed=70, total=100)
+        progress.update(completed=60, total=100)
 
         ## 3. DISTANCES ##
 
