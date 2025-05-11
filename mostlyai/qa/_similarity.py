@@ -64,7 +64,7 @@ def calculate_discriminator_auc(
     def calculate_mean_auc(embeds1, embeds2):
         """
         Calculate the mean AUC score using 10-fold cross-validation with a 90/10 split
-        for logistic regression to discriminate between two embedding arrays.
+        for random forest to discriminate between two embedding arrays.
         """
 
         # create labels for the data
@@ -87,7 +87,7 @@ def calculate_discriminator_auc(
                 X_train, X_holdout = X[train_index], X[test_index]
                 y_train, y_holdout = y[train_index], y[test_index]
 
-                # train a logistic regression classifier
+                # train a random forest classifier
                 clf = RandomForestClassifier(
                     n_estimators=100,
                     n_jobs=-1,
