@@ -116,7 +116,7 @@ def calculate_distances(
             else:
                 suffix = f"{len(columns)} columns [{columns}]"
             _LOG.info(f"DCR Share: {g_dcr_share:.1%}, NNDR Ratio: {g_nndr_ratio:.3f} - {suffix}")
-            if g_dcr_share > dcr_share:
+            if g_dcr_share >= dcr_share:
                 # keep results if DCR share is MAX
                 dcr_share = g_dcr_share
                 nndr_ratio = g_nndr_ratio
