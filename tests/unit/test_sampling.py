@@ -14,7 +14,6 @@
 
 import pandas as pd
 import numpy as np
-from datetime import datetime
 
 from mostlyai.qa._sampling import pull_data_for_embeddings
 
@@ -32,8 +31,7 @@ def test_pull_data_for_embeddings_large_int(tmp_path):
     df = pd.DataFrame(
         {"cc": list(np.random.randint(100, 200, size=1000)) + [1800218404984585216] + [pd.NA]}, dtype="Int64"
     )
-    bins = {"cc": [100, 200]}
-    pull_data_for_embeddings(df_tgt=df, bins=bins)
+    pull_data_for_embeddings(df_tgt=df)
 
 
 def test_pull_data_for_embeddings_dates(tmp_path):
@@ -43,9 +41,4 @@ def test_pull_data_for_embeddings_dates(tmp_path):
     df["y"] = df["y"].values.astype("datetime64[s]")
     df["z"] = df["z"].values.astype("datetime64[D]")
     df.loc[0] = pd.NaT
-    bins = {
-        "x": [datetime(2020, 2, 1), datetime(2024, 1, 1)],
-        "y": [datetime(2020, 2, 1), datetime(2024, 1, 1)],
-        "z": [datetime(2020, 2, 1), datetime(2024, 1, 1)],
-    }
-    pull_data_for_embeddings(df_tgt=df, bins=bins)
+    pull_data_for_embeddings(df_tgt=df)

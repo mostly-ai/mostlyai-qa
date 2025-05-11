@@ -176,14 +176,14 @@ class Similarity(CustomBaseModel):
 
 class Distances(CustomBaseModel):
     """
-    Metrics regarding the nearest neighbor distances between training, holdout, and synthetic samples in an embedding
-    space. Useful for assessing the novelty / privacy of synthetic data.
+    Metrics regarding the nearest neighbor distances between training, holdout, and synthetic samples in an numerically
+    encoded space. Useful for assessing the novelty / privacy of synthetic data.
 
     The provided data is first down-sampled, so that the number of samples match across all datasets. Note, that for
     an optimal sensitivity of this privacy assessment it is recommended to use a 50/50 split between training and
     holdout data, and then generate synthetic data of the same size.
 
-    The embeddings of these samples are then computed, and the nearest neighbor distances are calculated for each
+    The numerical encodings of these samples are then computed, and the nearest neighbor distances are calculated for each
     synthetic sample to the training and holdout samples. Based on these nearest neighbor distances the following
     metrics are calculated:
     - Identical Match Share (IMS): The share of synthetic samples that are identical to a training or holdout sample.
@@ -269,6 +269,21 @@ class Distances(CustomBaseModel):
 
 
 class ModelMetrics(CustomBaseModel):
+    """
+    Metrics regarding the quality of synthetic data, measured in terms of accuracy, similarity, and distances.
+
+    1. **Accuracy**: Metrics regarding the accuracy of synthetic data, measured as the closeness of discretized lower
+    dimensional marginal distributions.
+    2. **Similarity**: Metrics regarding the similarity of the full joint distributions of samples within an embedding
+    space.
+    3. **Distances**: Metrics regarding the nearest neighbor distances between training, holdout, and synthetic samples
+    in an numeric encoding space. Useful for assessing the novelty / privacy of synthetic data.
+
+    The quality of synthetic data is assessed by comparing these metrics to the same metrics of a holdout dataset.
+    The holdout dataset is a subset of the original training data, that was not used for training the synthetic data
+    generator. The metrics of the synthetic data should be as close as possible to the metrics of the holdout data.
+    """
+
     accuracy: Accuracy | None = Field(
         default=None,
         description="Metrics regarding the accuracy of synthetic data, measured as the closeness of discretized lower "
@@ -282,5 +297,5 @@ class ModelMetrics(CustomBaseModel):
     distances: Distances | None = Field(
         default=None,
         description="Metrics regarding the nearest neighbor distances between training, holdout, and synthetic "
-        "samples in an embedding space. Useful for assessing the novelty / privacy of synthetic data.",
+        "samples in an numeric encoding space. Useful for assessing the novelty / privacy of synthetic data.",
     )

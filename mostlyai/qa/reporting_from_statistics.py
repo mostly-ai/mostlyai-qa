@@ -72,7 +72,7 @@ def report_from_statistics(
         report_credits: The credits of the report.
         max_sample_size_accuracy: The maximum sample size for accuracy calculations.
         max_sample_size_coherence: The maximum sample size for coherence calculations.
-        max_sample_size_embeddings: The maximum sample size for embedding calculations (similarity & distances)
+        max_sample_size_embeddings: The maximum sample size for embedding calculations
         update_progress: The progress callback.
 
     Returns:
@@ -165,8 +165,6 @@ def report_from_statistics(
 
         _LOG.info("load embedder")
         embedder = load_embedder()
-        _LOG.info("load bins")
-        bins = statistics.load_bins()
 
         _LOG.info("calculate embeddings for synthetic")
         syn_embeds = calculate_embeddings(
@@ -176,7 +174,6 @@ def report_from_statistics(
                 ctx_primary_key=ctx_primary_key,
                 tgt_context_key=tgt_context_key,
                 max_sample_size=max_sample_size_embeddings,
-                bins=bins,
             ),
             progress=progress,
             progress_from=40,
