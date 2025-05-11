@@ -27,8 +27,6 @@
 #  limitations under the License.
 import logging
 import random
-import time
-import xxhash
 from typing import Any
 from pandas.core.dtypes.common import is_numeric_dtype, is_datetime64_dtype
 
@@ -43,16 +41,14 @@ from mostlyai.qa._common import (
     NXT_COLUMN_PREFIX,
     COUNT_COLUMN,
     ACCURACY_MAX_COLUMNS,
-    ProgressCallbackWrapper,
 )
 from mostlyai.qa.assets import load_tokenizer
-from joblib import Parallel, cpu_count, delayed, parallel_config
 
 
 _LOG = logging.getLogger(__name__)
 
 
-def pull_data_for_accuracy(
+def prepare_data_for_accuracy(
     *,
     df_tgt: pd.DataFrame,
     df_ctx: pd.DataFrame | None = None,
@@ -63,7 +59,7 @@ def pull_data_for_accuracy(
     ori_dtypes: dict[str, str] | None = None,
 ) -> pd.DataFrame:
     """
-    Prepare single dataset for accuracy report.
+    Prepare data for accuracy plots and metrics.
     """
 
     # keys must be provided if df_ctx provided
@@ -183,7 +179,7 @@ def sample_two_consecutive_rows(
     return first_rows, second_rows
 
 
-def pull_data_for_coherence(
+def prepare_data_for_coherence(
     *,
     df_tgt: pd.DataFrame,
     tgt_context_key: str,
@@ -219,104 +215,6 @@ def pull_data_for_coherence(
     df_tgt = pd.concat([keys, df_tgt], axis=1)
 
     return df_tgt, bins
-
-
-def pull_data_for_embeddings(
-    *,
-    df_tgt: pd.DataFrame,
-    df_ctx: pd.DataFrame | None = None,
-    ctx_primary_key: str | None = None,
-    tgt_context_key: str | None = None,
-    max_sample_size: int | None = None,
-) -> list[str]:
-    _LOG.info("pulling data for embeddings")
-    t0 = time.time()
-
-    # keys must be provided if df_ctx provided
-    assert df_ctx is None or (ctx_primary_key is not None and tgt_context_key is not None)
-
-    # sort columns to ensure consistent column order
-    df_tgt = df_tgt[sorted(df_tgt.columns)]
-    if df_ctx is not None:
-        df_ctx = df_ctx[sorted(df_ctx.columns)]
-
-    key = "__KEY"
-
-    if df_ctx is not None:
-        # explicit context
-        df_ctx = df_ctx.sample(frac=1).head(max_sample_size)
-        df_ctx = df_ctx.rename(columns={ctx_primary_key: tgt_context_key}).reset_index(drop=True)
-        df_tgt = df_tgt.merge(df_ctx[tgt_context_key], on=tgt_context_key, how="right").reset_index(drop=True)
-    elif tgt_context_key is not None:
-        # implicit context
-        df_ctx = df_tgt[[tgt_context_key]].drop_duplicates()
-        df_ctx = df_ctx.sample(frac=1).head(max_sample_size).reset_index(drop=True)
-        df_tgt = df_tgt.merge(df_ctx[tgt_context_key], on=tgt_context_key, how="right").reset_index(drop=True)
-    else:
-        # no context; flat table
-        tgt_context_key = key
-        df_tgt = df_tgt.sample(frac=1).head(max_sample_size).reset_index(drop=True)
-        df_tgt[tgt_context_key] = range(len(df_tgt))
-
-    # consistently use "__KEY" as key column
-    df_tgt = df_tgt.rename(columns={tgt_context_key: key})
-    tgt_context_key = key
-
-    # split into chunks while keeping groups together and process in parallel
-    n_jobs = min(16, max(1, cpu_count() - 1))
-    hash_ids = df_tgt[tgt_context_key].apply(lambda x: xxhash.xxh32_intdigest(str(x))) % n_jobs
-    with parallel_config("loky", n_jobs=n_jobs):
-        strings = Parallel()(
-            delayed(stringify_sequences)(df_tgt.loc[hash_ids == i], tgt_context_key) for i in range(n_jobs)
-        )
-
-    # flatten results
-    strings = pd.concat(strings).sample(frac=1).reset_index(drop=True)
-    _LOG.info(f"pulled data {strings.shape} for embeddings in {time.time() - t0:.2f}s")
-    return strings.to_list()
-
-
-def stringify_sequences(df: pd.DataFrame, tgt_context_key: str) -> pd.Series:
-    if len(df) == 0:
-        return pd.Series(dtype="string[pyarrow]")
-
-    def row_to_string(row: pd.Series) -> str:
-        # we concatenate all values as strings rather than convert to
-        # JSON to keep the string length for faster speed short
-        return " ".join(str(val) for val in row.values)
-
-    def sequence_to_string(sequence: pd.DataFrame) -> str:
-        return ", ".join(sequence.apply(row_to_string, axis=1))
-
-    strings = df.set_index(tgt_context_key).groupby(tgt_context_key).apply(sequence_to_string)
-    # cap at 1k chars, as encoder truncates anyway; still it speeds things up by truncating beforehand
-    strings = strings.astype("string[pyarrow]").str[:1_000]
-    return strings
-
-
-def calculate_embeddings(
-    strings: list[str],
-    progress: ProgressCallbackWrapper | None = None,
-    progress_from: int | None = None,
-    progress_to: int | None = None,
-    embedder: Any | None = None,
-) -> np.ndarray:
-    # split into buckets for calculating embeddings to avoid memory issues and report continuous progress
-    steps = progress_to - progress_from if progress_to is not None and progress_from is not None else 1
-    buckets = np.array_split(strings, steps)
-    buckets = [b for b in buckets if len(b) > 0]
-    # calculate embeddings for each bucket
-    t0 = time.time()
-    embeds = []
-    for i, bucket in enumerate(buckets, 1):
-        embeds += [embedder.encode(bucket.tolist(), show_progress_bar=False)]
-        if progress is not None:
-            progress.update(completed=progress_from + i, total=100)
-    if progress is not None:
-        progress.update(completed=progress_to, total=100)
-    embeds = np.concatenate(embeds, axis=0)
-    _LOG.info(f"calculated embeddings {embeds.shape} in {time.time() - t0:.2f}s")
-    return embeds
 
 
 def sample_text_tokens(df: pd.DataFrame) -> pd.DataFrame:

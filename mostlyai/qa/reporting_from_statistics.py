@@ -15,17 +15,16 @@
 import logging
 from pathlib import Path
 
-import numpy as np
 import pandas as pd
 
-from mostlyai.qa import _accuracy, _sampling, _similarity, _html_report
+from mostlyai.qa import _accuracy, _sampling, _html_report
 from mostlyai.qa._coherence import (
     calculate_distinct_categories_per_sequence,
     calculate_sequences_per_distinct_category,
     plot_store_distinct_categories_per_sequence,
     plot_store_sequences_per_distinct_category,
 )
-from mostlyai.qa._sampling import pull_data_for_embeddings, calculate_embeddings, pull_data_for_coherence
+from mostlyai.qa._sampling import prepare_data_for_coherence
 from mostlyai.qa._common import (
     ProgressCallback,
     PrerequisiteNotMetError,
@@ -36,7 +35,6 @@ from mostlyai.qa._common import (
     ProgressCallbackWrapper,
 )
 from mostlyai.qa._filesystem import Statistics, TemporaryWorkspace
-from mostlyai.qa.assets import load_embedder
 
 _LOG = logging.getLogger(__name__)
 
@@ -54,7 +52,6 @@ def report_from_statistics(
     report_credits: str = REPORT_CREDITS,
     max_sample_size_accuracy: int | None = None,
     max_sample_size_coherence: int | None = None,
-    max_sample_size_embeddings: int | None = None,
     update_progress: ProgressCallback | None = None,
 ) -> Path:
     """
@@ -72,7 +69,6 @@ def report_from_statistics(
         report_credits: The credits of the report.
         max_sample_size_accuracy: The maximum sample size for accuracy calculations.
         max_sample_size_coherence: The maximum sample size for coherence calculations.
-        max_sample_size_embeddings: The maximum sample size for embedding calculations
         update_progress: The progress callback.
 
     Returns:
@@ -114,7 +110,7 @@ def report_from_statistics(
 
         # prepare data
         _LOG.info("sample synthetic data started")
-        syn = _sampling.pull_data_for_accuracy(
+        syn = _sampling.prepare_data_for_accuracy(
             df_tgt=syn_tgt_data,
             df_ctx=syn_ctx_data,
             ctx_primary_key=ctx_primary_key,
@@ -133,13 +129,13 @@ def report_from_statistics(
             statistics=statistics,
             workspace=workspace,
         )
-        progress.update(completed=30, total=100)
+        progress.update(completed=50, total=100)
 
         ori_coh_bins = statistics.load_coherence_bins()
         do_coherence = ori_coh_bins is not None
         if do_coherence:
             _LOG.info("prepare synthetic data for coherence started")
-            syn_coh, _ = pull_data_for_coherence(
+            syn_coh, _ = prepare_data_for_coherence(
                 df_tgt=syn_tgt_data,
                 tgt_context_key=tgt_context_key,
                 bins=ori_coh_bins,
@@ -161,33 +157,7 @@ def report_from_statistics(
             )
         else:
             acc_cats_per_seq = acc_seqs_per_cat = pd.DataFrame({"column": [], "accuracy": [], "accuracy_max": []})
-        progress.update(completed=40, total=100)
-
-        _LOG.info("load embedder")
-        embedder = load_embedder()
-
-        _LOG.info("calculate embeddings for synthetic")
-        syn_embeds = calculate_embeddings(
-            strings=pull_data_for_embeddings(
-                df_tgt=syn_tgt_data,
-                df_ctx=syn_ctx_data,
-                ctx_primary_key=ctx_primary_key,
-                tgt_context_key=tgt_context_key,
-                max_sample_size=max_sample_size_embeddings,
-            ),
-            progress=progress,
-            progress_from=40,
-            progress_to=60,
-            embedder=embedder,
-        )
-
-        _LOG.info("report similarity")
-        _report_similarity_from_statistics(
-            syn_embeds=syn_embeds,
-            workspace=workspace,
-            statistics=statistics,
-        )
-        progress.update(completed=70, total=100)
+        progress.update(completed=80, total=100)
 
         meta |= {
             "rows_synthetic": syn.shape[0],
@@ -211,6 +181,7 @@ def report_from_statistics(
             acc_seqs_per_cat=acc_seqs_per_cat,
         )
         progress.update(completed=100, total=100)
+        _LOG.info(f"report stored at {report_path}")
         return report_path
 
 
@@ -380,24 +351,3 @@ def _report_coherence_sequences_per_distinct_category(
     )
 
     return acc_seqs_per_cat
-
-
-def _report_similarity_from_statistics(
-    *,
-    syn_embeds: np.ndarray,
-    statistics: Statistics,
-    workspace: TemporaryWorkspace,
-):
-    _LOG.info("load PCA model")
-    pca_model = statistics.load_pca_model()
-    if pca_model is None:
-        _LOG.info("PCA model not found; skipping plotting similarity contours")
-        return
-
-    _LOG.info("load training and holdout PCA-projected embeddings")
-    ori_pca, hol_pca = statistics.load_ori_hol_pcas()
-
-    _LOG.info("plot and store PCA similarity contours")
-    _similarity.plot_store_similarity_contours(
-        pca_model=pca_model, ori_pca=ori_pca, hol_pca=hol_pca, syn_embeds=syn_embeds, workspace=workspace
-    )

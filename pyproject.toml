@@ -37,7 +37,6 @@ dependencies = [
     "model2vec>=0.4.1",
     "transformers>=4.36.0",
     "accelerate>=1.5.0",
-    "skops>=0.11.0",
     "torch>=2.6.0",
     "xxhash>=3.5.0",
     "faiss-cpu>=1.7.0",

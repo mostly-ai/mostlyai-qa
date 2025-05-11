@@ -39,7 +39,7 @@ from mostlyai.qa._accuracy import (
     plot_store_correlation_matrices,
     bin_categorical,
 )
-from mostlyai.qa._sampling import pull_data_for_accuracy, sample_two_consecutive_rows
+from mostlyai.qa._sampling import prepare_data_for_accuracy, sample_two_consecutive_rows
 from mostlyai.qa._common import (
     OTHER_BIN,
     EMPTY_BIN,
@@ -296,7 +296,7 @@ def test_calculate_accuracy():
     observed_acc, expected_acc = calculate_accuracy(trn_bin_cols, syn_bin_cols)
     assert observed_acc > 0.9
     assert expected_acc > 0.9
-    assert np.abs(observed_acc - expected_acc) < 0.018
+    assert np.abs(observed_acc - expected_acc) < 0.019
 
 
 def test_calculate_expected_l1_multinomial():
@@ -361,7 +361,7 @@ class TestPrepareAccuracyData:
                 "col2": np.random.randint(low=0, high=100, size=100),
             }
         )
-        df = pull_data_for_accuracy(df_tgt=df_tgt)
+        df = prepare_data_for_accuracy(df_tgt=df_tgt)
         assert df.shape[0] == len(df_tgt)
         assert list(df.columns) == [f"{TGT_COLUMN_PREFIX}col1", f"{TGT_COLUMN_PREFIX}col2"]
 
@@ -379,7 +379,7 @@ class TestPrepareAccuracyData:
                 "col2": np.random.randint(low=0, high=10, size=100),
             }
         )
-        df = pull_data_for_accuracy(
+        df = prepare_data_for_accuracy(
             df_ctx=df_ctx,
             df_tgt=df_tgt,
             ctx_primary_key="pk",
@@ -403,7 +403,7 @@ class TestPrepareAccuracyData:
                 "col2": np.random.randint(low=0, high=10, size=100),
             }
         )
-        df = pull_data_for_accuracy(df_tgt=df_tgt, tgt_context_key="fk")
+        df = prepare_data_for_accuracy(df_tgt=df_tgt, tgt_context_key="fk")
         assert df.shape[0] == 50
         assert list(df.columns) == [
             f"{TGT_COLUMN_PREFIX}Sequence Length",

@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import logging
+import time
 
 import numpy as np
 import plotly.graph_objects as go
@@ -26,7 +27,7 @@ from mostlyai.qa._common import (
 from mostlyai.qa._filesystem import TemporaryWorkspace
 import scipy.stats
 from sklearn.model_selection import StratifiedKFold
-from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import HistGradientBoostingClassifier
 from sklearn.metrics import roc_auc_score
 
 _LOG = logging.getLogger(__name__)
@@ -48,10 +49,11 @@ def calculate_cosine_similarities(
     # calculate centroid similarities
     if hol_centroid is not None:
         sim_cosine_trn_hol = np.clip(cosine_similarity(trn_centroid, hol_centroid)[0][0], 0.0, 1.0)
+        _LOG.info(f"calculated cosine similarity for trn and hol: {sim_cosine_trn_hol:.7f}")
     else:
         sim_cosine_trn_hol = None
     sim_cosine_trn_syn = np.clip(cosine_similarity(trn_centroid, syn_centroid)[0][0], 0.0, 1.0)
-    _LOG.info(f"{sim_cosine_trn_hol=}, {sim_cosine_trn_syn=}")
+    _LOG.info(f"calculated cosine similarity for trn and syn: {sim_cosine_trn_syn:.7f}")
     return sim_cosine_trn_hol, sim_cosine_trn_syn
 
 
@@ -64,7 +66,7 @@ def calculate_discriminator_auc(
     def calculate_mean_auc(embeds1, embeds2):
         """
         Calculate the mean AUC score using 10-fold cross-validation with a 90/10 split
-        for logistic regression to discriminate between two embedding arrays.
+        for a ML model to discriminate between two embedding arrays.
         """
 
         # create labels for the data
@@ -76,7 +78,7 @@ def calculate_discriminator_auc(
         y = np.hstack((labels1, labels2))
 
         # initialize the cross-validator
-        kf = StratifiedKFold(n_splits=10, shuffle=True)
+        kf = StratifiedKFold(n_splits=10, shuffle=True, random_state=42)
 
         # initialize a list to store AUC scores
         auc_scores = []
@@ -87,8 +89,14 @@ def calculate_discriminator_auc(
                 X_train, X_holdout = X[train_index], X[test_index]
                 y_train, y_holdout = y[train_index], y[test_index]
 
-                # train a logistic regression classifier
-                clf = LogisticRegression(max_iter=1000)
+                # train a ML classifier
+                clf = HistGradientBoostingClassifier(
+                    max_iter=50,
+                    max_depth=10,
+                    min_samples_leaf=5,
+                    max_features=0.5,
+                    random_state=42,
+                )
                 clf.fit(X_train, y_train)
 
                 # predict probabilities on the holdout set
@@ -110,11 +118,14 @@ def calculate_discriminator_auc(
         return mean_auc_score
 
     if hol_embeds is not None:
+        t0 = time.time()
         sim_auc_trn_hol = calculate_mean_auc(trn_embeds, hol_embeds)
+        _LOG.info(f"calculated AUC for trn and hol: {sim_auc_trn_hol:.1%} in {time.time() - t0:.2f} seconds")
     else:
         sim_auc_trn_hol = None
+    t0 = time.time()
     sim_auc_trn_syn = calculate_mean_auc(trn_embeds, syn_embeds)
-    _LOG.info(f"{sim_auc_trn_hol=}, {sim_auc_trn_syn=}")
+    _LOG.info(f"calculated AUC for trn and syn: {sim_auc_trn_syn:.1%} in {time.time() - t0:.2f} seconds")
     return sim_auc_trn_hol, sim_auc_trn_syn
 
 
@@ -177,37 +188,26 @@ def make_contour_and_centroid_traces(
 def plot_store_similarity_contours(
     *,
     syn_embeds: np.ndarray,
-    pca_model: PCA | None = None,
-    trn_embeds: np.ndarray | None = None,
-    ori_pca: np.ndarray | None = None,
+    trn_embeds: np.ndarray,
     hol_embeds: np.ndarray | None = None,
-    hol_pca: np.ndarray | None = None,
     workspace: TemporaryWorkspace = None,
-) -> tuple[PCA, np.ndarray, np.ndarray, np.ndarray | None]:
-    # either PCA model + trn/hol PCA-transformed embeddings or trn/hol embeddings must be provided
-    if pca_model is None:
-        assert trn_embeds is not None and ori_pca is None
-    else:
-        assert trn_embeds is None and ori_pca is not None
+):
+    if trn_embeds.shape[1] < 3:
+        return
 
     # perform PCA on trn embeddings
-    if pca_model is None:
-        pca_model = PCA(n_components=8)
-        pca_model.fit_transform(trn_embeds)
+    pca_model = PCA(n_components=3)
+    pca_model.fit(trn_embeds)
 
     # transform embeddings to PCA space
     syn_pca = pca_model.transform(syn_embeds)
-    if ori_pca is None:
-        ori_pca = pca_model.transform(trn_embeds)
-    if hol_embeds is not None and hol_pca is None:
-        hol_pca = pca_model.transform(hol_embeds)
-    pcas = [ori_pca, syn_pca]
-    if hol_pca is not None:
-        pcas.append(hol_pca)
+    trn_pca = pca_model.transform(trn_embeds)
+    hol_pca = pca_model.transform(hol_embeds) if hol_embeds is not None else None
 
     # calculate percentiles to make axis ranges resilient towards outliers
-    pca_min = np.quantile(np.vstack(pcas), 0.01, axis=0)
-    pca_max = np.quantile(np.vstack(pcas), 0.99, axis=0)
+    pcas = [trn_pca, syn_pca] + ([hol_pca] if hol_pca is not None else [])
+    pca_min = np.quantile(np.vstack(pcas), 0.02, axis=0)
+    pca_max = np.quantile(np.vstack(pcas), 0.98, axis=0)
 
     # make plots layout
     pca_combos = [(1, 0), (2, 0)]
@@ -263,5 +263,3 @@ def plot_store_similarity_contours(
 
     # store the figure
     workspace.store_figure_html(fig, "similarity_pca")
-
-    return pca_model, syn_pca, ori_pca, hol_pca

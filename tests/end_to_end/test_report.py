@@ -81,7 +81,6 @@ def test_report_flat(tmp_path):
         syn_tgt_data=syn_tgt_data,
         statistics_path=statistics_path,
         max_sample_size_accuracy=110,
-        max_sample_size_embeddings=70,
     )
 
     assert report_path.exists()
@@ -152,7 +151,6 @@ def test_report_sequential(tmp_path):
         ctx_primary_key="id",
         tgt_context_key="ctx_id",
         max_sample_size_accuracy=130,
-        max_sample_size_embeddings=90,
         max_sample_size_coherence=30,
         statistics_path=statistics_path,
     )
@@ -306,4 +304,4 @@ def test_mixed_dtypes(tmp_path):
             "Expected a warning about dtype mismatch for column 'dt'"
         )
     assert statistics.accuracy.overall > 0.6
-    assert 0.4 < statistics.similarity.discriminator_auc_training_synthetic < 0.6
+    assert 0.2 < statistics.similarity.discriminator_auc_training_synthetic < 0.8

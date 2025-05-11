@@ -20,7 +20,7 @@ import numpy as np
 import pandas as pd
 from pandas.core.dtypes.common import is_numeric_dtype, is_datetime64_dtype
 
-from mostlyai.qa import _distances, _similarity, _html_report
+from mostlyai.qa import _distances, _similarity, _html_report, _embeddings
 from mostlyai.qa._accuracy import (
     bin_data,
     binning_data,
@@ -46,13 +46,10 @@ from mostlyai.qa._coherence import (
     plot_store_distinct_categories_per_sequence,
     plot_store_sequences_per_distinct_category,
 )
-from mostlyai.qa.assets import load_embedder
 from mostlyai.qa.metrics import ModelMetrics, Accuracy, Similarity, Distances
 from mostlyai.qa._sampling import (
-    calculate_embeddings,
-    pull_data_for_accuracy,
-    pull_data_for_coherence,
-    pull_data_for_embeddings,
+    prepare_data_for_accuracy,
+    prepare_data_for_coherence,
 )
 from mostlyai.qa._common import (
     determine_data_size,
@@ -85,9 +82,8 @@ def report(
     report_subtitle: str = "",
     report_credits: str = REPORT_CREDITS,
     max_sample_size_accuracy: int | None = None,
-    max_sample_size_embeddings: int | None = None,
     max_sample_size_coherence: int | None = None,
-    max_sample_size_distances: int | None = None,
+    max_sample_size_embeddings: int | None = None,
     statistics_path: str | Path | None = None,
     update_progress: ProgressCallback | None = None,
 ) -> tuple[Path, ModelMetrics | None]:
@@ -121,8 +117,7 @@ def report(
         report_credits: The credits of the report.
         max_sample_size_accuracy: The maximum sample size for accuracy calculations.
         max_sample_size_coherence: The maximum sample size for coherence calculations.
-        max_sample_size_embeddings: The maximum sample size for embedding calculations (for similarity).
-        max_sample_size_distances: The maximum sample size for distance calculations.
+        max_sample_size_embeddings: The maximum sample size for embedding calculations.
         statistics_path: The path of where to store the statistics to be used by `report_from_statistics`
         update_progress: The progress callback.
 
@@ -191,9 +186,8 @@ def report(
             _html_report.store_early_exit_report(report_path)
             return report_path, None
 
-        ## 1. ACCURACY ##
+        ## 0. PREPARE DATA ##
 
-        # prepare datasets for accuracy
         if trn_ctx_data is not None:
             assert ctx_primary_key is not None
             setup = (
@@ -210,8 +204,8 @@ def report(
         else:
             setup = "1:1"
 
-        _LOG.info("prepare original data for accuracy")
-        trn = pull_data_for_accuracy(
+        _LOG.info("prepare training data for accuracy")
+        trn = prepare_data_for_accuracy(
             df_tgt=trn_tgt_data,
             df_ctx=trn_ctx_data,
             ctx_primary_key=ctx_primary_key,
@@ -220,7 +214,8 @@ def report(
             setup=setup,
         )
         if hol_tgt_data is not None:
-            hol = pull_data_for_accuracy(
+            _LOG.info("prepare holdout data for accuracy")
+            hol = prepare_data_for_accuracy(
                 df_tgt=hol_tgt_data,
                 df_ctx=hol_ctx_data,
                 ctx_primary_key=ctx_primary_key,
@@ -236,7 +231,7 @@ def report(
         progress.update(completed=5, total=100)
 
         _LOG.info("prepare synthetic data for accuracy")
-        syn = pull_data_for_accuracy(
+        syn = prepare_data_for_accuracy(
             df_tgt=syn_tgt_data,
             df_ctx=syn_ctx_data,
             ctx_primary_key=ctx_primary_key,
@@ -247,26 +242,17 @@ def report(
         )
         progress.update(completed=10, total=100)
 
-        _LOG.info("report accuracy and correlations")
-        acc_uni, acc_biv, acc_triv, corr_trn = _report_accuracy_and_correlations(
-            ori=ori,
-            syn=syn,
-            statistics=statistics,
-            workspace=workspace,
-        )
-        progress.update(completed=20, total=100)
-
         # do coherence analysis only if there are non-fk columns in the target data
         do_coherence = setup == "1:N" and len(trn_tgt_data.columns) > 1
         if do_coherence:
-            _LOG.info("prepare training data for coherence started")
-            ori_coh, ori_coh_bins = pull_data_for_coherence(
+            _LOG.info("prepare original data for coherence started")
+            ori_coh, ori_coh_bins = prepare_data_for_coherence(
                 df_tgt=pd.concat([trn_tgt_data, hol_tgt_data]) if hol_tgt_data is not None else trn_tgt_data,
                 tgt_context_key=tgt_context_key,
                 max_sample_size=max_sample_size_coherence,
             )
             _LOG.info("prepare synthetic data for coherence started")
-            syn_coh, _ = pull_data_for_coherence(
+            syn_coh, _ = prepare_data_for_coherence(
                 df_tgt=syn_tgt_data,
                 tgt_context_key=tgt_context_key,
                 bins=ori_coh_bins,
@@ -274,6 +260,35 @@ def report(
             )
             _LOG.info("store bins used for training data for coherence")
             statistics.store_coherence_bins(bins=ori_coh_bins)
+        progress.update(completed=15, total=100)
+
+        _LOG.info("calculate embeddings")
+        # ensure that embeddings are all equal size for a fair 3-way comparison
+        max_sample_size_embeddings_final = min(
+            max_sample_size_embeddings or float("inf"),
+            syn_sample_size,
+            trn_sample_size,
+            hol_sample_size or float("inf"),
+        )
+        syn_embeds, trn_embeds, hol_embeds = _embeddings.encode_data(
+            syn=syn.head(max_sample_size_embeddings_final),
+            trn=trn.head(max_sample_size_embeddings_final),
+            hol=hol.head(max_sample_size_embeddings_final) if hol is not None else None,
+        )
+        progress.update(completed=20, total=100)
+
+        ## 1. ACCURACY ##
+
+        _LOG.info("report accuracy and correlations")
+        acc_uni, acc_biv, acc_triv, corr_trn = _report_accuracy_and_correlations(
+            ori=ori,
+            syn=syn,
+            statistics=statistics,
+            workspace=workspace,
+        )
+        progress.update(completed=30, total=100)
+
+        if do_coherence:
             _LOG.info("report sequences per distinct category")
             acc_seqs_per_cat = _report_coherence_sequences_per_distinct_category(
                 ori_coh=ori_coh,
@@ -292,98 +307,26 @@ def report(
             )
         else:
             acc_cats_per_seq = acc_seqs_per_cat = pd.DataFrame({"column": [], "accuracy": [], "accuracy_max": []})
-        progress.update(completed=30, total=100)
+        progress.update(completed=40, total=100)
 
         ## 2. SIMILARITY ##
-
-        # ensure that embeddings are all equal size for a fair 3-way comparison
-        max_sample_size_embeddings_final = min(
-            max_sample_size_embeddings or float("inf"),
-            syn_sample_size,
-            trn_sample_size,
-            hol_sample_size or float("inf"),
-        )
-        _LOG.info("load embedder")
-        embedder = load_embedder()
-        _LOG.info("calculate embeddings for synthetic")
-        syn_embeds = calculate_embeddings(
-            strings=pull_data_for_embeddings(
-                df_tgt=syn_tgt_data,
-                df_ctx=syn_ctx_data,
-                ctx_primary_key=ctx_primary_key,
-                tgt_context_key=tgt_context_key,
-                max_sample_size=max_sample_size_embeddings_final,
-            ),
-            progress=progress,
-            progress_from=30,
-            progress_to=40,
-            embedder=embedder,
-        )
-        _LOG.info("calculate embeddings for training")
-        trn_embeds = calculate_embeddings(
-            strings=pull_data_for_embeddings(
-                df_tgt=trn_tgt_data,
-                df_ctx=trn_ctx_data,
-                ctx_primary_key=ctx_primary_key,
-                tgt_context_key=tgt_context_key,
-                max_sample_size=max_sample_size_embeddings_final,
-            ),
-            progress=progress,
-            progress_from=40,
-            progress_to=50,
-            embedder=embedder,
-        )
-        if hol_tgt_data is not None:
-            _LOG.info("calculate embeddings for holdout")
-            hol_embeds = calculate_embeddings(
-                strings=pull_data_for_embeddings(
-                    df_tgt=hol_tgt_data,
-                    df_ctx=hol_ctx_data,
-                    ctx_primary_key=ctx_primary_key,
-                    tgt_context_key=tgt_context_key,
-                    max_sample_size=max_sample_size_embeddings_final,
-                ),
-                progress=progress,
-                progress_from=50,
-                progress_to=60,
-                embedder=embedder,
-            )
-        else:
-            hol_embeds = None
-        progress.update(completed=60, total=100)
 
         _LOG.info("report similarity")
         sim_cosine_trn_hol, sim_cosine_trn_syn, sim_auc_trn_hol, sim_auc_trn_syn = _report_similarity(
             syn_embeds=syn_embeds,
             trn_embeds=trn_embeds,
-            hol_embeds=hol_embeds,
+            hol_embeds=hol_embeds if hol_embeds is not None else None,
             workspace=workspace,
-            statistics=statistics,
         )
-        progress.update(completed=70, total=100)
+        progress.update(completed=60, total=100)
 
         ## 3. DISTANCES ##
 
-        _LOG.info("encode data for distances")
-        max_sample_size_distances = max_sample_size_distances or max_sample_size_embeddings_final
-        max_sample_size_distances = min(
-            max_sample_size_distances,
-            syn_sample_size,
-            trn_sample_size,
-            hol_sample_size or float("inf"),
-        )
-        syn_encoded, trn_encoded, hol_encoded = _distances.encode_data(
-            syn=syn.head(max_sample_size_distances),
-            trn=trn.head(max_sample_size_distances),
-            hol=hol.head(max_sample_size_distances) if hol is not None else None,
-        )
-        progress.update(completed=80, total=100)
-
         _LOG.info("calculate and plot distances")
         distances = _report_distances(
-            syn_encoded=syn_encoded.values,
-            trn_encoded=trn_encoded.values,
-            hol_encoded=hol_encoded.values if hol_encoded is not None else None,
+            syn_embeds=syn_embeds,
+            trn_embeds=trn_embeds,
+            hol_embeds=hol_embeds if hol_embeds is not None else None,
             workspace=workspace,
         )
         progress.update(completed=90, total=100)
@@ -436,6 +379,7 @@ def report(
             corr_trn=corr_trn,
         )
         progress.update(completed=100, total=100)
+        _LOG.info(f"report stored at {report_path}")
         return report_path, metrics
 
 
@@ -542,18 +486,18 @@ def _calculate_metrics(
         discriminator_auc_training_holdout=sim_auc_trn_hol if sim_auc_trn_hol is not None else None,
     )
     distances = Distances(
-        ims_training=(dcr_syn_trn <= 1e-6).mean(),
-        ims_holdout=(dcr_syn_hol <= 1e-6).mean() if dcr_syn_hol is not None else None,
-        ims_trn_hol=(dcr_trn_hol <= 1e-6).mean() if dcr_trn_hol is not None else None,
-        dcr_training=dcr_syn_trn.mean(),
-        dcr_holdout=dcr_syn_hol.mean() if dcr_syn_hol is not None else None,
-        dcr_trn_hol=dcr_trn_hol.mean() if dcr_trn_hol is not None else None,
-        dcr_share=np.mean(dcr_syn_trn < dcr_syn_hol) + np.mean(dcr_syn_trn == dcr_syn_hol) / 2
+        ims_training=_distances.calculate_ims(dcr_syn_trn),
+        ims_holdout=_distances.calculate_ims(dcr_syn_hol) if dcr_syn_hol is not None else None,
+        ims_trn_hol=_distances.calculate_ims(dcr_trn_hol) if dcr_trn_hol is not None else None,
+        dcr_training=_distances.calculate_dcr(dcr_syn_trn),
+        dcr_holdout=_distances.calculate_dcr(dcr_syn_hol) if dcr_syn_hol is not None else None,
+        dcr_trn_hol=_distances.calculate_dcr(dcr_trn_hol) if dcr_trn_hol is not None else None,
+        dcr_share=_distances.calculate_dcr_share(dcr_syn_trn=dcr_syn_trn, dcr_syn_hol=dcr_syn_hol)
         if dcr_syn_hol is not None
         else None,
-        nndr_training=np.sort(nndr_syn_trn)[9],
-        nndr_holdout=np.sort(nndr_syn_hol)[9] if nndr_syn_hol is not None else None,
-        nndr_trn_hol=np.sort(nndr_trn_hol)[9] if nndr_trn_hol is not None else None,
+        nndr_training=_distances.calculate_nndr(nndr_syn_trn),
+        nndr_holdout=_distances.calculate_nndr(nndr_syn_hol) if nndr_syn_hol is not None else None,
+        nndr_trn_hol=_distances.calculate_nndr(nndr_trn_hol) if nndr_trn_hol is not None else None,
     )
     return ModelMetrics(
         accuracy=accuracy,
@@ -793,7 +737,6 @@ def _report_similarity(
     trn_embeds: np.ndarray,
     hol_embeds: np.ndarray | None,
     workspace: TemporaryWorkspace,
-    statistics: Statistics,
 ) -> tuple[np.float64 | None, np.float64, np.float64 | None, np.float64]:
     _LOG.info("calculate centroid similarities")
     sim_cosine_trn_hol, sim_cosine_trn_syn = _similarity.calculate_cosine_similarities(
@@ -806,15 +749,9 @@ def _report_similarity(
     )
 
     _LOG.info("plot and store PCA similarity contours")
-    pca_model, _, trn_pca, hol_pca = _similarity.plot_store_similarity_contours(
+    _similarity.plot_store_similarity_contours(
         syn_embeds=syn_embeds, trn_embeds=trn_embeds, hol_embeds=hol_embeds, workspace=workspace
     )
-
-    _LOG.info("store PCA model")
-    statistics.store_pca_model(pca_model)
-
-    _LOG.info("store training and holdout PCA-projected embeddings")
-    statistics.store_trn_hol_pcas(trn_pca, hol_pca)
 
     return (
         sim_cosine_trn_hol,
@@ -826,13 +763,13 @@ def _report_similarity(
 
 def _report_distances(
     *,
-    syn_encoded: np.ndarray,
-    trn_encoded: np.ndarray,
-    hol_encoded: np.ndarray | None,
+    syn_embeds: np.ndarray,
+    trn_embeds: np.ndarray,
+    hol_embeds: np.ndarray | None,
     workspace: TemporaryWorkspace,
 ) -> dict[str, np.ndarray]:
-    distances = _distances.calculate_distances(
-        syn_encoded=syn_encoded, trn_encoded=trn_encoded, hol_encoded=hol_encoded
-    )
+    _LOG.info("calculate distances")
+    distances = _distances.calculate_distances(syn_embeds=syn_embeds, trn_embeds=trn_embeds, hol_embeds=hol_embeds)
+    _LOG.info("plot and store distances")
     _distances.plot_store_distances(distances, workspace)
     return distances

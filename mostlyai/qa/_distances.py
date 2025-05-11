@@ -15,138 +15,20 @@
 import logging
 import platform
 import time
-
 import numpy as np
-import pandas as pd
-from sklearn.preprocessing import QuantileTransformer
+import networkx as nx
+import xxhash
 
 from mostlyai.qa._common import (
     CHARTS_COLORS,
     CHARTS_FONTS,
-    EMPTY_BIN,
-    NA_BIN,
-    RARE_BIN,
 )
+from sklearn.cluster import SpectralClustering
 from mostlyai.qa._filesystem import TemporaryWorkspace
 from plotly import graph_objs as go
 
-from mostlyai.qa.assets import load_embedder
-from sklearn.decomposition import PCA
 
 _LOG = logging.getLogger(__name__)
-
-
-def encode_numerics(
-    syn: pd.DataFrame, trn: pd.DataFrame, hol: pd.DataFrame | None = None
-) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame | None]:
-    """
-    Encode numeric features by mapping this via QuantileTransformer to a uniform distribution from [-0.5, 0.5].
-    """
-    syn_num, trn_num, hol_num = {}, {}, {}
-    if hol is None:
-        hol = pd.DataFrame(columns=trn.columns)
-    for col in trn.columns:
-        # convert to numerics
-        syn_num[col] = pd.to_numeric(syn[col], errors="coerce")
-        trn_num[col] = pd.to_numeric(trn[col], errors="coerce")
-        hol_num[col] = pd.to_numeric(hol[col], errors="coerce")
-        # retain NAs (needed for datetime)
-        syn_num[col] = syn_num[col].where(~syn[col].isna(), np.nan)
-        trn_num[col] = trn_num[col].where(~trn[col].isna(), np.nan)
-        hol_num[col] = hol_num[col].where(~hol[col].isna(), np.nan)
-        # normalize numeric features based on trn
-        qt_scaler = QuantileTransformer(
-            output_distribution="uniform",
-            random_state=42,
-            n_quantiles=min(100, len(trn) + len(hol)),
-        )
-        ori_num = pd.concat([trn_num[col], hol_num[col]]) if len(hol) > 0 else pd.DataFrame(trn_num[col])
-        qt_scaler.fit(ori_num.values.reshape(-1, 1))
-        syn_num[col] = qt_scaler.transform(syn_num[col].values.reshape(-1, 1))[:, 0] - 0.5
-        trn_num[col] = qt_scaler.transform(trn_num[col].values.reshape(-1, 1))[:, 0] - 0.5
-        hol_num[col] = qt_scaler.transform(hol_num[col].values.reshape(-1, 1))[:, 0] - 0.5 if len(hol) > 0 else None
-        # replace NAs with 0.0
-        syn_num[col] = np.nan_to_num(syn_num[col], nan=0.0)
-        trn_num[col] = np.nan_to_num(trn_num[col], nan=0.0)
-        hol_num[col] = np.nan_to_num(hol_num[col], nan=0.0)
-        # add extra columns for NAs
-        if trn[col].isna().any() or hol[col].isna().any():
-            syn_num[col + " - N/A"] = syn[col].isna().astype(float)
-            trn_num[col + " - N/A"] = trn[col].isna().astype(float)
-            hol_num[col + " - N/A"] = hol[col].isna().astype(float)
-    syn_num = pd.DataFrame(syn_num, index=syn.index)
-    trn_num = pd.DataFrame(trn_num, index=trn.index)
-    hol_num = pd.DataFrame(hol_num, index=hol.index) if len(hol) > 0 else None
-    return syn_num, trn_num, hol_num
-
-
-def encode_strings(
-    syn: pd.DataFrame, trn: pd.DataFrame, hol: pd.DataFrame | None = None
-) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame | None]:
-    """
-    Encode string features by mapping them to a low-dimensional space using PCA of their embeddings.
-    """
-    trn_str, syn_str, hol_str = {}, {}, {}
-    if hol is None:
-        hol = pd.DataFrame(columns=trn.columns)
-    for col in trn.columns:
-        # prepare inputs
-        syn_col = syn[col].astype(str).fillna(NA_BIN).replace("", EMPTY_BIN)
-        trn_col = trn[col].astype(str).fillna(NA_BIN).replace("", EMPTY_BIN)
-        hol_col = hol[col].astype(str).fillna(NA_BIN).replace("", EMPTY_BIN)
-        # get unique original values
-        uvals = pd.concat([trn_col, hol_col]).value_counts().index.to_list()
-        # map out of range values to RARE_BIN
-        syn_col = syn_col.where(syn_col.isin(uvals), RARE_BIN)
-        # embed unique values into high-dimensional space
-        embedder = load_embedder()
-        embeds = embedder.encode(uvals + [RARE_BIN])
-        # project embeddings into a low-dimensional space
-        dims = 2  # potentially adapt to the number of unique values
-        pca_model = PCA(n_components=dims)
-        embeds = pca_model.fit_transform(embeds)
-        # create mapping from unique values to PCA
-        embeds = pd.DataFrame(embeds)
-        embeds.index = uvals + [RARE_BIN]
-        # map values to PCA
-        syn_str[col] = embeds.reindex(syn_col.values).reset_index(drop=True)
-        trn_str[col] = embeds.reindex(trn_col.values).reset_index(drop=True)
-        hol_str[col] = embeds.reindex(hol_col.values).reset_index(drop=True)
-        # assign column names
-        columns = [f"{col} - PCA {i + 1}" for i in range(dims)]
-        syn_str[col].columns = columns
-        trn_str[col].columns = columns
-        hol_str[col].columns = columns
-    syn_str = pd.concat(syn_str.values(), axis=1) if syn_str else pd.DataFrame()
-    syn_str.index = syn.index
-    trn_str = pd.concat(trn_str.values(), axis=1) if trn_str else pd.DataFrame()
-    trn_str.index = trn.index
-    if len(hol) > 0:
-        hol_str = pd.concat(hol_str.values(), axis=1) if hol_str else pd.DataFrame()
-        hol_str.index = hol.index
-    else:
-        hol_str = None
-    return syn_str, trn_str, hol_str
-
-
-def encode_data(
-    syn: pd.DataFrame, trn: pd.DataFrame, hol: pd.DataFrame | None = None
-) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame | None]:
-    """
-    Encode all columns corresponding to their data type.
-    """
-    num_dat_cols = trn.select_dtypes(include=["number", "datetime"]).columns
-    string_cols = [col for col in trn.columns if col not in num_dat_cols]
-    syn_num, trn_num, hol_num = encode_numerics(
-        syn[num_dat_cols], trn[num_dat_cols], hol[num_dat_cols] if hol is not None else None
-    )
-    syn_str, trn_str, hol_str = encode_strings(
-        syn[string_cols], trn[string_cols], hol[string_cols] if hol is not None else None
-    )
-    syn_encoded = pd.concat([syn_num, syn_str], axis=1)
-    trn_encoded = pd.concat([trn_num, trn_str], axis=1)
-    hol_encoded = pd.concat([hol_num, hol_str], axis=1) if hol is not None else None
-    return syn_encoded, trn_encoded, hol_encoded
 
 
 def calculate_dcrs_nndrs(
@@ -157,7 +39,6 @@ def calculate_dcrs_nndrs(
     """
     if data is None or query is None or data.shape[0] == 0 or query.shape[0] == 0:
         return None, None
-    _LOG.info(f"calculate DCRs for {data.shape=} and {query.shape=}")
     t0 = time.time()
     data = data[data[:, 0].argsort()]  # sort data by first dimension to enforce deterministic results
 
@@ -184,48 +65,69 @@ def calculate_dcrs_nndrs(
 
 
 def calculate_distances(
-    *, syn_encoded: np.ndarray, trn_encoded: np.ndarray, hol_encoded: np.ndarray | None
+    *, syn_embeds: np.ndarray, trn_embeds: np.ndarray, hol_embeds: np.ndarray | None
 ) -> dict[str, np.ndarray]:
     """
     Calculates distances to the closest records (DCR).
     """
-    assert syn_encoded.shape == trn_encoded.shape
-    if hol_encoded is not None and hol_encoded.shape[0] > 0:
-        assert trn_encoded.shape == hol_encoded.shape
+    assert syn_embeds.shape == trn_embeds.shape
+    if hol_embeds is not None and hol_embeds.shape[0] > 0:
+        assert trn_embeds.shape == hol_embeds.shape
 
-    # cap dimensionality of encoded data
-    max_dims = 256
-    if trn_encoded.shape[1] > max_dims:
-        _LOG.info(f"capping dimensionality of encoded data from {trn_encoded.shape[1]} to {max_dims}")
-        pca_model = PCA(n_components=max_dims)
-        pca_model.fit(np.vstack((trn_encoded, hol_encoded)))
-        trn_encoded = pca_model.transform(trn_encoded)
-        hol_encoded = pca_model.transform(hol_encoded)
-        syn_encoded = pca_model.transform(syn_encoded)
-
-    # calculate DCR / NNDR for synthetic to training
-    dcr_syn_trn, nndr_syn_trn = calculate_dcrs_nndrs(data=trn_encoded, query=syn_encoded)
-    # calculate DCR / NNDR for synthetic to holdout
-    dcr_syn_hol, nndr_syn_hol = calculate_dcrs_nndrs(data=hol_encoded, query=syn_encoded)
-    # calculate DCR / NNDR for holdout to training
-    dcr_trn_hol, nndr_trn_hol = calculate_dcrs_nndrs(data=trn_encoded, query=hol_encoded)
-
-    # log statistics
-    def deciles(x):
-        return np.round(np.quantile(x, np.linspace(0, 1, 11)), 3)
-
-    _LOG.info(f"DCR deciles for synthetic to training: {deciles(dcr_syn_trn)}")
-    _LOG.info(f"NNDR deciles for synthetic to training: {deciles(nndr_syn_trn)}")
-    if dcr_syn_hol is not None:
-        _LOG.info(f"DCR deciles for synthetic to holdout:  {deciles(dcr_syn_hol)}")
-        _LOG.info(f"NNDR deciles for synthetic to holdout: {deciles(nndr_syn_hol)}")
+    if hol_embeds is None:
+        # calculate DCR / NNDR for synthetic to training
+        dcr_syn_trn, nndr_syn_trn = calculate_dcrs_nndrs(data=trn_embeds, query=syn_embeds)
+        dcr_syn_hol, nndr_syn_hol = None, None
+        dcr_trn_hol, nndr_trn_hol = None, None
+    else:
+        # calculate DCR / NNDR for several (sub)sets of columns and keep the one with highest DCR share
+        ori_embeds = np.vstack((trn_embeds, hol_embeds))
+        groups = []
+        # check all columns together
+        groups += [np.arange(ori_embeds.shape[1])]
+        # check subsets of correlated columns together
+        if ori_embeds.shape[1] > 10:
+            k = max(3, ori_embeds.shape[1] // 10)
+            groups += split_columns_into_correlated_groups(ori_embeds, k=k)
+        # check random subsets of columns
+        if ori_embeds.shape[1] > 10:
+            k = max(3, ori_embeds.shape[1] // 10)
+            groups += split_columns_into_random_groups(ori_embeds, k=k)
+        dcr_share = 0.0
+        nndr_ratio = 1.0
+        for columns in groups:
+            # calculate DCR / NNDR for synthetic to training
+            g_dcr_syn_trn, g_nndr_syn_trn = calculate_dcrs_nndrs(
+                data=trn_embeds[:, columns], query=syn_embeds[:, columns]
+            )
+            # calculate DCR / NNDR for synthetic to holdout
+            g_dcr_syn_hol, g_nndr_syn_hol = calculate_dcrs_nndrs(
+                data=hol_embeds[:, columns], query=syn_embeds[:, columns]
+            )
+            # calculate DCR / NNDR for holdout to training
+            g_dcr_trn_hol, g_nndr_trn_hol = calculate_dcrs_nndrs(
+                data=trn_embeds[:, columns], query=hol_embeds[:, columns]
+            )
+            # keep results if DCR share is MAX
+            g_dcr_share = calculate_dcr_share(g_dcr_syn_trn, g_dcr_syn_hol)
+            g_nndr_ratio = calculate_nndr_ratio(g_nndr_syn_trn, g_nndr_syn_hol)
+            if len(columns) == ori_embeds.shape[1]:
+                _LOG.info(f"DCR Share: {g_dcr_share:.1%}, NNDR Ratio: {g_nndr_ratio:.3f} - ALL columns")
+            else:
+                _LOG.info(
+                    f"DCR Share: {g_dcr_share:.1%}, NNDR Ratio: {g_nndr_ratio:.3f} - {len(columns)} columns [{columns}]"
+                )
+            if g_dcr_share > dcr_share:
+                # keep results if DCR share is MAX
+                dcr_share = g_dcr_share
+                nndr_ratio = g_nndr_ratio
+                dcr_syn_trn, nndr_syn_trn = g_dcr_syn_trn, g_nndr_syn_trn
+                dcr_syn_hol, nndr_syn_hol = g_dcr_syn_hol, g_nndr_syn_hol
+                dcr_trn_hol, nndr_trn_hol = g_dcr_trn_hol, g_nndr_trn_hol
+        _LOG.info(f"DCR Share: {dcr_share:.1%}, NNDR Ratio: {nndr_ratio:.3f} - FINAL")
         _LOG.info(f"share of dcr_syn_trn < dcr_syn_hol: {np.mean(dcr_syn_trn < dcr_syn_hol):.1%}")
-        _LOG.info(f"share of nndr_syn_trn < nndr_syn_hol: {np.mean(nndr_syn_trn < nndr_syn_hol):.1%}")
         _LOG.info(f"share of dcr_syn_trn > dcr_syn_hol: {np.mean(dcr_syn_trn > dcr_syn_hol):.1%}")
-        _LOG.info(f"share of nndr_syn_trn > nndr_syn_hol: {np.mean(nndr_syn_trn > nndr_syn_hol):.1%}")
-    if dcr_trn_hol is not None:
-        _LOG.info(f"DCR deciles for training to holdout:  {deciles(dcr_trn_hol)}")
-        _LOG.info(f"NNDR deciles for training to holdout: {deciles(nndr_trn_hol)}")
+
     return {
         "dcr_syn_trn": dcr_syn_trn,
         "nndr_syn_trn": nndr_syn_trn,
@@ -234,6 +136,120 @@ def calculate_distances(
         "dcr_trn_hol": dcr_trn_hol,
         "nndr_trn_hol": nndr_trn_hol,
     }
+
+
+def deciles(x):
+    return np.round(np.quantile(x, np.linspace(0, 1, 11)), 3)
+
+
+def calculate_ims(dcr: np.ndarray) -> float:
+    return (dcr <= 1e-6).mean()
+
+
+def calculate_dcr(dcr: np.ndarray) -> float:
+    return dcr.mean()
+
+
+def calculate_dcr_share(dcr_syn_trn: np.ndarray, dcr_syn_hol: np.ndarray) -> float:
+    return np.mean(dcr_syn_trn < dcr_syn_hol) + np.mean(dcr_syn_trn == dcr_syn_hol) / 2
+
+
+def calculate_nndr(nndrs: np.ndarray) -> float:
+    return np.sort(nndrs)[9]
+
+
+def calculate_nndr_ratio(nndr_syn_trn: np.ndarray, nndr_syn_hol: np.ndarray) -> float:
+    return calculate_nndr(nndr_syn_trn) / calculate_nndr(nndr_syn_hol)
+
+
+def split_columns_into_random_groups(X, k):
+    """
+    Split the columns of input matrix X into k non-overlapping, randomly ordered groups
+    with as even sizes as possible (difference ≤ 1).
+
+    Parameters:
+        X (ndarray): Input array of shape (n_samples, n_features)
+        k (int): Number of groups to split columns into
+
+    Returns:
+        List of lists: Each list contains column indices for one group
+    """
+    n_cols = X.shape[1]
+
+    # create a deterministic seed based on the input matrix
+    seed = xxhash.xxh32(X.sum()).intdigest()
+    rng = np.random.default_rng(seed)
+
+    # shuffle all column indices
+    all_indices = np.arange(n_cols)
+    rng.shuffle(all_indices)
+
+    # evenly divide shuffled indices into k groups
+    base_size = n_cols // k
+    remainder = n_cols % k
+    groups = []
+
+    start = 0
+    for i in range(k):
+        size = base_size + (1 if i < remainder else 0)
+        groups.append(all_indices[start : start + size].tolist())
+        start += size
+
+    return groups
+
+
+def split_columns_into_correlated_groups(X, k):
+    """
+    Split the columns of input matrix X into k groups such that
+    intra-group correlation is high and cross-group correlation is minimized.
+    Uses spectral clustering on a correlation-weighted graph.
+
+    Parameters:
+        X (ndarray): Input data of shape (n_samples, n_features)
+        k (int): Number of desired column groups
+
+    Returns:
+        groups (list of lists): List containing k lists of column indices
+    """
+
+    def correlation_graph(X):
+        """
+        Constructs a graph where each node is a feature (column),
+        and edges are weighted by absolute Pearson correlation.
+
+        Returns:
+            G (networkx.Graph): Weighted undirected graph
+            corr_matrix (ndarray): Absolute correlation matrix
+        """
+        n = X.shape[1]
+        corr_matrix = np.abs(np.corrcoef(X, rowvar=False))
+        G = nx.Graph()
+        for i in range(n):
+            for j in range(i + 1, n):
+                G.add_edge(i, j, weight=corr_matrix[i, j])
+        return G, corr_matrix
+
+    # Step 1: Create correlation graph and matrix
+    G, corr_matrix = correlation_graph(X)
+
+    # Step 2: Convert graph to adjacency matrix (symmetric)
+    adj_matrix = np.zeros((X.shape[1], X.shape[1]))
+    for i, j, d in G.edges(data=True):
+        adj_matrix[i, j] = d["weight"]
+        adj_matrix[j, i] = d["weight"]
+
+    # Step 3: Apply spectral clustering to partition the graph
+    sc = SpectralClustering(
+        n_clusters=k,
+        affinity="precomputed",  # uses adj_matrix directly as similarity
+        assign_labels="kmeans",  # clustering on the embedding
+        random_state=42,
+    )
+    labels = sc.fit_predict(adj_matrix)
+
+    # Step 4: Group column indices by their cluster labels
+    groups = [np.where(labels == i)[0].tolist() for i in range(k)]
+    return groups
 
 
 def plot_distances(plot_title: str, distances: dict[str, np.ndarray]) -> go.Figure:
