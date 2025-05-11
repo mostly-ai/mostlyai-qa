@@ -33,6 +33,7 @@ def encode_numerics(
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame | None]:
     """
     Encode numeric features by mapping this via QuantileTransformer to a uniform distribution from [-0.5, 0.5].
+    Missing values are encoded as 0.0, plus there is a separate column with a -0.5/0.5 flag for N/A values.
     """
     syn_num, trn_num, hol_num = {}, {}, {}
     if hol is None:
@@ -63,9 +64,9 @@ def encode_numerics(
         hol_num[col] = np.nan_to_num(hol_num[col], nan=0.0)
         # add extra columns for NAs
         if trn[col].isna().any() or hol[col].isna().any():
-            syn_num[col + " - N/A"] = syn[col].isna().astype(float)
-            trn_num[col + " - N/A"] = trn[col].isna().astype(float)
-            hol_num[col + " - N/A"] = hol[col].isna().astype(float)
+            syn_num[col + " - N/A"] = syn[col].isna().astype(float) - 0.5
+            trn_num[col + " - N/A"] = trn[col].isna().astype(float) - 0.5
+            hol_num[col + " - N/A"] = hol[col].isna().astype(float) - 0.5
     syn_num = pd.DataFrame(syn_num, index=syn.index)
     trn_num = pd.DataFrame(trn_num, index=trn.index)
     hol_num = pd.DataFrame(hol_num, index=hol.index) if len(hol) > 0 else None
