@@ -103,12 +103,12 @@ def encode_strings(
         embedder = load_embedder()
         embeds = embedder.encode(uvals + [RARE_BIN])
         # project embeddings into a low-dimensional space with dim depending on col cardinality
-        if len(uvals) <= 2:
-            dims = 1
-        elif len(uvals) <= 20:
+        if len(uvals) <= 20:
             dims = 2
-        else:
+        elif len(uvals) <= 100:
             dims = 3
+        else:
+            dims = 4
         pca_model = PCA(n_components=dims)
         embeds = pca_model.fit_transform(embeds)
         # create mapping from unique values to PCA
