@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from mostlyai.qa import _accuracy, _html_report, _distances, _similarity
+from mostlyai.qa import _accuracy, _html_report, _distances, _similarity, _embeddings
 from mostlyai.qa._common import CTX_COLUMN_PREFIX, TGT_COLUMN_PREFIX
 from mostlyai.qa.reporting import _calculate_metrics
 import pandas as pd
@@ -33,7 +33,7 @@ def test_generate_store_report(tmp_path, cols, workspace):
     acc_cats_per_seq = pd.DataFrame({"column": acc_uni["column"], "accuracy": 0.5, "accuracy_max": 0.5})
     acc_seqs_per_cat = pd.DataFrame({"column": acc_uni["column"], "accuracy": 0.5, "accuracy_max": 0.5})
     corr_trn = _accuracy.calculate_correlations(acc_trn)
-    syn_embeds, trn_embeds, hol_embeds = _distances.encode_data(
+    syn_embeds, trn_embeds, hol_embeds = _embeddings.encode_data(
         syn=syn,
         trn=trn,
         hol=hol,

@@ -20,7 +20,7 @@ import numpy as np
 import pandas as pd
 from pandas.core.dtypes.common import is_numeric_dtype, is_datetime64_dtype
 
-from mostlyai.qa import _distances, _similarity, _html_report
+from mostlyai.qa import _distances, _similarity, _html_report, _embeddings
 from mostlyai.qa._accuracy import (
     bin_data,
     binning_data,
@@ -270,7 +270,7 @@ def report(
             trn_sample_size,
             hol_sample_size or float("inf"),
         )
-        syn_embeds, trn_embeds, hol_embeds = _distances.encode_data(
+        syn_embeds, trn_embeds, hol_embeds = _embeddings.encode_data(
             syn=syn.head(max_sample_size_embeddings_final),
             trn=trn.head(max_sample_size_embeddings_final),
             hol=hol.head(max_sample_size_embeddings_final) if hol is not None else None,
