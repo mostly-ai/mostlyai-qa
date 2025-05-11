@@ -185,7 +185,7 @@ def plot_store_similarity_contours(
         return
 
     # perform PCA on trn embeddings
-    pca_model = PCA(n_components=min(8, trn_embeds.shape[1]))
+    pca_model = PCA(n_components=3)
     pca_model.fit_transform(trn_embeds)
 
     # transform embeddings to PCA space

@@ -314,9 +314,9 @@ def report(
 
         _LOG.info("report similarity")
         sim_cosine_trn_hol, sim_cosine_trn_syn, sim_auc_trn_hol, sim_auc_trn_syn = _report_similarity(
-            syn_embeds=syn_embeds.values,
-            trn_embeds=trn_embeds.values,
-            hol_embeds=hol_embeds.values if hol_embeds is not None else None,
+            syn_embeds=syn_embeds,
+            trn_embeds=trn_embeds,
+            hol_embeds=hol_embeds if hol_embeds is not None else None,
             workspace=workspace,
         )
         progress.update(completed=70, total=100)
@@ -325,9 +325,9 @@ def report(
 
         _LOG.info("calculate and plot distances")
         distances = _report_distances(
-            syn_embeds=syn_embeds.values,
-            trn_embeds=trn_embeds.values,
-            hol_embeds=hol_embeds.values if hol_embeds is not None else None,
+            syn_embeds=syn_embeds,
+            trn_embeds=trn_embeds,
+            hol_embeds=hol_embeds if hol_embeds is not None else None,
             workspace=workspace,
         )
         progress.update(completed=90, total=100)

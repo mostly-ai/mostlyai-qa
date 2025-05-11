@@ -18,7 +18,7 @@ import time
 
 import numpy as np
 import pandas as pd
-from sklearn.preprocessing import QuantileTransformer
+from sklearn.preprocessing import QuantileTransformer, normalize
 
 from mostlyai.qa._common import (
     CHARTS_COLORS,
@@ -137,24 +137,32 @@ def encode_strings(
 
 def encode_data(
     syn: pd.DataFrame, trn: pd.DataFrame, hol: pd.DataFrame | None = None
-) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame | None]:
+) -> tuple[np.ndarray, np.ndarray, np.ndarray | None]:
     """
     Encode all columns corresponding to their data type.
     """
+    # get target columns
     tgt_cols = [c for c in trn.columns if not c.startswith(CTX_COLUMN_PREFIX)]
     num_dat_cols = [
         col for col in tgt_cols if pd.api.types.is_numeric_dtype(trn[col]) or pd.api.types.is_datetime64_dtype(trn[col])
     ]
     string_cols = [col for col in tgt_cols if col not in num_dat_cols]
+    # encode numeric columns
     syn_num, trn_num, hol_num = encode_numerics(
         syn[num_dat_cols], trn[num_dat_cols], hol[num_dat_cols] if hol is not None else None
     )
+    # encode string columns
     syn_str, trn_str, hol_str = encode_strings(
         syn[string_cols], trn[string_cols], hol[string_cols] if hol is not None else None
     )
+    # concatenate numeric and string encoded columns
     syn_encoded = pd.concat([syn_num, syn_str], axis=1)
     trn_encoded = pd.concat([trn_num, trn_str], axis=1)
     hol_encoded = pd.concat([hol_num, hol_str], axis=1) if hol is not None else None
+    # normalize embeddings
+    syn_encoded = normalize(syn_encoded.values, norm="l2")
+    trn_encoded = normalize(trn_encoded.values, norm="l2")
+    hol_encoded = normalize(hol_encoded.values, norm="l2") if hol_encoded is not None else None
     return syn_encoded, trn_encoded, hol_encoded
 
 

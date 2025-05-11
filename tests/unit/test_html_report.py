@@ -39,19 +39,19 @@ def test_generate_store_report(tmp_path, cols, workspace):
         hol=hol,
     )
     sim_cosine_trn_hol, sim_cosine_trn_syn = _similarity.calculate_cosine_similarities(
-        syn_embeds=syn_embeds.values,
-        trn_embeds=trn_embeds.values,
-        hol_embeds=hol_embeds.values,
+        syn_embeds=syn_embeds,
+        trn_embeds=trn_embeds,
+        hol_embeds=hol_embeds,
     )
     sim_auc_trn_hol, sim_auc_trn_syn = _similarity.calculate_discriminator_auc(
-        syn_embeds=syn_embeds.values,
-        trn_embeds=trn_embeds.values,
-        hol_embeds=hol_embeds.values,
+        syn_embeds=syn_embeds,
+        trn_embeds=trn_embeds,
+        hol_embeds=hol_embeds,
     )
     distances = _distances.calculate_distances(
-        syn_embeds=syn_embeds.values,
-        trn_embeds=trn_embeds.values,
-        hol_embeds=hol_embeds.values,
+        syn_embeds=syn_embeds,
+        trn_embeds=trn_embeds,
+        hol_embeds=hol_embeds,
     )
 
     # simulate created plots
