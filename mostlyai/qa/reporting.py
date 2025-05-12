@@ -205,7 +205,6 @@ def report(
         else:
             setup = "1:1"
 
-        _LOG.info("prepare training data for accuracy")
         trn = prepare_data_for_accuracy(
             df_tgt=trn_tgt_data,
             df_ctx=trn_ctx_data,
@@ -214,8 +213,8 @@ def report(
             max_sample_size=max_sample_size_accuracy,
             setup=setup,
         )
+        _LOG.info(f"prepared training data for accuracy: {trn.shape}")
         if hol_tgt_data is not None:
-            _LOG.info("prepare holdout data for accuracy")
             hol = prepare_data_for_accuracy(
                 df_tgt=hol_tgt_data,
                 df_ctx=hol_ctx_data,
@@ -225,13 +224,13 @@ def report(
                 setup=setup,
                 ori_dtypes=trn.dtypes.to_dict(),
             )
+            _LOG.info(f"prepared holdout data for accuracy: {hol.shape}")
             ori = pd.concat([trn, hol], axis=0, ignore_index=True)
         else:
             hol = None
             ori = trn
         progress.update(completed=5, total=100)
 
-        _LOG.info("prepare synthetic data for accuracy")
         syn = prepare_data_for_accuracy(
             df_tgt=syn_tgt_data,
             df_ctx=syn_ctx_data,
@@ -241,29 +240,29 @@ def report(
             setup=setup,
             ori_dtypes=trn.dtypes.to_dict(),
         )
+        _LOG.info(f"prepared synthetic data for accuracy: {syn.shape}")
         progress.update(completed=10, total=100)
 
         # do coherence analysis only if there are non-fk columns in the target data
         do_coherence = setup == "1:N" and len(trn_tgt_data.columns) > 1
         if do_coherence:
-            _LOG.info("prepare original data for coherence started")
             ori_coh, ori_coh_bins = prepare_data_for_coherence(
                 df_tgt=pd.concat([trn_tgt_data, hol_tgt_data]) if hol_tgt_data is not None else trn_tgt_data,
                 tgt_context_key=tgt_context_key,
                 max_sample_size=max_sample_size_coherence,
             )
-            _LOG.info("prepare synthetic data for coherence started")
+            _LOG.info(f"prepared original data for coherence: {ori_coh.shape}")
             syn_coh, _ = prepare_data_for_coherence(
                 df_tgt=syn_tgt_data,
                 tgt_context_key=tgt_context_key,
                 bins=ori_coh_bins,
                 max_sample_size=max_sample_size_coherence,
             )
-            _LOG.info("store bins used for training data for coherence")
+            _LOG.info(f"prepared synthetic data for coherence: {syn_coh.shape}")
             statistics.store_coherence_bins(bins=ori_coh_bins)
+            _LOG.info("stored bins used for training data for coherence")
         progress.update(completed=15, total=100)
 
-        _LOG.info("calculate embeddings")
         syn_embeds, trn_embeds, hol_embeds = prepare_data_for_embeddings(
             syn_tgt_data=syn_tgt_data,
             trn_tgt_data=trn_tgt_data,
@@ -274,6 +273,9 @@ def report(
             ctx_primary_key=ctx_primary_key,
             tgt_context_key=tgt_context_key,
             max_sample_size=max_sample_size_embeddings,
+        )
+        _LOG.info(
+            f"calculated embeddings: syn={syn_embeds.shape}, trn={trn_embeds.shape}, hol={hol_embeds.shape if hol_embeds is not None else None}"
         )
         progress.update(completed=20, total=100)
 
