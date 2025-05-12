@@ -69,6 +69,10 @@ def calculate_discriminator_auc(
         for a ML model to discriminate between two embedding arrays.
         """
 
+        # limit the number of samples to 10000
+        embeds1 = embeds1[:10000]
+        embeds2 = embeds2[:10000]
+
         # create labels for the data
         labels1 = np.zeros(embeds1.shape[0])
         labels2 = np.ones(embeds2.shape[0])
