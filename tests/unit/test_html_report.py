@@ -34,9 +34,9 @@ def test_generate_store_report(tmp_path, cols, workspace):
     acc_seqs_per_cat = pd.DataFrame({"column": acc_uni["column"], "accuracy": 0.5, "accuracy_max": 0.5})
     corr_trn = _accuracy.calculate_correlations(acc_trn)
     syn_embeds, trn_embeds, hol_embeds = _embeddings.encode_data(
-        syn=syn,
-        trn=trn,
-        hol=hol,
+        syn_data=syn,
+        trn_data=trn,
+        hol_data=hol,
     )
     sim_cosine_trn_hol, sim_cosine_trn_syn = _similarity.calculate_cosine_similarities(
         syn_embeds=syn_embeds,
