@@ -34,9 +34,11 @@ import numpy as np
 import pandas as pd
 import pyarrow as pa
 
+from mostlyai.qa._embeddings import encode_data
 from mostlyai.qa._accuracy import bin_data
 from mostlyai.qa._common import (
     CTX_COLUMN_PREFIX,
+    EMBEDDINGS_MAX_COLUMNS,
     TGT_COLUMN_PREFIX,
     NXT_COLUMN_PREFIX,
     COUNT_COLUMN,
@@ -131,7 +133,7 @@ def prepare_data_for_accuracy(
     # harmonize dtypes
     df = df.apply(harmonize_dtype)
 
-    # coerce dtypes to trn_dtypes
+    # coerce dtypes to ori_dtypes
     for trn_col, trn_dtype in (ori_dtypes or {}).items():
         if is_numeric_dtype(trn_dtype):
             df[trn_col] = pd.to_numeric(df[trn_col], errors="coerce")
@@ -262,3 +264,82 @@ def harmonize_dtype(x: pd.Series):
 def is_text_heuristic(x: pd.Series) -> bool:
     # if more than 5% of rows contain unique values -> consider as TEXT
     return x.dtype == "object" and x.value_counts().eq(1).reindex(x).mean() > 0.05
+
+
+def prepare_data_for_embeddings(
+    *,
+    syn_tgt_data: pd.DataFrame,
+    trn_tgt_data: pd.DataFrame,
+    hol_tgt_data: pd.DataFrame | None = None,
+    syn_ctx_data: pd.DataFrame | None = None,
+    trn_ctx_data: pd.DataFrame | None = None,
+    hol_ctx_data: pd.DataFrame | None = None,
+    ctx_primary_key: str | None = None,
+    tgt_context_key: str | None = None,
+    max_sample_size: int | None = None,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray | None]:
+    # helper variables
+    key = tgt_context_key or None
+    hol = hol_tgt_data is not None
+
+    # filter target to context keys
+    if trn_ctx_data is not None:
+        rename_key = {ctx_primary_key: key}
+        syn_ctx_data = syn_ctx_data[[ctx_primary_key]].rename(columns=rename_key)
+        trn_ctx_data = trn_ctx_data[[ctx_primary_key]].rename(columns=rename_key)
+        hol_ctx_data = hol_ctx_data[[ctx_primary_key]].rename(columns=rename_key) if hol else None
+        syn_tgt_data = syn_tgt_data.merge(syn_ctx_data, on=key, how="inner")
+        trn_tgt_data = trn_tgt_data.merge(trn_ctx_data, on=key, how="inner")
+        hol_tgt_data = hol_tgt_data.merge(hol_ctx_data, on=key, how="inner") if hol else None
+
+    # enrich with count column
+    if tgt_context_key is not None:
+        syn_tgt_data.insert(0, COUNT_COLUMN, syn_tgt_data.groupby(key)[key].transform("size"))
+        trn_tgt_data.insert(0, COUNT_COLUMN, trn_tgt_data.groupby(key)[key].transform("size"))
+        hol_tgt_data.insert(0, COUNT_COLUMN, hol_tgt_data.groupby(key)[key].transform("size")) if hol else None
+
+    # cap to Q95 sequence length of original to avoid excessive samples per group distorting results
+    if tgt_context_key is not None:
+        q95_sequence_length = trn_tgt_data.groupby(key).size().quantile(0.95)
+        syn_tgt_data = syn_tgt_data.groupby(key).sample(frac=1).groupby(key).head(n=q95_sequence_length)
+        trn_tgt_data = trn_tgt_data.groupby(key).sample(frac=1).groupby(key).head(n=q95_sequence_length)
+        hol_tgt_data = (
+            hol_tgt_data.groupby(key).sample(frac=1).groupby(key).head(n=q95_sequence_length) if hol else None
+        )
+
+    # drop key from data as its not relevant for embeddings
+    if tgt_context_key is not None:
+        syn_tgt_data = syn_tgt_data.drop(columns=[key])
+        trn_tgt_data = trn_tgt_data.drop(columns=[key])
+        hol_tgt_data = hol_tgt_data.drop(columns=[key]) if hol else None
+
+    # draw equally sized samples for fair 3-way comparison
+    max_sample_size = min(
+        max_sample_size or float("inf"),
+        len(syn_tgt_data),
+        len(trn_tgt_data),
+        len(hol_tgt_data) if hol_tgt_data is not None else float("inf"),
+    )
+    syn_tgt_data = syn_tgt_data.sample(n=max_sample_size)
+    trn_tgt_data = trn_tgt_data.sample(n=max_sample_size)
+    hol_tgt_data = hol_tgt_data.sample(n=max_sample_size) if hol else None
+
+    # limit to same columns
+    trn_cols = list(trn_tgt_data.columns)[:EMBEDDINGS_MAX_COLUMNS]
+    syn_tgt_data = syn_tgt_data[trn_cols]
+    trn_tgt_data = trn_tgt_data[trn_cols]
+    hol_tgt_data = hol_tgt_data[trn_cols] if hol else None
+
+    # harmonize dtypes
+    syn_tgt_data = syn_tgt_data.apply(harmonize_dtype)
+    trn_tgt_data = trn_tgt_data.apply(harmonize_dtype)
+    hol_tgt_data = hol_tgt_data.apply(harmonize_dtype) if hol else None
+
+    # encode data
+    syn_embeds, trn_embeds, hol_embeds = encode_data(
+        syn_data=syn_tgt_data,
+        trn_data=trn_tgt_data,
+        hol_data=hol_tgt_data,
+    )
+
+    return syn_embeds, trn_embeds, hol_embeds

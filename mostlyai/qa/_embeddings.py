@@ -12,20 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import logging
 import numpy as np
 import pandas as pd
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import QuantileTransformer, normalize
+from pandas.core.dtypes.common import is_numeric_dtype, is_datetime64_dtype
 
 from mostlyai.qa._common import (
-    COUNT_COLUMN,
     EMPTY_BIN,
     NA_BIN,
-    NXT_COLUMN_PREFIX,
     RARE_BIN,
-    TGT_COLUMN_PREFIX,
 )
 from mostlyai.qa.assets import load_embedder
+
+
+_LOG = logging.getLogger(__name__)
 
 
 def encode_numerics(
@@ -128,36 +130,15 @@ def encode_strings(
 
 
 def encode_data(
-    syn: pd.DataFrame, trn: pd.DataFrame, hol: pd.DataFrame | None = None
+    syn_data: pd.DataFrame, trn_data: pd.DataFrame, hol_data: pd.DataFrame | None = None
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray | None]:
     """
     Encode all columns corresponding to their data type.
     """
-    tgt_cols = [c for c in trn.columns if c.startswith(TGT_COLUMN_PREFIX)]
-    nxt_cols = [c for c in trn.columns if c.startswith(NXT_COLUMN_PREFIX)]
-    cnt_col = f"{TGT_COLUMN_PREFIX}{COUNT_COLUMN}"
-    cnt_cols = [cnt_col] if cnt_col in trn.columns else []
+    _LOG.info("encode datasets for embeddings")
     # split into numeric and string columns
-    num_dat_cols = [
-        col for col in tgt_cols if pd.api.types.is_numeric_dtype(trn[col]) or pd.api.types.is_datetime64_dtype(trn[col])
-    ]
-    string_cols = [col for col in tgt_cols if col not in num_dat_cols]
-    # keep TGT data
-    syn_data = syn[tgt_cols]
-    trn_data = trn[tgt_cols]
-    hol_data = hol[tgt_cols] if hol is not None else None
-    # append NXT data with TGT data to increase data coverage
-    if len(nxt_cols) > 0:
-        syn_nxt = syn[cnt_cols + nxt_cols]
-        syn_nxt.columns = syn_nxt.columns.str.replace(NXT_COLUMN_PREFIX, TGT_COLUMN_PREFIX)
-        syn_data = pd.concat([syn_data, syn_nxt], axis=0)
-        trn_nxt = trn[cnt_cols + nxt_cols]
-        trn_nxt.columns = trn_nxt.columns.str.replace(NXT_COLUMN_PREFIX, TGT_COLUMN_PREFIX)
-        trn_data = pd.concat([trn_data, trn_nxt], axis=0)
-        if hol is not None:
-            hol_nxt = hol[cnt_cols + nxt_cols]
-            hol_nxt.columns = hol_nxt.columns.str.replace(NXT_COLUMN_PREFIX, TGT_COLUMN_PREFIX)
-            hol_data = pd.concat([hol_data, hol_nxt], axis=0)
+    num_dat_cols = [col for col in trn_data if is_numeric_dtype(trn_data[col]) or is_datetime64_dtype(trn_data[col])]
+    string_cols = [col for col in trn_data if col not in num_dat_cols]
     # encode numeric columns
     syn_num, trn_num, hol_num = encode_numerics(
         syn_data[num_dat_cols], trn_data[num_dat_cols], hol_data[num_dat_cols] if hol_data is not None else None

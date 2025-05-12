@@ -20,7 +20,7 @@ import numpy as np
 import pandas as pd
 from pandas.core.dtypes.common import is_numeric_dtype, is_datetime64_dtype
 
-from mostlyai.qa import _distances, _similarity, _html_report, _embeddings
+from mostlyai.qa import _distances, _similarity, _html_report
 from mostlyai.qa._accuracy import (
     bin_data,
     binning_data,
@@ -50,6 +50,7 @@ from mostlyai.qa.metrics import ModelMetrics, Accuracy, Similarity, Distances
 from mostlyai.qa._sampling import (
     prepare_data_for_accuracy,
     prepare_data_for_coherence,
+    prepare_data_for_embeddings,
 )
 from mostlyai.qa._common import (
     determine_data_size,
@@ -263,17 +264,16 @@ def report(
         progress.update(completed=15, total=100)
 
         _LOG.info("calculate embeddings")
-        # ensure that embeddings are all equal size for a fair 3-way comparison
-        max_sample_size_embeddings_final = min(
-            max_sample_size_embeddings or float("inf"),
-            syn_sample_size,
-            trn_sample_size,
-            hol_sample_size or float("inf"),
-        )
-        syn_embeds, trn_embeds, hol_embeds = _embeddings.encode_data(
-            syn=syn.head(max_sample_size_embeddings_final),
-            trn=trn.head(max_sample_size_embeddings_final),
-            hol=hol.head(max_sample_size_embeddings_final) if hol is not None else None,
+        syn_embeds, trn_embeds, hol_embeds = prepare_data_for_embeddings(
+            syn_tgt_data=syn_tgt_data,
+            trn_tgt_data=trn_tgt_data,
+            hol_tgt_data=hol_tgt_data,
+            syn_ctx_data=syn_ctx_data,
+            trn_ctx_data=trn_ctx_data,
+            hol_ctx_data=hol_ctx_data,
+            ctx_primary_key=ctx_primary_key,
+            tgt_context_key=tgt_context_key,
+            max_sample_size=max_sample_size_embeddings,
         )
         progress.update(completed=20, total=100)
 

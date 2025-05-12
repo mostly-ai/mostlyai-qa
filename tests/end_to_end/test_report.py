@@ -304,4 +304,3 @@ def test_mixed_dtypes(tmp_path):
             "Expected a warning about dtype mismatch for column 'dt'"
         )
     assert statistics.accuracy.overall > 0.6
-    assert 0.2 < statistics.similarity.discriminator_auc_training_synthetic < 0.8

@@ -23,6 +23,7 @@ _LOG = logging.getLogger(__name__)
 
 
 ACCURACY_MAX_COLUMNS = 300  # should be an even number and greater than 100
+EMBEDDINGS_MAX_COLUMNS = 300
 
 MAX_UNIVARIATE_PLOTS = 300
 MAX_BIVARIATE_TGT_PLOTS = 300
