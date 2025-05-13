@@ -69,6 +69,10 @@ def calculate_discriminator_auc(
         for a ML model to discriminate between two embedding arrays.
         """
 
+        # limit the number of samples to 10000
+        embeds1 = embeds1[:10000]
+        embeds2 = embeds2[:10000]
+
         # create labels for the data
         labels1 = np.zeros(embeds1.shape[0])
         labels2 = np.ones(embeds2.shape[0])
@@ -194,6 +198,11 @@ def plot_store_similarity_contours(
 ):
     if trn_embeds.shape[1] < 3:
         return
+
+    # limit the number of samples to 10000
+    syn_embeds = syn_embeds[:10000]
+    trn_embeds = trn_embeds[:10000]
+    hol_embeds = hol_embeds[:10000] if hol_embeds is not None else None
 
     # perform PCA on trn embeddings
     pca_model = PCA(n_components=3)

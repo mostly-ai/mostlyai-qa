@@ -13,11 +13,12 @@
 # limitations under the License.
 
 import logging
-import platform
 import time
 import numpy as np
 import networkx as nx
 import xxhash
+from sklearn.neighbors import NearestNeighbors
+from joblib import cpu_count
 
 from mostlyai.qa._common import (
     CHARTS_COLORS,
@@ -42,22 +43,9 @@ def calculate_dcrs_nndrs(
     t0 = time.time()
     data = data[data[:, 0].argsort()]  # sort data by first dimension to enforce deterministic results
 
-    if platform.system() == "Linux":
-        # use FAISS on Linux for best performance
-        import faiss  # type: ignore
-
-        index = faiss.IndexFlatL2(data.shape[1])
-        index.add(data)
-        dcrs, _ = index.search(query, 2)
-        dcrs = np.sqrt(dcrs)  # FAISS returns squared distances
-    else:
-        # use sklearn as a fallback on non-Linux systems to avoid segfaults; these occurred when using QA as part of SDK
-        from sklearn.neighbors import NearestNeighbors  # type: ignore
-        from joblib import cpu_count  # type: ignore
-
-        index = NearestNeighbors(n_neighbors=2, algorithm="auto", metric="l2", n_jobs=min(16, max(1, cpu_count() - 1)))
-        index.fit(data)
-        dcrs, _ = index.kneighbors(query)
+    index = NearestNeighbors(n_neighbors=2, algorithm="auto", metric="l2", n_jobs=min(16, max(1, cpu_count() - 1)))
+    index.fit(data)
+    dcrs, _ = index.kneighbors(query)
     dcr = dcrs[:, 0]
     nndr = (dcrs[:, 0] + 1e-8) / (dcrs[:, 1] + 1e-8)
     _LOG.info(f"calculated DCRs for {data.shape=} and {query.shape=} in {time.time() - t0:.2f}s")
@@ -85,14 +73,12 @@ def calculate_distances(
         groups = []
         # check all columns together
         groups += [np.arange(ori_embeds.shape[1])]
-        # check subsets of correlated columns together
+        # check 3 correlated subsets of columns
         if ori_embeds.shape[1] > 10:
-            k = max(3, ori_embeds.shape[1] // 10)
-            groups += split_columns_into_correlated_groups(ori_embeds, k=k)
-        # check random subsets of columns
+            groups += split_columns_into_correlated_groups(ori_embeds, k=3)
+        # check 3 random subsets of columns
         if ori_embeds.shape[1] > 10:
-            k = max(3, ori_embeds.shape[1] // 10)
-            groups += split_columns_into_random_groups(ori_embeds, k=k)
+            groups += split_columns_into_random_groups(ori_embeds, k=3)
         dcr_share = 0.0
         nndr_ratio = 1.0
         for columns in groups:
