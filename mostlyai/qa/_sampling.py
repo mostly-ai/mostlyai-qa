@@ -300,11 +300,13 @@ def prepare_data_for_embeddings(
 
     # cap to Q95 sequence length of original to avoid excessive samples per group distorting results
     if tgt_context_key is not None:
+        cap_sequence_length = 100
         q95_sequence_length = trn_tgt_data.groupby(key).size().quantile(0.95)
-        syn_tgt_data = syn_tgt_data.groupby(key).sample(frac=1).groupby(key).head(n=q95_sequence_length)
-        trn_tgt_data = trn_tgt_data.groupby(key).sample(frac=1).groupby(key).head(n=q95_sequence_length)
+        max_sequence_length = min(q95_sequence_length, cap_sequence_length)
+        syn_tgt_data = syn_tgt_data.groupby(key).sample(frac=1).groupby(key).head(n=max_sequence_length)
+        trn_tgt_data = trn_tgt_data.groupby(key).sample(frac=1).groupby(key).head(n=max_sequence_length)
         hol_tgt_data = (
-            hol_tgt_data.groupby(key).sample(frac=1).groupby(key).head(n=q95_sequence_length) if hol else None
+            hol_tgt_data.groupby(key).sample(frac=1).groupby(key).head(n=max_sequence_length) if hol else None
         )
 
     # drop key from data as its not relevant for embeddings

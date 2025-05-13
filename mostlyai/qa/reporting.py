@@ -181,6 +181,8 @@ def report(
             check_min_sample_size(trn_sample_size, 90, "training")
             if hol_tgt_data is not None:
                 check_min_sample_size(hol_sample_size, 10, "holdout")
+            if trn_tgt_data.shape[1] == 0 or syn_tgt_data.shape[1] == 0:
+                raise PrerequisiteNotMetError("Provided data has no columns.")
         except PrerequisiteNotMetError as err:
             _LOG.info(err)
             statistics.mark_early_exit()
