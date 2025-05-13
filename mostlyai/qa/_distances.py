@@ -205,7 +205,9 @@ def split_columns_into_correlated_groups(X, k):
             corr_matrix (ndarray): Absolute correlation matrix
         """
         n = X.shape[1]
-        corr_matrix = np.abs(np.corrcoef(X, rowvar=False))
+        # add tiny noise to avoid zero variance
+        X_noisy = X + 1e-8 * np.random.randn(*X.shape)
+        corr_matrix = np.abs(np.corrcoef(X_noisy, rowvar=False))
         G = nx.Graph()
         for i in range(n):
             for j in range(i + 1, n):
@@ -213,7 +215,7 @@ def split_columns_into_correlated_groups(X, k):
         return G, corr_matrix
 
     # Step 1: Create correlation graph and matrix
-    G, corr_matrix = correlation_graph(X)
+    G, _ = correlation_graph(X)
 
     # Step 2: Convert graph to adjacency matrix (symmetric)
     adj_matrix = np.zeros((X.shape[1], X.shape[1]))
@@ -228,7 +230,11 @@ def split_columns_into_correlated_groups(X, k):
         assign_labels="kmeans",  # clustering on the embedding
         random_state=42,
     )
-    labels = sc.fit_predict(adj_matrix)
+    try:
+        labels = sc.fit_predict(adj_matrix)
+    except Exception as e:
+        _LOG.warning(f"Spectral clustering failed: {e}")
+        return []
 
     # Step 4: Group column indices by their cluster labels
     groups = [np.where(labels == i)[0].tolist() for i in range(k)]
