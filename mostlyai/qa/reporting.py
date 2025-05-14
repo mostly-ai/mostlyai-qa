@@ -62,6 +62,7 @@ from mostlyai.qa._common import (
     TGT_COLUMN_PREFIX,
     REPORT_CREDITS,
     ProgressCallbackWrapper,
+    set_random_state,
 )
 from mostlyai.qa._filesystem import Statistics, TemporaryWorkspace
 
@@ -87,6 +88,7 @@ def report(
     max_sample_size_embeddings: int | None = None,
     statistics_path: str | Path | None = None,
     update_progress: ProgressCallback | None = None,
+    random_state: int | None = None,
 ) -> tuple[Path, ModelMetrics | None]:
     """
     Generate an HTML report and metrics for assessing synthetic data quality.
@@ -121,11 +123,14 @@ def report(
         max_sample_size_embeddings: The maximum sample size for embedding calculations.
         statistics_path: The path of where to store the statistics to be used by `report_from_statistics`
         update_progress: The progress callback.
+        random_state: Seed for the random number generators.
 
     Returns:
         The path to the generated HTML report.
         Metrics instance with accuracy, similarity, and distances metrics.
     """
+
+    set_random_state(random_state)
 
     if syn_ctx_data is not None:
         if ctx_primary_key is None:
