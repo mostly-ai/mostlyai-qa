@@ -82,7 +82,7 @@ def calculate_discriminator_auc(
         y = np.hstack((labels1, labels2))
 
         # initialize the cross-validator
-        kf = StratifiedKFold(n_splits=10, shuffle=True, random_state=42)
+        kf = StratifiedKFold(n_splits=10, shuffle=True)
 
         # initialize a list to store AUC scores
         auc_scores = []
@@ -99,7 +99,6 @@ def calculate_discriminator_auc(
                     max_depth=10,
                     min_samples_leaf=5,
                     max_features=0.5,
-                    random_state=42,
                 )
                 clf.fit(X_train, y_train)
 

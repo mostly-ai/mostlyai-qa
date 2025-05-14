@@ -52,7 +52,6 @@ def encode_numerics(
         # normalize numeric features based on trn
         qt_scaler = QuantileTransformer(
             output_distribution="uniform",
-            random_state=42,
             n_quantiles=min(100, len(trn) + len(hol)),
         )
         ori_num = pd.concat([trn_num[col], hol_num[col]]) if len(hol) > 0 else pd.DataFrame(trn_num[col])

@@ -228,7 +228,6 @@ def split_columns_into_correlated_groups(X, k):
         n_clusters=k,
         affinity="precomputed",  # uses adj_matrix directly as similarity
         assign_labels="kmeans",  # clustering on the embedding
-        random_state=42,
     )
     try:
         labels = sc.fit_predict(adj_matrix)
