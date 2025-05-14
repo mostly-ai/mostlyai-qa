@@ -33,6 +33,7 @@ from mostlyai.qa._common import (
     determine_data_size,
     REPORT_CREDITS,
     ProgressCallbackWrapper,
+    set_random_state,
 )
 from mostlyai.qa._filesystem import Statistics, TemporaryWorkspace
 
@@ -53,6 +54,7 @@ def report_from_statistics(
     max_sample_size_accuracy: int | None = None,
     max_sample_size_coherence: int | None = None,
     update_progress: ProgressCallback | None = None,
+    random_state: int | None = None,
 ) -> Path:
     """
     Generate an HTML report based on previously generated statistics and newly provided synthetic data samples.
@@ -70,10 +72,13 @@ def report_from_statistics(
         max_sample_size_accuracy: The maximum sample size for accuracy calculations.
         max_sample_size_coherence: The maximum sample size for coherence calculations.
         update_progress: The progress callback.
+        random_state: Seed for the random number generators.
 
     Returns:
         The path to the generated HTML report.
     """
+
+    set_random_state(random_state)
 
     with (
         TemporaryWorkspace() as workspace,

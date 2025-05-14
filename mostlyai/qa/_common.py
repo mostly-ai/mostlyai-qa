@@ -13,6 +13,8 @@
 # limitations under the License.
 
 import logging
+import os
+import struct
 from typing import Protocol
 
 import pandas as pd
@@ -122,3 +124,21 @@ def determine_data_size(
         return len(tgt_keys)
     else:
         return len(tgt_data)
+
+
+def set_random_state(random_state: int | None = None):
+    def get_random_int_from_os() -> int:
+        # 32-bit, cryptographically secure random int from os
+        return int(struct.unpack("I", os.urandom(4))[0])
+
+    if random_state is not None:
+        _LOG.info(f"Global random_state set to `{random_state}`")
+
+    if random_state is None:
+        random_state = get_random_int_from_os()
+
+    import random
+    import numpy as np
+
+    random.seed(random_state)
+    np.random.seed(random_state)
