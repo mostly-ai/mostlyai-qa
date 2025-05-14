@@ -16,7 +16,6 @@ import logging
 import time
 import numpy as np
 import networkx as nx
-import xxhash
 from sklearn.neighbors import NearestNeighbors
 from joblib import cpu_count
 
@@ -159,13 +158,9 @@ def split_columns_into_random_groups(X, k):
     """
     n_cols = X.shape[1]
 
-    # create a deterministic seed based on the input matrix
-    seed = xxhash.xxh32(X.sum()).intdigest()
-    rng = np.random.default_rng(seed)
-
     # shuffle all column indices
     all_indices = np.arange(n_cols)
-    rng.shuffle(all_indices)
+    np.random.shuffle(all_indices)
 
     # evenly divide shuffled indices into k groups
     base_size = n_cols // k
