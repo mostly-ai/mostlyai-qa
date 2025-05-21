@@ -28,6 +28,7 @@
 import logging
 import random
 from typing import Any
+import warnings
 from pandas.core.dtypes.common import is_numeric_dtype, is_datetime64_dtype
 
 import numpy as np
@@ -316,15 +317,23 @@ def prepare_data_for_embeddings(
         hol_tgt_data = hol_tgt_data.drop(columns=[key]) if hol else None
 
     # draw equally sized samples for fair 3-way comparison
-    max_sample_size = min(
+    max_sample_size_final = min(
         max_sample_size or float("inf"),
         len(syn_tgt_data),
         len(trn_tgt_data),
         len(hol_tgt_data) if hol_tgt_data is not None else float("inf"),
     )
-    syn_tgt_data = syn_tgt_data.sample(n=max_sample_size)
-    trn_tgt_data = trn_tgt_data.sample(n=max_sample_size)
-    hol_tgt_data = hol_tgt_data.sample(n=max_sample_size) if hol else None
+    syn_tgt_data = syn_tgt_data.sample(n=max_sample_size_final)
+    trn_tgt_data = trn_tgt_data.sample(n=max_sample_size_final)
+    hol_tgt_data = hol_tgt_data.sample(n=max_sample_size_final) if hol else None
+
+    if max_sample_size_final > 50_000 and max_sample_size is None:
+        warnings.warn(
+            UserWarning(
+                "More than 50k embeddings will be calculated per dataset, which may take a long time. "
+                "Consider setting a limit via `max_sample_size_embeddings` to speed up the process."
+            )
+        )
 
     # limit to same columns
     trn_cols = list(trn_tgt_data.columns)[:EMBEDDINGS_MAX_COLUMNS]
