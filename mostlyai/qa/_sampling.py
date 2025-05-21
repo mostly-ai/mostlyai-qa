@@ -331,7 +331,8 @@ def prepare_data_for_embeddings(
         warnings.warn(
             UserWarning(
                 "More than 50k embeddings will be calculated per dataset, which may take a long time. "
-                "Consider setting a limit via `max_sample_size_embeddings` to speed up the process."
+                "Consider setting a limit via `max_sample_size_embeddings` to speed up the process. "
+                "Note however, that limiting the number of embeddings will affect the sensitivity of the distance metrics."
             )
         )
 
