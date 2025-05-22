@@ -304,3 +304,23 @@ def test_mixed_dtypes(tmp_path):
             "Expected a warning about dtype mismatch for column 'dt'"
         )
     assert statistics.accuracy.overall > 0.6
+
+
+def test_reproducibility(tmp_path):
+    statistics_path = tmp_path / "statistics"
+    syn_tgt_data = mock_data(150)
+    trn_tgt_data = mock_data(150)
+    hol_tgt_data = mock_data(150)
+    kwargs = {
+        "syn_tgt_data": syn_tgt_data,
+        "trn_tgt_data": trn_tgt_data,
+        "hol_tgt_data": hol_tgt_data,
+        "statistics_path": statistics_path,
+        "max_sample_size_accuracy": 120,
+        "max_sample_size_embeddings": 80,
+    }
+    qa.set_random_state(45)
+    _, m1 = qa.report(**kwargs)
+    qa.set_random_state(45)
+    _, m2 = qa.report(**kwargs)
+    assert m1 == m2
