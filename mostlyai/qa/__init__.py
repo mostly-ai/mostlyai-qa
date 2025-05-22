@@ -19,10 +19,11 @@ import pandas as pd
 from packaging.version import Version
 
 from mostlyai.qa.logging import init_logging
+from mostlyai.qa.random_state import set_random_state
 from mostlyai.qa.reporting import report
 from mostlyai.qa.reporting_from_statistics import report_from_statistics
 
-__all__ = ["report", "report_from_statistics", "init_logging"]
+__all__ = ["report", "report_from_statistics", "init_logging", "set_random_state"]
 __version__ = "1.9.5"
 
 warnings.filterwarnings("ignore", category=FutureWarning, module="phik")
