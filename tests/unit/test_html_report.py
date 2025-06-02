@@ -12,10 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from mostlyai.qa import _accuracy, _html_report, _distances, _similarity, _embeddings
+import pandas as pd
+
+from mostlyai.qa import _accuracy, _distances, _embeddings, _html_report, _similarity
 from mostlyai.qa._common import CTX_COLUMN_PREFIX, TGT_COLUMN_PREFIX
 from mostlyai.qa.reporting import _calculate_metrics
-import pandas as pd
 
 
 def test_generate_store_report(tmp_path, cols, workspace):

@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from joblib import Parallel, cpu_count, delayed, parallel_config
 import pandas as pd
+from joblib import Parallel, cpu_count, delayed, parallel_config
 
 from mostlyai.qa._accuracy import (
     calculate_accuracy,

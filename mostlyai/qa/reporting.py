@@ -18,25 +18,25 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from pandas.core.dtypes.common import is_numeric_dtype, is_datetime64_dtype
+from pandas.core.dtypes.common import is_datetime64_dtype, is_numeric_dtype
 
-from mostlyai.qa import _distances, _similarity, _html_report
+from mostlyai.qa import _distances, _html_report, _similarity
 from mostlyai.qa._accuracy import (
     bin_data,
     binning_data,
-    calculate_correlations,
-    plot_store_correlation_matrices,
-    calculate_univariates,
-    calculate_bivariates,
-    calculate_trivariates,
-    plot_store_accuracy_matrix,
-    filter_uni_acc_for_plotting,
-    filter_biv_acc_for_plotting,
-    calculate_numeric_uni_kdes,
-    calculate_categorical_uni_counts,
     calculate_bin_counts,
-    plot_store_univariates,
+    calculate_bivariates,
+    calculate_categorical_uni_counts,
+    calculate_correlations,
+    calculate_numeric_uni_kdes,
+    calculate_trivariates,
+    calculate_univariates,
+    filter_biv_acc_for_plotting,
+    filter_uni_acc_for_plotting,
+    plot_store_accuracy_matrix,
     plot_store_bivariates,
+    plot_store_correlation_matrices,
+    plot_store_univariates,
 )
 from mostlyai.qa._coherence import (
     calculate_distinct_categories_per_sequence,
@@ -46,24 +46,24 @@ from mostlyai.qa._coherence import (
     plot_store_distinct_categories_per_sequence,
     plot_store_sequences_per_distinct_category,
 )
-from mostlyai.qa.metrics import ModelMetrics, Accuracy, Similarity, Distances
+from mostlyai.qa._common import (
+    CTX_COLUMN_PREFIX,
+    NXT_COLUMN,
+    REPORT_CREDITS,
+    TGT_COLUMN_PREFIX,
+    PrerequisiteNotMetError,
+    ProgressCallback,
+    ProgressCallbackWrapper,
+    check_min_sample_size,
+    determine_data_size,
+)
+from mostlyai.qa._filesystem import Statistics, TemporaryWorkspace
 from mostlyai.qa._sampling import (
     prepare_data_for_accuracy,
     prepare_data_for_coherence,
     prepare_data_for_embeddings,
 )
-from mostlyai.qa._common import (
-    determine_data_size,
-    ProgressCallback,
-    PrerequisiteNotMetError,
-    check_min_sample_size,
-    NXT_COLUMN,
-    CTX_COLUMN_PREFIX,
-    TGT_COLUMN_PREFIX,
-    REPORT_CREDITS,
-    ProgressCallbackWrapper,
-)
-from mostlyai.qa._filesystem import Statistics, TemporaryWorkspace
+from mostlyai.qa.metrics import Accuracy, Distances, ModelMetrics, Similarity
 
 _LOG = logging.getLogger(__name__)
 

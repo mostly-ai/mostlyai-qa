@@ -18,38 +18,37 @@ import hashlib
 import logging
 import math
 import time
-from typing import Any, Literal
 from collections.abc import Callable, Iterable
+from typing import Any, Literal
 
 import numpy as np
 import pandas as pd
 import phik.phik
 import scipy.cluster
 import scipy.stats
-from joblib import Parallel, delayed, parallel_config, cpu_count
+from joblib import Parallel, cpu_count, delayed, parallel_config
+from plotly import graph_objs as go
 
 from mostlyai.qa._common import (
     CHARTS_COLORS,
     CHARTS_FONTS,
+    CTX_COLUMN_PREFIX,
     EMPTY_BIN,
-    MAX_TRIVARIATES,
-    NA_BIN,
-    MIN_RARE_CAT_PROTECTION,
-    OTHER_BIN,
-    RARE_BIN,
-    MAX_UNIVARIATE_PLOTS,
-    MAX_BIVARIATE_TGT_PLOTS,
     MAX_BIVARIATE_CTX_PLOTS,
     MAX_BIVARIATE_NXT_PLOTS,
-    CTX_COLUMN_PREFIX,
-    TGT_COLUMN_PREFIX,
-    NXT_COLUMN_PREFIX,
+    MAX_BIVARIATE_TGT_PLOTS,
     MAX_ENGINE_RARE_CATEGORY_THRESHOLD,
+    MAX_TRIVARIATES,
+    MAX_UNIVARIATE_PLOTS,
+    MIN_RARE_CAT_PROTECTION,
+    NA_BIN,
+    NXT_COLUMN_PREFIX,
+    OTHER_BIN,
+    RARE_BIN,
     TGT_COLUMN,
+    TGT_COLUMN_PREFIX,
 )
-from plotly import graph_objs as go
-
-from mostlyai.qa._filesystem import TemporaryWorkspace, Statistics
+from mostlyai.qa._filesystem import Statistics, TemporaryWorkspace
 
 _LOG = logging.getLogger(__name__)
 

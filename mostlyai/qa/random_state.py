@@ -14,8 +14,9 @@
 
 import logging
 import os
-import struct
 import random
+import struct
+
 import numpy as np
 
 _LOG = logging.getLogger(__name__)

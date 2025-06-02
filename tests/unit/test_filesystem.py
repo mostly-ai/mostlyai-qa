@@ -15,9 +15,9 @@
 import pandas as pd
 
 from mostlyai.qa._accuracy import (
+    bin_data,
     calculate_bin_counts,
     calculate_categorical_uni_counts,
-    bin_data,
 )
 from mostlyai.qa._filesystem import Statistics
 

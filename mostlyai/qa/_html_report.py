@@ -19,14 +19,15 @@ from typing import Literal
 
 import pandas as pd
 from jinja2 import Environment, FileSystemLoader
-from mostlyai.qa._accuracy import trim_label, filter_uni_acc_for_plotting, filter_biv_acc_for_plotting
+
+from mostlyai.qa._accuracy import filter_biv_acc_for_plotting, filter_uni_acc_for_plotting, trim_label
 from mostlyai.qa._common import TGT_COLUMN_PREFIX
 from mostlyai.qa._filesystem import TemporaryWorkspace
 from mostlyai.qa.assets import (
     HTML_ASSETS_PATH,
-    read_html_assets,
-    HTML_REPORT_TEMPLATE,
     HTML_REPORT_EARLY_EXIT,
+    HTML_REPORT_TEMPLATE,
+    read_html_assets,
 )
 from mostlyai.qa.metrics import ModelMetrics
 
