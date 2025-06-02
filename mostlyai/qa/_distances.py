@@ -14,19 +14,19 @@
 
 import logging
 import time
-import numpy as np
+
 import networkx as nx
-from sklearn.neighbors import NearestNeighbors
+import numpy as np
 from joblib import cpu_count
+from plotly import graph_objs as go
+from sklearn.cluster import SpectralClustering
+from sklearn.neighbors import NearestNeighbors
 
 from mostlyai.qa._common import (
     CHARTS_COLORS,
     CHARTS_FONTS,
 )
-from sklearn.cluster import SpectralClustering
 from mostlyai.qa._filesystem import TemporaryWorkspace
-from plotly import graph_objs as go
-
 
 _LOG = logging.getLogger(__name__)
 

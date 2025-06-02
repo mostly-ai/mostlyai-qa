@@ -13,11 +13,12 @@
 # limitations under the License.
 
 import logging
+
 import numpy as np
 import pandas as pd
+from pandas.core.dtypes.common import is_datetime64_dtype, is_numeric_dtype
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import QuantileTransformer, normalize
-from pandas.core.dtypes.common import is_numeric_dtype, is_datetime64_dtype
 
 from mostlyai.qa._common import (
     EMPTY_BIN,
@@ -25,7 +26,6 @@ from mostlyai.qa._common import (
     RARE_BIN,
 )
 from mostlyai.qa.assets import load_embedder
-
 
 _LOG = logging.getLogger(__name__)
 

@@ -17,18 +17,18 @@ import time
 
 import numpy as np
 import plotly.graph_objects as go
-from sklearn.decomposition import PCA
-from sklearn.metrics.pairwise import cosine_similarity
-
-from mostlyai.qa._common import (
-    CHARTS_FONTS,
-    CHARTS_COLORS,
-)
-from mostlyai.qa._filesystem import TemporaryWorkspace
 import scipy.stats
-from sklearn.model_selection import StratifiedKFold
+from sklearn.decomposition import PCA
 from sklearn.ensemble import HistGradientBoostingClassifier
 from sklearn.metrics import roc_auc_score
+from sklearn.metrics.pairwise import cosine_similarity
+from sklearn.model_selection import StratifiedKFold
+
+from mostlyai.qa._common import (
+    CHARTS_COLORS,
+    CHARTS_FONTS,
+)
+from mostlyai.qa._filesystem import TemporaryWorkspace
 
 _LOG = logging.getLogger(__name__)
 

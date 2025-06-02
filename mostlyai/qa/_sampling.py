@@ -27,26 +27,25 @@
 #  limitations under the License.
 import logging
 import random
-from typing import Any
 import warnings
-from pandas.core.dtypes.common import is_numeric_dtype, is_datetime64_dtype
+from typing import Any
 
 import numpy as np
 import pandas as pd
 import pyarrow as pa
+from pandas.core.dtypes.common import is_datetime64_dtype, is_numeric_dtype
 
-from mostlyai.qa._embeddings import encode_data
 from mostlyai.qa._accuracy import bin_data
 from mostlyai.qa._common import (
+    ACCURACY_MAX_COLUMNS,
+    COUNT_COLUMN,
     CTX_COLUMN_PREFIX,
     EMBEDDINGS_MAX_COLUMNS,
-    TGT_COLUMN_PREFIX,
     NXT_COLUMN_PREFIX,
-    COUNT_COLUMN,
-    ACCURACY_MAX_COLUMNS,
+    TGT_COLUMN_PREFIX,
 )
+from mostlyai.qa._embeddings import encode_data
 from mostlyai.qa.assets import load_tokenizer
-
 
 _LOG = logging.getLogger(__name__)
 

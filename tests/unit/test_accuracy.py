@@ -18,37 +18,37 @@ from numpy.testing import assert_array_equal
 from pandas._testing import assert_frame_equal
 
 from mostlyai.qa._accuracy import (
+    bin_categorical,
+    bin_data,
+    bin_datetime,
+    bin_numeric,
     calculate_accuracy,
-    calculate_bivariate_columns,
-    calculate_expected_l1_multinomial,
-    plot_univariate_distribution_numeric,
     calculate_bin_counts,
+    calculate_bivariate_columns,
     calculate_bivariates,
     calculate_categorical_uni_counts,
+    calculate_correlations,
+    calculate_expected_l1_multinomial,
     calculate_numeric_uni_kdes,
     calculate_univariates,
     plot_store_accuracy_matrix,
     plot_store_bivariates,
+    plot_store_correlation_matrices,
     plot_store_univariates,
-    bin_data,
-    bin_numeric,
-    bin_datetime,
+    plot_univariate_distribution_numeric,
     search_bin_boundaries,
     trim_labels,
-    calculate_correlations,
-    plot_store_correlation_matrices,
-    bin_categorical,
 )
-from mostlyai.qa._sampling import prepare_data_for_accuracy, sample_two_consecutive_rows
 from mostlyai.qa._common import (
-    OTHER_BIN,
+    CTX_COLUMN_PREFIX,
     EMPTY_BIN,
     NA_BIN,
-    RARE_BIN,
-    CTX_COLUMN_PREFIX,
-    TGT_COLUMN_PREFIX,
     NXT_COLUMN_PREFIX,
+    OTHER_BIN,
+    RARE_BIN,
+    TGT_COLUMN_PREFIX,
 )
+from mostlyai.qa._sampling import prepare_data_for_accuracy, sample_two_consecutive_rows
 
 
 def test_calculate_univariates(cols):
