@@ -162,7 +162,7 @@
               <td style="width: 70px;">
                 <div class="result-box-title">
                   Distances
-                  <div data-bs-toggle="tooltip" data-bs-title='This metric represents the average distance between synthetic samples and their nearest training samples. For comparison, the average distances between synthetic samples and samples from a holdout dataset is shown in light gray to assess if the trained model learned the general patterns that are common in training as well as in holdout sets.'>
+                  <div data-bs-toggle="tooltip" data-bs-title='Identical matches is the share of synthetic samples that have at least one exact match within the training dataset. As reference the share of synthetic samples, with an identical match within the holdout is being reported. The average distances is the mean distance between synthetic samples and their nearest training samples. As reference the mean distance between synthetic samples and their nearest holdout samples is provided. The DCR share is the share of synthetic samples that are closer to a training sample than to a holdout sample. With equally-sized holdout and training datasets, the DCR share is ideally close to 50%. The NNDR is the nearest neighbor distance ratio, which is the distance towards the nearest neighbor divided by the distance to the second nearest neighbor. We compute the NNDR for all synthetic samples with respect to the training dataset, as well as with respect to the holdout dataset. The NNDR ratio is then the ratio of the 10-th smallest NNDR for synthetic vs. training, divided by 10-th smallest NNDR for synthetic vs. holdout.'>
                     {{html_assets['info.svg']}}
                   </div>
                 </div>
@@ -472,9 +472,17 @@
               <td>{{ "{:.2e}".format(metrics.distances.nndr_training) if metrics.distances.nndr_training < 0.01 else "{:.3f}".format(metrics.distances.nndr_training) }}</td>
               {% if metrics.distances.nndr_holdout is not none %}
               <td><small style="color: #666666;">{{ "{:.2e}".format(metrics.distances.nndr_holdout) if metrics.distances.nndr_holdout < 0.01 else "{:.3f}".format(metrics.distances.nndr_holdout) }}</small></td>
-              <td></td>
+              <td><small style="color: #999999;">{{ "{:.2e}".format(metrics.distances.nndr_trn_hol) if metrics.distances.nndr_trn_hol < 0.01 else "{:.3f}".format(metrics.distances.nndr_trn_hol) }}</small></td>
               {% endif %}
             </tr>
+            {% if metrics.distances.nndr_holdout is not none %}
+            <tr>
+              <td>NNDR Ratio</td>
+              <td>{{ "{:.3f}".format(metrics.distances.nndr_training / metrics.distances.nndr_holdout) }}</td>
+              <td><small style="color: #666666;">(={{ "{:.2e}".format(metrics.distances.nndr_training) if metrics.distances.nndr_training < 0.01 else "{:.3f}".format(metrics.distances.nndr_training) }} / {{ "{:.2e}".format(metrics.distances.nndr_holdout) if metrics.distances.nndr_holdout < 0.01 else "{:.3f}".format(metrics.distances.nndr_holdout) }})</small></td>
+              <td></td>
+            </tr>
+            {% endif %}
           </tbody>
         </table>
       </div>
