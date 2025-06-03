@@ -162,7 +162,7 @@
               <td style="width: 70px;">
                 <div class="result-box-title">
                   Distances
-                  <div data-bs-toggle="tooltip" data-bs-title='This metric represents the average distance between synthetic samples and their nearest training samples. For comparison, the average distances between synthetic samples and samples from a holdout dataset is shown in light gray to assess if the trained model learned the general patterns that are common in training as well as in holdout sets.'>
+                  <div data-bs-toggle="tooltip" data-bs-title='Identical matches is the share of synthetic samples that have at least one exact match within the training dataset. As reference the share of synthetic samples, with an identical match within the holdout is being reported. The average distances is the mean distance between synthetic samples and their nearest training samples. As reference the mean distance between synthetic samples and their nearest holdout samples is provided. The DCR share is the share of synthetic samples that are closer to a training sample than to a holdout sample. With equally-sized holdout and training datasets, the DCR share is ideally close to 50%. The NNDR is the nearest neighbor distance ratio, which is the distance towards the nearest neighbor divided by the distance to the second nearest neighbor. We compute the NNDR for all synthetic samples with respect to the training dataset, as well as with respect to the holdout dataset. The NNDR ratio is then the ratio of the 10-th smallest NNDR for synthetic vs. training, divided by 10-th smallest NNDR for synthetic vs. holdout.'>
                     {{html_assets['info.svg']}}
                   </div>
                 </div>
@@ -435,10 +435,10 @@
           <thead>
             <tr>
               <td style="width: 25%"> </td>
-              <td style="width: 25%">Synthetic vs. Training Data</td>
+              <td style="width: 25%">Synthetic vs. Training</td>
               {% if metrics.distances.ims_holdout is not none %}
-              <td style="width: 25%"><small style="color: #666666;">Synthetic vs. Holdout Data</small></td>
-              <td style="width: 25%"><small style="color: #999999;">Training vs. Holdout Data</small></td>
+              <td style="width: 25%"><small style="color: #666666;">Synthetic vs. Holdout</small></td>
+              <td style="width: 25%"><small style="color: #999999;">Training vs. Holdout</small></td>
               {% endif %}
             </tr>
           </thead>
@@ -459,22 +459,26 @@
               <td><small style="color: #999999;">{{ "{:.3f}".format(metrics.distances.dcr_trn_hol) if metrics.distances.dcr_trn_hol is not none else "N/A" }}</small></td>
               {% endif %}
             </tr>
-            {% if metrics.distances.dcr_share is not none %}
-            <tr>
-              <td>DCR Share</td>
-              <td>{{ "{:.1%}".format(metrics.distances.dcr_share) }}</td>
-              <td><small style="color: #666666;">{{ "{:.1%}".format(1 - metrics.distances.dcr_share) }}</small></td>
-              <td></td>
-            </tr>
-            {% endif %}
             <tr>
               <td>NNDR Min10</td>
               <td>{{ "{:.2e}".format(metrics.distances.nndr_training) if metrics.distances.nndr_training < 0.01 else "{:.3f}".format(metrics.distances.nndr_training) }}</td>
               {% if metrics.distances.nndr_holdout is not none %}
               <td><small style="color: #666666;">{{ "{:.2e}".format(metrics.distances.nndr_holdout) if metrics.distances.nndr_holdout < 0.01 else "{:.3f}".format(metrics.distances.nndr_holdout) }}</small></td>
-              <td></td>
+              <td><small style="color: #999999;">{{ "{:.2e}".format(metrics.distances.nndr_trn_hol) if metrics.distances.nndr_trn_hol < 0.01 else "{:.3f}".format(metrics.distances.nndr_trn_hol) }}</small></td>
               {% endif %}
             </tr>
+            {% if metrics.distances.dcr_share is not none %}
+            <tr>
+              <td>DCR Share</td>
+              <td colspan="3" style="padding-left: 20px;"><b>{{ "{:.1%}".format(metrics.distances.dcr_share) }}</b> <small style="color: #999999;">of synthetic samples are closer to a training than to a holdout sample</small></td>
+            </tr>
+            {% endif %}
+            {% if metrics.distances.nndr_holdout is not none %}
+            <tr>
+              <td>NNDR Ratio</td>
+              <td colspan="3" style="padding-left: 20px;"><b>{{ "{:.3f}".format(metrics.distances.nndr_training / metrics.distances.nndr_holdout) }}</b> <small style="color: #999999;"> = (NNDR Min10 of Synthetic vs. Training) / (NNDR Min10 of Synthetic vs. Holdout)</small></td>
+            </tr>
+            {% endif %}
           </tbody>
         </table>
       </div>
@@ -496,6 +500,7 @@
         A green line that is significantly left of the dark gray line implies that synthetic samples are closer to the training samples than to the holdout samples, indicating that the data has overfitted to the training data.
         A green line that overlays with the dark gray line validates that the trained model indeed represents the general rules, that can be found in training just as well as in holdout samples.
         The DCR share indicates the proportion of synthetic samples that are closer to a training sample than to a holdout sample, and ideally, this value should not significantly exceed 50%, as a higher value could indicate overfitting.
+        The NNDR ratio is the ratio of the 10-th smallest NNDR for synthetic vs. training, divided by 10-th smallest NNDR for synthetic vs. holdout. Ideally, this value should be close to 1, indicating that the synthetic samples are in sparse as well as in dense regions just as close to the training samples as to the holdout samples.
       </div>
     </div>
   </div>
