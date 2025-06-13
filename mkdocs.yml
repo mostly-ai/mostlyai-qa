@@ -54,6 +54,15 @@ plugins:
             extra:
               show_docstring: true
               show_docstring_examples: true
+  - llmstxt:
+      full_output: llms-full.txt
+      sections:
+        Getting started:
+          - index.md
+        Usage Examples:
+          - examples.md
+        API Reference:
+          - api.md
 
 markdown_extensions:
   - pymdownx.highlight:
