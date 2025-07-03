@@ -28,6 +28,8 @@ On Linux, one can explicitly install the CPU-only variant of torch together with
 pip install -U torch==2.6.0+cpu torchvision==0.21.0+cpu mostlyai-qa --extra-index-url https://download.pytorch.org/whl/cpu
 ```
 
+> At least Python version `3.10.x` is required to install this package.
+
 ## Quick Start
 
 ```python
