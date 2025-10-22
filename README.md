@@ -25,7 +25,7 @@ pip install -U mostlyai-qa
 On Linux, one can explicitly install the CPU-only variant of torch together with `mostlyai-qa`:
 
 ```bash
-pip install -U torch==2.7.0+cpu torchvision==0.22.0+cpu mostlyai-qa --extra-index-url https://download.pytorch.org/whl/cpu
+pip install -U torch==2.8.0+cpu torchvision==0.23.0+cpu mostlyai-qa --extra-index-url https://download.pytorch.org/whl/cpu
 ```
 
 ## Quick Start
