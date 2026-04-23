@@ -1,0 +1,45 @@
+name: Bump Version and Create PR
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'New version (e.g. 1.2.3)'
+        required: true
+        type: string
+
+jobs:
+  bump-version:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Update version in pyproject.toml
+        run: |
+          sed -i -E 's/^version = ".*"/version = "${{ inputs.version }}"/' pyproject.toml
+
+      - name: Update version in __init__.py
+        run: |
+          sed -i -E 's/^__version__ = ".*"/__version__ = "${{ inputs.version }}"/' mostlyai/qa/__init__.py
+
+      - name: Create Pull Request
+        id: cpr
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GIT_TOKEN || secrets.GITHUB_TOKEN }}
+          commit-message: "build: bump version to ${{ inputs.version }}"
+          title: "build: release ${{ inputs.version }}"
+          body: "Automated PR to bump the version to `${{ inputs.version }}`."
+          branch: "release-${{ inputs.version }}"
+          base: main
+          labels: "release"
+
+      - name: Merge Pull Request
+        if: steps.cpr.outputs.pull-request-number
+        run: gh pr merge ${{ steps.cpr.outputs.pull-request-number }} --squash
+        env:
+          GH_TOKEN: ${{ secrets.GIT_TOKEN || secrets.GITHUB_TOKEN }}
