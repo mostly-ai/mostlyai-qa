@@ -250,7 +250,8 @@ def harmonize_dtype(x: pd.Series):
 
 def is_text_heuristic(x: pd.Series) -> bool:
     # if more than 5% of rows contain unique values -> consider as TEXT
-    return x.dtype == "object" and x.value_counts().eq(1).reindex(x).mean() > 0.05
+    is_text_dtype = x.dtype == "object" or pd.api.types.is_string_dtype(x)
+    return is_text_dtype and x.value_counts().eq(1).reindex(x).mean() > 0.05
 
 
 def prepare_data_for_embeddings(

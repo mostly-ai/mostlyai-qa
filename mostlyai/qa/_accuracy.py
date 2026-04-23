@@ -388,8 +388,9 @@ def bin_count_uni(col: str, values: pd.Series) -> tuple[str, pd.Series]:
 
 
 def bin_count_biv(col1: str, col2: str, x: pd.Series, y: pd.Series) -> tuple[tuple[str, str], pd.Series]:
-    # keep order of categories
-    return (col1, col2), pd.concat([x, y], axis=1).value_counts(sort=False)
+    # keep order of categories; filter out unobserved combinations (pandas 3 includes them for categoricals)
+    counts = pd.concat([x, y], axis=1).value_counts(sort=False)
+    return (col1, col2), counts[counts > 0]
 
 
 def calculate_bin_counts(
@@ -1177,7 +1178,7 @@ def bin_non_categorical(
     adjust_breaks: Callable,
     label_style: Literal["bounded", "unbounded", "lower"] = "unbounded",
 ) -> tuple[pd.Categorical, list]:
-    col = col.fillna(np.nan).infer_objects(copy=False)
+    col = col.fillna(np.nan).infer_objects()
 
     col, breaks = clip_and_breaks(col, bins)
     labels = create_labels(breaks)

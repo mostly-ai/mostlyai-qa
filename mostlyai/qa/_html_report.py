@@ -180,14 +180,14 @@ def summarize_accuracies_by_column(
 
     acc_nxt = acc_biv.loc[acc_biv.type == "nxt"]
     if not all((acc_nxt.empty, acc_cats_per_seq.empty, acc_seqs_per_cat.empty)):
-        acc_nxt = acc_nxt.groupby("col1").mean(["accuracy", "accuracy_max"]).reset_index(names="column")
+        acc_nxt = acc_nxt.groupby("col1")[["accuracy", "accuracy_max"]].mean().reset_index(names="column")
         acc_nxt = acc_nxt[acc_nxt["column"].str.startswith(TGT_COLUMN_PREFIX)]
         acc_cats_per_seq = acc_cats_per_seq.assign(column=TGT_COLUMN_PREFIX + acc_cats_per_seq["column"])
         acc_seqs_per_cat = acc_seqs_per_cat.assign(column=TGT_COLUMN_PREFIX + acc_seqs_per_cat["column"])
         tbl_acc_coherence = (
             pd.concat([a for a in [acc_nxt, acc_cats_per_seq, acc_seqs_per_cat] if not a.empty])
-            .groupby("column")
-            .mean(["accuracy", "accuracy_max"])
+            .groupby("column")[["accuracy", "accuracy_max"]]
+            .mean()
             .rename(columns={"accuracy": "coherence", "accuracy_max": "coherence_max"})
             .reset_index()
         )

@@ -275,8 +275,8 @@ def test_mixed_dtypes(tmp_path):
     # are still yielding somewhat good results and warning is issued
 
     def generate_dates(start_date, end_date, num_samples):
-        days_range = (end_date - start_date).days
-        return [start_date + timedelta(days=int(days)) for days in np.random.randint(0, days_range, num_samples)]
+        seconds_range = int((end_date - start_date).total_seconds())
+        return [start_date + timedelta(seconds=int(s)) for s in np.random.randint(0, seconds_range, num_samples)]
 
     num_samples = 200
     start_date = datetime(2020, 1, 1)

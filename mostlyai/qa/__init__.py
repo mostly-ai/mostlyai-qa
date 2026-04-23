@@ -29,5 +29,5 @@ __version__ = "1.9.9"
 warnings.filterwarnings("ignore", category=FutureWarning, module="phik")
 warnings.filterwarnings("ignore", category=UserWarning, module="huggingface_hub")
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
-if Version(pd.__version__) >= Version("2.2.0"):
+if Version("2.2.0") <= Version(pd.__version__) < Version("3.0.0"):
     pd.set_option("future.no_silent_downcasting", True)
