@@ -18,23 +18,15 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GIT_TOKEN || secrets.GITHUB_TOKEN }}
 
       - name: Configure Git
         run: |
-          echo "${{ secrets.GIT_GPG_PRIVATE_KEY }}" | gpg --batch --pinentry-mode loopback --import
-          git config --global user.email "ci@mostly.ai"
-          git config --global user.name "mostlyai-ci"
-          git config --global user.signingkey ${{ secrets.GIT_GPG_KEY_ID }}
-          git config --global commit.gpgsign true
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
-      - name: Update version in pyproject.toml
+      - name: Update version
         run: |
           sed -i -E 's/^version = ".*"/version = "${{ inputs.version }}"/' pyproject.toml
-
-      - name: Update version in __init__.py
-        run: |
           sed -i -E 's/^__version__ = ".*"/__version__ = "${{ inputs.version }}"/' mostlyai/qa/__init__.py
 
       - name: Commit and Push
@@ -47,7 +39,7 @@ jobs:
 
       - name: Create and Merge PR
         env:
-          GH_TOKEN: ${{ secrets.GIT_TOKEN || secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           pr_id=$(gh pr list --head release-${{ inputs.version }} --base main --json number --jq '.[0].number')
           if [ -z "$pr_id" ]; then
@@ -57,5 +49,4 @@ jobs:
               --base main \
               --head release-${{ inputs.version }})
           fi
-          # Merge it automatically
           gh pr merge $pr_id --squash
