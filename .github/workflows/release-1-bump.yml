@@ -1,4 +1,4 @@
-name: Bump Version
+name: Release Step 1 - Release on GitHub
 run-name: bump version to ${{ inputs.version }}
 
 on:
@@ -50,3 +50,11 @@ jobs:
               --head release-${{ inputs.version }})
           fi
           gh pr merge $pr_id --squash
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create ${{ inputs.version }} \
+            --title "Release ${{ inputs.version }}" \
+            --generate-notes

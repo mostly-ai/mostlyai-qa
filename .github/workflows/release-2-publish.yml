@@ -1,4 +1,4 @@
-name: Publish to PyPI
+name: Release Step 2 - Publish to PyPI
 run-name: publish to pypi ${{ github.event.release.tag_name }}
 
 on:
@@ -19,6 +19,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name }}
 
       - name: Install uv
         uses: astral-sh/setup-uv@v5
