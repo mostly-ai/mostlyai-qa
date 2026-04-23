@@ -1,4 +1,4 @@
-name: Bump Version
+name: Release Step 1 - Release on GitHub
 run-name: bump version to ${{ inputs.version }}
 
 on:

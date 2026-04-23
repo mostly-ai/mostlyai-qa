@@ -1,4 +1,4 @@
-name: Publish to PyPI
+name: Release Step 2 - Publish to PyPI
 run-name: publish to pypi ${{ github.event.release.tag_name }}
 
 on:
