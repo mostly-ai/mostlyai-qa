@@ -1217,7 +1217,7 @@ wheels = [
 
 [[package]]
 name = "mostlyai-qa"
-version = "1.9.9"
+version = "1.10.4"
 source = { editable = "." }
 dependencies = [
     { name = "accelerate" },
@@ -1269,7 +1269,7 @@ requires-dist = [
     { name = "pyarrow", specifier = ">=14.0.0" },
     { name = "pydantic", specifier = ">=2.0.0,<3.0.0" },
     { name = "scikit-learn", specifier = ">=1.4.0" },
-    { name = "scipy", specifier = ">=1.11.0,<1.16.0" },
+    { name = "scipy", specifier = ">=1.11.0" },
     { name = "torch", specifier = ">=2.6.0" },
     { name = "transformers", specifier = ">=4.36.0" },
     { name = "xxhash", specifier = ">=3.5.0" },
