@@ -1,6 +1,6 @@
 [project]
 name = "mostlyai-qa"
-version = "1.10.6"
+version = "1.10.7"
 description = "Synthetic Data Quality Assurance"
 requires-python = ">=3.11"
 readme = "README.md"
