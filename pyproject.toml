@@ -2,7 +2,6 @@
 name = "mostlyai-qa"
 version = "1.10.6"
 description = "Synthetic Data Quality Assurance"
-authors = [{ name = "MOSTLY AI", email = "dev@mostly.ai" }]
 maintainers = [{ name = "Michael Platzer", email = "michael.platzer@gmail.com" }]
 requires-python = ">=3.11"
 readme = "README.md"
