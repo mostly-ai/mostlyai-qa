@@ -2,7 +2,6 @@
 name = "mostlyai-qa"
 version = "1.10.6"
 description = "Synthetic Data Quality Assurance"
-authors = [{ name = "MOSTLY AI", email = "dev@mostly.ai" }]
 requires-python = ">=3.11"
 readme = "README.md"
 license = "Apache-2.0"
@@ -44,6 +43,7 @@ dependencies = [
 homepage = "https://github.com/mostly-ai/mostlyai-qa"
 repository = "https://github.com/mostly-ai/mostlyai-qa"
 documentation = "https://mostly-ai.github.io/mostlyai-qa/"
+issues = "https://github.com/mostly-ai/mostlyai-qa/issues"
 
 [dependency-groups]
 dev = [
