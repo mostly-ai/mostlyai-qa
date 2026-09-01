@@ -1136,7 +1136,13 @@ def bin_datetime(
         if col.nunique() == 1:
             # ensure 2 breaks for single-valued columns
             val = col.dropna().iloc[0]
-            upper_limit = [val + np.timedelta64(1, "D")] if not pd.isna(val) else []
+            if not pd.isna(val):
+                try:
+                    upper_limit = [val + np.timedelta64(1, "D")]
+                except (OverflowError, pd.errors.OutOfBoundsDatetime):
+                    upper_limit = [val]
+            else:
+                upper_limit = []
             breaks = [val] + upper_limit
         else:
             breaks = search_bin_boundaries(col, bins)
@@ -1165,7 +1171,11 @@ def bin_datetime(
         return labels
 
     def _adjust_breaks(breaks):
-        return breaks[:-1] + [max(breaks[-1] + np.timedelta64(1, "D"), breaks[-1])]
+        try:
+            last = max(breaks[-1] + np.timedelta64(1, "D"), breaks[-1])
+        except (OverflowError, pd.errors.OutOfBoundsDatetime):
+            last = breaks[-1]
+        return breaks[:-1] + [last]
 
     return bin_non_categorical(col, bins, _clip, _define_labels, _adjust_breaks, label_style=label_style)
 
