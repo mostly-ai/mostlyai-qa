@@ -25,11 +25,35 @@ jobs:
       contents: read
 
     steps:
+      - name: Resolve publish ref
+        id: publish_ref
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          UPSTREAM_EVENT: ${{ github.event.workflow_run.event }}
+          HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
+          INPUT_REF: ${{ inputs.ref }}
+        run: |
+          # Step 1 started by workflow_dispatch publishes head_branch (usually main).
+          # A release/* tag push reports that tag as head_branch, which is the
+          # pre-bump commit. Publish the version tag Step 1 created instead.
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            ref="${INPUT_REF:-main}"
+          elif [ "$UPSTREAM_EVENT" = "push" ]; then
+            case "$HEAD_BRANCH" in
+              release/*) ref="${HEAD_BRANCH#release/}" ;;
+              *) ref="${HEAD_BRANCH:-main}" ;;
+            esac
+          elif [ -n "$HEAD_BRANCH" ]; then
+            ref="$HEAD_BRANCH"
+          else
+            ref="${INPUT_REF:-main}"
+          fi
+          echo "ref=$ref" >> "$GITHUB_OUTPUT"
+
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          # Use branch from trigger, or default to main
-          ref: ${{ github.event.workflow_run.head_branch || inputs.ref || 'main' }}
+          ref: ${{ steps.publish_ref.outputs.ref }}
 
       - name: Install uv
         uses: astral-sh/setup-uv@v5
