@@ -18,7 +18,8 @@ from pathlib import Path
 from typing import Literal
 
 import pandas as pd
-from jinja2 import Environment, FileSystemLoader
+from jinja2 import Environment, FileSystemLoader, select_autoescape
+from markupsafe import Markup
 
 from mostlyai.qa._accuracy import filter_biv_acc_for_plotting, filter_uni_acc_for_plotting, trim_label
 from mostlyai.qa._common import TGT_COLUMN_PREFIX
@@ -112,10 +113,12 @@ def store_report(
         "report_creation_datetime": datetime.datetime.now(),
     }
 
-    template = Environment(loader=FileSystemLoader(HTML_ASSETS_PATH)).get_template(HTML_REPORT_TEMPLATE)
+    template = Environment(
+        loader=FileSystemLoader(HTML_ASSETS_PATH), autoescape=select_autoescape(["html"])
+    ).get_template(HTML_REPORT_TEMPLATE)
     html = template.render(
         is_model_report=(report_type == "model_report"),
-        html_assets=read_html_assets(),
+        html_assets={name: Markup(content) for name, content in read_html_assets().items()},
         report_creation_datetime=datetime.datetime.now(),
         metrics=metrics.model_dump() if metrics else None,
         meta=meta,
@@ -198,6 +201,10 @@ def summarize_accuracies_by_column(
 
 
 def store_early_exit_report(report_path: Path):
-    template = Environment(loader=FileSystemLoader(HTML_ASSETS_PATH)).get_template(HTML_REPORT_EARLY_EXIT)
-    report_html = template.render(html_assets=read_html_assets(), meta={})
+    template = Environment(
+        loader=FileSystemLoader(HTML_ASSETS_PATH), autoescape=select_autoescape(["html"])
+    ).get_template(HTML_REPORT_EARLY_EXIT)
+    report_html = template.render(
+        html_assets={name: Markup(content) for name, content in read_html_assets().items()}, meta={}
+    )
     report_path.write_text(report_html, encoding="utf-8")
