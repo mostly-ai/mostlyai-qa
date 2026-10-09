@@ -62,7 +62,7 @@ def calculate_discriminator_auc(
     syn_embeds: np.ndarray,
     trn_embeds: np.ndarray,
     hol_embeds: np.ndarray | None,
-) -> tuple[np.float64 | None, np.float64]:
+) -> tuple[np.float64 | None, np.float64 | None]:
     def calculate_mean_auc(embeds1, embeds2):
         """
         Calculate the mean AUC score using 10-fold cross-validation with a 90/10 split
@@ -123,12 +123,14 @@ def calculate_discriminator_auc(
     if hol_embeds is not None:
         t0 = time.time()
         sim_auc_trn_hol = calculate_mean_auc(trn_embeds, hol_embeds)
-        _LOG.info(f"calculated AUC for trn and hol: {sim_auc_trn_hol:.1%} in {time.time() - t0:.2f} seconds")
+        auc_label = f"{sim_auc_trn_hol:.1%}" if sim_auc_trn_hol is not None else "N/A"
+        _LOG.info(f"calculated AUC for trn and hol: {auc_label} in {time.time() - t0:.2f} seconds")
     else:
         sim_auc_trn_hol = None
     t0 = time.time()
     sim_auc_trn_syn = calculate_mean_auc(trn_embeds, syn_embeds)
-    _LOG.info(f"calculated AUC for trn and syn: {sim_auc_trn_syn:.1%} in {time.time() - t0:.2f} seconds")
+    auc_label = f"{sim_auc_trn_syn:.1%}" if sim_auc_trn_syn is not None else "N/A"
+    _LOG.info(f"calculated AUC for trn and syn: {auc_label} in {time.time() - t0:.2f} seconds")
     return sim_auc_trn_hol, sim_auc_trn_syn
 
 
