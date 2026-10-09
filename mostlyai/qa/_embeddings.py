@@ -83,6 +83,7 @@ def encode_strings(
     trn_str, syn_str, hol_str = {}, {}, {}
     if hol is None:
         hol = pd.DataFrame(columns=trn.columns)
+    embedder = load_embedder() if len(trn.columns) > 0 else None
     for col in trn.columns:
         # prepare inputs
         syn_col = syn[col].astype(str).fillna(NA_BIN).replace("", EMPTY_BIN)
@@ -93,7 +94,6 @@ def encode_strings(
         # map out of range values to RARE_BIN
         syn_col = syn_col.where(syn_col.isin(uvals), RARE_BIN)
         # embed unique values into high-dimensional space
-        embedder = load_embedder()
         embeds = embedder.encode(uvals + [RARE_BIN])
         # project embeddings into a low-dimensional space with dim depending on col cardinality
         if len(uvals) <= 20:
