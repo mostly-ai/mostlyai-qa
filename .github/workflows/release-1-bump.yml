@@ -1,5 +1,5 @@
 name: Release Step 1 - Release on GitHub
-run-name: bump version to ${{ inputs.version || replace(github.ref_name, 'release/', '') }}
+run-name: bump version to ${{ inputs.version || github.ref_name }}
 
 on:
   workflow_dispatch:
