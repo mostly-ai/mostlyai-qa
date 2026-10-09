@@ -145,7 +145,7 @@
                   <tr>
                     <td>Discriminator AUC</td>
                     <td align="left">
-                      {{ "{:.1%}".format(metrics.similarity.discriminator_auc_training_synthetic) }}
+                      {{ "{:.1%}".format(metrics.similarity.discriminator_auc_training_synthetic) if metrics.similarity.discriminator_auc_training_synthetic is not none else "N/A" }}
                       <div class="ref-metric">(50.0%)</div>
                     </td>
                   </tr>

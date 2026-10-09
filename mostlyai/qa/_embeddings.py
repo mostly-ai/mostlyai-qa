@@ -64,7 +64,7 @@ def encode_numerics(
         trn_num[col] = np.nan_to_num(trn_num[col], nan=0.0)
         hol_num[col] = np.nan_to_num(hol_num[col], nan=0.0)
         # add extra columns for NAs
-        if trn[col].isna().any() or hol[col].isna().any():
+        if syn[col].isna().any() or trn[col].isna().any() or hol[col].isna().any():
             syn_num[col + " - N/A"] = syn[col].isna().astype(float) - 0.5
             trn_num[col + " - N/A"] = trn[col].isna().astype(float) - 0.5
             hol_num[col + " - N/A"] = hol[col].isna().astype(float) - 0.5
@@ -83,6 +83,7 @@ def encode_strings(
     trn_str, syn_str, hol_str = {}, {}, {}
     if hol is None:
         hol = pd.DataFrame(columns=trn.columns)
+    embedder = load_embedder() if len(trn.columns) > 0 else None
     for col in trn.columns:
         # prepare inputs
         syn_col = syn[col].astype(str).fillna(NA_BIN).replace("", EMPTY_BIN)
@@ -93,7 +94,6 @@ def encode_strings(
         # map out of range values to RARE_BIN
         syn_col = syn_col.where(syn_col.isin(uvals), RARE_BIN)
         # embed unique values into high-dimensional space
-        embedder = load_embedder()
         embeds = embedder.encode(uvals + [RARE_BIN])
         # project embeddings into a low-dimensional space with dim depending on col cardinality
         if len(uvals) <= 20:
