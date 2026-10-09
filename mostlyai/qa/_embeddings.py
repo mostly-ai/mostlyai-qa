@@ -64,7 +64,7 @@ def encode_numerics(
         trn_num[col] = np.nan_to_num(trn_num[col], nan=0.0)
         hol_num[col] = np.nan_to_num(hol_num[col], nan=0.0)
         # add extra columns for NAs
-        if trn[col].isna().any() or hol[col].isna().any():
+        if syn[col].isna().any() or trn[col].isna().any() or hol[col].isna().any():
             syn_num[col + " - N/A"] = syn[col].isna().astype(float) - 0.5
             trn_num[col + " - N/A"] = trn[col].isna().astype(float) - 0.5
             hol_num[col + " - N/A"] = hol[col].isna().astype(float) - 0.5
