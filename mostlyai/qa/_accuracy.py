@@ -1235,6 +1235,7 @@ def bin_categorical(col: pd.Series, bins: int | list[str]) -> tuple[pd.Categoric
     bins = [c for c in bins if c != OTHER_BIN] + [OTHER_BIN]
     bins = [c for c in bins if c != RARE_BIN] + [RARE_BIN]
     bins = [c for c in bins if c != NA_BIN] + [NA_BIN]
+    col = col.where(col.isin(bins), OTHER_BIN)
     col = pd.Categorical(col, categories=bins, ordered=True)
     col = col.fillna(OTHER_BIN)
     new_cats = dict(zip(bins, trim_labels(bins, max_length=20)))
