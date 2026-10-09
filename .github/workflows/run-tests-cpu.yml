@@ -25,13 +25,15 @@ jobs:
       - name: Setup | uv
         uses: astral-sh/setup-uv@ed21f2f24f8dd64503750218de024bcf64c7250a # v7.1.5
         with:
+          version: '0.12.23'
           enable-cache: false
           python-version: '3.11'
 
       - name: Setup | dependencies
         run: |
           uv sync --frozen --only-group dev --only-group docs
-          uv pip install --index-strategy unsafe-first-match torch==2.6.0+cpu torchvision==0.21.0+cpu . --extra-index-url https://download.pytorch.org/whl/cpu
+          uv export --frozen --no-dev --no-default-groups --no-emit-project --no-hashes --no-emit-package torch --output-file /tmp/runtime-constraints.txt
+          uv pip install --constraint /tmp/runtime-constraints.txt --index-strategy unsafe-first-match torch==2.14.1+cpu . --extra-index-url https://download.pytorch.org/whl/cpu
 
       - name: Run tests
         run: uv run --no-sync pytest tests/
