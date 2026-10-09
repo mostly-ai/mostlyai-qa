@@ -412,7 +412,7 @@ def calculate_bin_counts(
     _LOG.info(f"calculated univariate bin counts for {len(binned.columns)} columns in {time.time() - t0:.2f} seconds")
 
     t0 = time.time()
-    biv_cols = calculate_bivariate_columns(binned, append_symetric=True)
+    biv_cols = calculate_bivariate_columns(binned, append_symetric=False)
     with parallel_config("loky", n_jobs=min(16, max(1, cpu_count() - 1))):
         results = Parallel()(
             delayed(bin_count_biv)(
@@ -424,6 +424,7 @@ def calculate_bin_counts(
             for _, row in biv_cols.iterrows()
         )
         bin_cnts_biv = dict(results)
+        bin_cnts_biv.update({(col2, col1): counts.swaplevel().sort_index() for (col1, col2), counts in results})
     _LOG.info(f"calculated bivariate bin counts for {len(biv_cols)} combinations in {time.time() - t0:.2f} seconds")
 
     return bin_cnts_uni, bin_cnts_biv
