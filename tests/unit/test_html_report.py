@@ -13,13 +13,21 @@
 # limitations under the License.
 
 import pandas as pd
+import pytest
 
 from mostlyai.qa import _accuracy, _distances, _embeddings, _html_report, _similarity
 from mostlyai.qa._common import CTX_COLUMN_PREFIX, TGT_COLUMN_PREFIX
 from mostlyai.qa.reporting import _calculate_metrics
 
 
-def test_generate_store_report(tmp_path, cols, workspace):
+@pytest.mark.parametrize("unavailable_auc", [False, True])
+def test_generate_store_report(tmp_path, cols, workspace, monkeypatch, unavailable_auc):
+    if unavailable_auc:
+
+        def fail_fit(*args, **kwargs):
+            raise ValueError("classifier unavailable")
+
+        monkeypatch.setattr(_similarity.HistGradientBoostingClassifier, "fit", fail_fit)
     trn, hol, syn = cols
     # apply ctx::/tgt:: prefixes and create nxt:: columns
     prefixes = ["ctx::", "_.", "tgt::"]
@@ -110,6 +118,8 @@ def test_generate_store_report(tmp_path, cols, workspace):
         acc_seqs_per_cat=acc_seqs_per_cat,
     )
     assert report_path.exists()
+    if unavailable_auc:
+        assert "N/A" in report_path.read_text(encoding="utf-8")
 
 
 def test_summarize_accuracies_by_column(tmp_path, cols):

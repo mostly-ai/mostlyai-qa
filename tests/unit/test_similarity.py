@@ -12,7 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import logging
+
 import numpy as np
+import pytest
 
 from mostlyai.qa._similarity import calculate_cosine_similarities, calculate_discriminator_auc
 
@@ -37,3 +40,21 @@ def test_calculate_discriminator_auc():
     )
     np.testing.assert_allclose(sim_trn_hol, 0.5, atol=0.1)
     np.testing.assert_allclose(sim_trn_syn, 0.5, atol=0.1)
+
+
+@pytest.mark.parametrize("with_holdout", [False, True])
+def test_discriminator_auc_failure_is_optional(monkeypatch, caplog, with_holdout):
+    def fail_fit(*args, **kwargs):
+        raise ValueError("classifier unavailable")
+
+    monkeypatch.setattr("mostlyai.qa._similarity.HistGradientBoostingClassifier.fit", fail_fit)
+    embeds = np.ones((100, 2))
+    with caplog.at_level(logging.INFO, logger="mostlyai.qa._similarity"):
+        result = calculate_discriminator_auc(
+            syn_embeds=embeds,
+            trn_embeds=embeds,
+            hol_embeds=embeds if with_holdout else None,
+        )
+    assert result == (None, None)
+    assert "classifier unavailable" in caplog.text
+    assert "trn and syn: N/A" in caplog.text

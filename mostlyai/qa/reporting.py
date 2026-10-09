@@ -423,8 +423,8 @@ def _calculate_metrics(
     nndr_trn_hol: np.ndarray | None,
     sim_cosine_trn_hol: np.float64,
     sim_cosine_trn_syn: np.float64,
-    sim_auc_trn_hol: np.float64,
-    sim_auc_trn_syn: np.float64,
+    sim_auc_trn_hol: np.float64 | None,
+    sim_auc_trn_syn: np.float64 | None,
     acc_cats_per_seq: pd.DataFrame,
     acc_seqs_per_cat: pd.DataFrame,
 ) -> ModelMetrics:
