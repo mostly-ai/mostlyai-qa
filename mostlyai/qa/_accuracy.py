@@ -26,7 +26,7 @@ import pandas as pd
 import phik.phik
 import scipy.cluster
 import scipy.stats
-from joblib import Parallel, cpu_count, delayed, parallel_config
+from joblib import Parallel, delayed
 from plotly import graph_objs as go
 
 from mostlyai.qa._common import (
@@ -49,6 +49,7 @@ from mostlyai.qa._common import (
     TGT_COLUMN_PREFIX,
 )
 from mostlyai.qa._filesystem import Statistics, TemporaryWorkspace
+from mostlyai.qa._parallel import parallel_context
 
 _LOG = logging.getLogger(__name__)
 
@@ -64,7 +65,7 @@ def calculate_univariates(
     tgt_cols = [c for c in ori_bin.columns if c.startswith(TGT_COLUMN)]
 
     accuracies = pd.DataFrame({"column": tgt_cols})
-    with parallel_config("loky", n_jobs=min(16, max(1, cpu_count() - 1))):
+    with parallel_context():
         results = Parallel()(
             delayed(calculate_accuracy)(
                 ori_bin_cols=ori_bin[[row["column"]]],
@@ -100,7 +101,7 @@ def calculate_bivariates(
 
     # calculate bivariates if there is at least one pair
     if len(accuracies) > 0:
-        with parallel_config("loky", n_jobs=min(16, max(1, cpu_count() - 1))):
+        with parallel_context():
             results = Parallel()(
                 delayed(calculate_accuracy)(
                     ori_bin_cols=ori_bin[[row["col1"], row["col2"]]],
@@ -185,7 +186,7 @@ def calculate_trivariates(ori_bin: pd.DataFrame, syn_bin: pd.DataFrame) -> pd.Da
 
     # calculate trivariates if there is at least one pair
     if len(accuracies) > 0:
-        with parallel_config("loky", n_jobs=min(16, max(1, cpu_count() - 1))):
+        with parallel_context():
             results = Parallel()(
                 delayed(calculate_accuracy)(
                     ori_bin_cols=ori_bin[[row["col1"], row["col2"], row["col3"]]],
@@ -400,7 +401,7 @@ def calculate_bin_counts(
     Calculates counts of unique values in each bin.
     """
     t0 = time.time()
-    with parallel_config("loky", n_jobs=min(16, max(1, cpu_count() - 1))):
+    with parallel_context():
         results = Parallel()(
             delayed(bin_count_uni)(
                 col=col,
@@ -413,7 +414,7 @@ def calculate_bin_counts(
 
     t0 = time.time()
     biv_cols = calculate_bivariate_columns(binned, append_symetric=False)
-    with parallel_config("loky", n_jobs=min(16, max(1, cpu_count() - 1))):
+    with parallel_context():
         results = Parallel()(
             delayed(bin_count_biv)(
                 col1=row["col1"],
@@ -446,7 +447,7 @@ def plot_store_univariates(
     """
     _LOG.info("plot univariates")
 
-    with parallel_config("loky", n_jobs=min(16, max(1, cpu_count() - 1))):
+    with parallel_context():
         Parallel()(
             delayed(plot_store_univariate)(
                 row["column"],
@@ -743,7 +744,7 @@ def plot_store_bivariates(
     """
     _LOG.info("plot bivariates")
 
-    with parallel_config("loky", n_jobs=min(16, max(1, cpu_count() - 1))):
+    with parallel_context():
         Parallel()(
             delayed(plot_store_bivariate)(
                 row["col1"],
