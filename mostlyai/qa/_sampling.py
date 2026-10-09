@@ -282,6 +282,9 @@ def prepare_data_for_embeddings(
 
     # enrich with count column
     if tgt_context_key is not None:
+        syn_tgt_data = syn_tgt_data.copy()
+        trn_tgt_data = trn_tgt_data.copy()
+        hol_tgt_data = hol_tgt_data.copy() if hol else None
         syn_tgt_data.insert(0, COUNT_COLUMN, syn_tgt_data.groupby(key)[key].transform("size"))
         trn_tgt_data.insert(0, COUNT_COLUMN, trn_tgt_data.groupby(key)[key].transform("size"))
         hol_tgt_data.insert(0, COUNT_COLUMN, hol_tgt_data.groupby(key)[key].transform("size")) if hol else None
