@@ -31,9 +31,9 @@ def test_generate_store_report(tmp_path, cols, workspace, monkeypatch, unavailab
     trn, hol, syn = cols
     # apply ctx::/tgt:: prefixes and create nxt:: columns
     prefixes = ["ctx::", "_.", "tgt::"]
-    columns = [f"{p}{c}" for p, c in zip(prefixes, trn.columns)]
+    columns = [f"{p}<{c}>" for p, c in zip(prefixes, trn.columns)]
     trn.columns, hol.columns, syn.columns = columns, columns, columns
-    trn["nxt::dt"], hol["nxt::dt"], syn["nxt::dt"] = trn["tgt::dt"], hol["tgt::dt"], syn["tgt::dt"]
+    trn["nxt::<dt>"], hol["nxt::<dt>"], syn["nxt::<dt>"] = trn["tgt::<dt>"], hol["tgt::<dt>"], syn["tgt::<dt>"]
     acc_trn, bins = _accuracy.bin_data(trn, 3)
     acc_syn, _ = _accuracy.bin_data(syn, bins)
     acc_uni = _accuracy.calculate_univariates(acc_trn, acc_syn)
@@ -76,7 +76,7 @@ def test_generate_store_report(tmp_path, cols, workspace, monkeypatch, unavailab
     )
     for path in plot_paths:
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text("<div></div>", encoding="utf-8")
+        path.write_text('<div data-review="chart"></div>', encoding="utf-8")
 
     metrics = _calculate_metrics(
         acc_uni=acc_uni,
@@ -97,6 +97,9 @@ def test_generate_store_report(tmp_path, cols, workspace, monkeypatch, unavailab
     )
 
     meta = {
+        "report_title": "<script>title</script>",
+        "report_subtitle": "<b>subtitle</b>",
+        "report_credits": '<a href="https://example.com">Credits</a>',
         "rows_original": trn.shape[0],
         "rows_synthetic": syn.shape[0],
         "tgt_columns": len([c for c in trn.columns if c.startswith(TGT_COLUMN_PREFIX)]),
@@ -118,8 +121,15 @@ def test_generate_store_report(tmp_path, cols, workspace, monkeypatch, unavailab
         acc_seqs_per_cat=acc_seqs_per_cat,
     )
     assert report_path.exists()
+    html = report_path.read_text(encoding="utf-8")
+    assert "<script>title</script>" not in html
+    assert "&lt;script&gt;title&lt;/script&gt;" in html
+    assert "&lt;b&gt;subtitle&lt;/b&gt;" in html
+    assert '<a href="https://example.com">Credits</a>' in html
+    assert '<div data-review="chart"></div>' in html
+    assert "&lt;dt&gt;" in html
     if unavailable_auc:
-        assert "N/A" in report_path.read_text(encoding="utf-8")
+        assert "N/A" in html
 
 
 def test_summarize_accuracies_by_column(tmp_path, cols):

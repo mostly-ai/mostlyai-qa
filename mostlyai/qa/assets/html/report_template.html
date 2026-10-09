@@ -43,7 +43,7 @@
       </ul>
     </div>
   </div>
-  <div style="text-align: right; padding-right: 10px; width: 300px">{{ meta.report_credits }}</div>
+  <div style="text-align: right; padding-right: 10px; width: 300px">{{ meta.report_credits | safe }}</div>
 </nav>
 
 <main class="container">
@@ -64,7 +64,7 @@
                 <div class="result-box-title">
                   Accuracy
                   <div data-bs-toggle="tooltip" data-bs-title="Accuracy measures how well the synthetic data captures the characteristics of the original data. The higher the accuracy, the better. For comparison, the expected accuracy of an equally-sized holdout dataset is shown in light gray.">
-                    {{html_assets['info.svg']}}
+                    {{ html_assets['info.svg'] | safe }}
                   </div>
                 </div>
                 <div class="result-box-large-title">{{ "{:.1%}".format(metrics.accuracy.overall) }}</div>
@@ -126,7 +126,7 @@
                 <div class="result-box-title">
                   Similarity
                   <div data-bs-toggle="tooltip" data-bs-title="Cosine similarity is calculated between the centroids of training and synthetic samples within the embedding space, where values closer to 1 indicate higher similarity. For context, cosine similarity between training and holdout samples is shown in light gray. Discriminator AUC measures the ability of a classifier to distinguish between training and synthetic embeddings. An AUC close to 50% suggests indistinguishability, while values above 60% indicate that synthetic embeddings have distinguishable characteristics. For context, discriminator AUC between training and holdout samples is shown in light gray.">
-                    {{html_assets['info.svg']}}
+                    {{ html_assets['info.svg'] | safe }}
                   </div>
                 </div>
               </td>
@@ -163,7 +163,7 @@
                 <div class="result-box-title">
                   Distances
                   <div data-bs-toggle="tooltip" data-bs-title='Identical matches is the share of synthetic samples that have at least one exact match within the training dataset. As reference the share of synthetic samples, with an identical match within the holdout is being reported. The average distances is the mean distance between synthetic samples and their nearest training samples. As reference the mean distance between synthetic samples and their nearest holdout samples is provided. The DCR share is the share of synthetic samples that are closer to a training sample than to a holdout sample. With equally-sized holdout and training datasets, the DCR share is ideally close to 50%. The NNDR is the nearest neighbor distance ratio, which is the distance towards the nearest neighbor divided by the distance to the second nearest neighbor. We compute the NNDR for all synthetic samples with respect to the training dataset, as well as with respect to the holdout dataset. The NNDR ratio is then the ratio of the 10-th smallest NNDR for synthetic vs. training, divided by 10-th smallest NNDR for synthetic vs. holdout.'>
-                    {{html_assets['info.svg']}}
+                    {{ html_assets['info.svg'] | safe }}
                   </div>
                 </div>
               </td>
@@ -223,7 +223,7 @@
     <p class="lead"></p>
     <div class="white-box p-3">
       <div>
-        {{ correlation_matrix_html_chart }}
+        {{ correlation_matrix_html_chart | safe }}
       </div>
     </div>
   </div>
@@ -235,7 +235,7 @@
         {% for uni_plots_row in univariate_html_charts | batch(3, '&nbsp;') %}
         <div class="row p-3">
           {% for uni_plot in uni_plots_row %}
-          <div class="col-sm-4">{{ uni_plot }}</div>
+          <div class="col-sm-4">{{ uni_plot | safe }}</div>
           {% endfor %}
         </div>
         {% endfor %}
@@ -250,7 +250,7 @@
       {% for biv_plots_row in bivariate_html_charts_tgt | batch(3, '&nbsp;') %}
       <div class="row p-3">
         {% for biv_plot in biv_plots_row %}
-        <div class="col-sm-4">{{ biv_plot }}</div>
+        <div class="col-sm-4">{{ biv_plot | safe }}</div>
         {% endfor %}
       </div>
       {% endfor %}
@@ -266,7 +266,7 @@
       {% for biv_plots_row in bivariate_html_charts_ctx | batch(3, '&nbsp;') %}
       <div class="row p-3">
         {% for biv_plot in biv_plots_row %}
-        <div class="col-sm-4">{{ biv_plot }}</div>
+        <div class="col-sm-4">{{ biv_plot | safe }}</div>
         {% endfor %}
       </div>
       {% endfor %}
@@ -282,7 +282,7 @@
       {% for biv_plots_row in bivariate_html_charts_nxt | batch(3, '&nbsp;') %}
       <div class="row p-3">
         {% for biv_plot in biv_plots_row %}
-        <div class="col-sm-4">{{ biv_plot }}</div>
+        <div class="col-sm-4">{{ biv_plot | safe }}</div>
         {% endfor %}
       </div>
       {% endfor %}
@@ -298,7 +298,7 @@
       {% for seq_per_cat_plots_row in sequences_per_distinct_category_html_charts | batch(3, '&nbsp;') %}
       <div class="row p-3">
         {% for seq_per_cat_plot in seq_per_cat_plots_row %}
-        <div class="col-sm-4">{{ seq_per_cat_plot }}</div>
+        <div class="col-sm-4">{{ seq_per_cat_plot | safe }}</div>
         {% endfor %}
       </div>
       {% endfor %}
@@ -314,7 +314,7 @@
       {% for cats_per_seq_plots_row in distinct_categories_per_sequence_html_charts | batch(3, '&nbsp;') %}
       <div class="row p-3">
         {% for cats_per_seq_plot in cats_per_seq_plots_row %}
-        <div class="col-sm-4">{{ cats_per_seq_plot }}</div>
+        <div class="col-sm-4">{{ cats_per_seq_plot | safe }}</div>
         {% endfor %}
       </div>
       {% endfor %}
@@ -383,14 +383,14 @@
     <div class="row">
       <div class="table-responsive col-md-8 offset-md-2">
         <div class="white-box p-3" style="margin-top: 70px">
-          {{ accuracy_matrix_html_chart }}
+          {{ accuracy_matrix_html_chart | safe }}
         </div>
       </div>
     </div>
     <br />
     <div class="explainer" style="margin-bottom: 30px">
       <div class="explainer-header">
-        <div class="explainer-icon">{{html_assets['explainer.svg']}}</div>
+        <div class="explainer-icon">{{ html_assets['explainer.svg'] | safe }}</div>
         <div class="explainer-title">Explainer</div>
       </div>
       <div class="explainer-body">
@@ -408,13 +408,13 @@
     <p class="lead"></p>
     <div class="white-box p-3">
       <div>
-        {{ similarity_pca_html_chart }}
+        {{ similarity_pca_html_chart | safe }}
       </div>
     </div>
     <br />
     <div class="explainer" style="margin-bottom: 30px">
       <div class="explainer-header">
-        <div class="explainer-icon">{{html_assets['explainer.svg']}}</div>
+        <div class="explainer-icon">{{ html_assets['explainer.svg'] | safe }}</div>
         <div class="explainer-title">Explainer</div>
       </div>
       <div class="explainer-body">
@@ -485,13 +485,13 @@
     </div>
     <div class="row">
       <div class="white-box p-3">
-          {{ distances_dcr_html_chart }}
+          {{ distances_dcr_html_chart | safe }}
       </div>
     </div>
     <br />
     <div class="explainer" style="margin-bottom: 30px">
       <div class="explainer-header">
-        <div class="explainer-icon">{{html_assets['explainer.svg']}}</div>
+        <div class="explainer-icon">{{ html_assets['explainer.svg'] | safe }}</div>
         <div class="explainer-title">Explainer</div>
       </div>
       <div class="explainer-body">
