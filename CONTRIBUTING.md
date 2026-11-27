@@ -23,7 +23,7 @@ Thanks for your interest in contributing to Synthetic Data Quality Assurance! Fo
 
 3. **Create a virtual environment and install dependencies**:
    ```bash
-   uv sync --frozen --python=3.10
+   uv sync --frozen --python=3.11
    source .venv/bin/activate
    ```
 

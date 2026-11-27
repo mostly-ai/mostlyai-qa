@@ -25,7 +25,7 @@ pip install -U mostlyai-qa
 On Linux, one can explicitly install the CPU-only variant of torch together with `mostlyai-qa`:
 
 ```bash
-pip install -U torch==2.13.0+cpu torchvision==0.28.0+cpu mostlyai-qa --extra-index-url https://download.pytorch.org/whl/cpu
+pip install -U torch==2.15.0+cpu mostlyai-qa --extra-index-url https://download.pytorch.org/whl/cpu
 ```
 
 ## Quick Start
@@ -98,7 +98,9 @@ report_path, metrics = qa.report(
 ## Sample Reports
 
 * [Baseball Players](https://html-preview.github.io/?url=https://github.com/mostly-ai/mostlyai-qa/blob/main/examples/baseball-players.html) (Flat Data)
-* [Baseball Seasons](https://html-preview.github.io/?url=https://github.com/mostly-ai/mostlyai-qa/blob/main/examples/baseball-seasons-with-context.html) (Sequential Data)
+* [Baseball Players with Context](https://html-preview.github.io/?url=https://github.com/mostly-ai/mostlyai-qa/blob/main/examples/baseball-players-with-context.html) (Flat Data with Context)
+* [Baseball Seasons](https://html-preview.github.io/?url=https://github.com/mostly-ai/mostlyai-qa/blob/main/examples/baseball-seasons.html) (Sequential Data)
+* [Baseball Seasons with Context](https://html-preview.github.io/?url=https://github.com/mostly-ai/mostlyai-qa/blob/main/examples/baseball-seasons-with-context.html) (Sequential Data with Context)
 
 ## Citation
 
