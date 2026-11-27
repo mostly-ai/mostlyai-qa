@@ -45,7 +45,7 @@ class TestStatistics:
     def test_store_and_load_bin_counts(self, tmp_path, cols):
         # this tests covers two symetrical functions:
         # store_bin_counts and load_bin_counts
-        trn, hol, syn = cols
+        trn, _hol, syn = cols
         # apply ctx:/tgt: prefixes and create nxt: columns
         prefixes = ["ctx:", "ctx:", "tgt:"]
         columns = [f"{p}{c}" for p, c in zip(prefixes, trn.columns)]

@@ -69,29 +69,29 @@ qa.init_logging()
 
 # analyze single-table data
 report_path, metrics = qa.report(
-    syn_tgt_data = synthetic_df,
-    trn_tgt_data = training_df,
-    hol_tgt_data = holdout_df,  # optional
+    syn_tgt_data=synthetic_df,
+    trn_tgt_data=training_df,
+    hol_tgt_data=holdout_df,  # optional
 )
 
 # analyze sequential data
 report_path, metrics = qa.report(
-    syn_tgt_data = synthetic_df,
-    trn_tgt_data = training_df,
-    hol_tgt_data = holdout_df,  # optional
-    tgt_context_key = "user_id",
+    syn_tgt_data=synthetic_df,
+    trn_tgt_data=training_df,
+    hol_tgt_data=holdout_df,  # optional
+    tgt_context_key="user_id",
 )
 
 # analyze sequential data with context
 report_path, metrics = qa.report(
-    syn_tgt_data = synthetic_df,
-    trn_tgt_data = training_df,
-    hol_tgt_data = holdout_df,  # optional
-    syn_ctx_data = synthetic_context_df,
-    trn_ctx_data = training_context_df,
-    hol_ctx_data = holdout_context_df,  # optional
-    ctx_primary_key = "id",
-    tgt_context_key = "user_id",
+    syn_tgt_data=synthetic_df,
+    trn_tgt_data=training_df,
+    hol_tgt_data=holdout_df,  # optional
+    syn_ctx_data=synthetic_context_df,
+    trn_ctx_data=training_context_df,
+    hol_ctx_data=holdout_context_df,  # optional
+    ctx_primary_key="id",
+    tgt_context_key="user_id",
 )
 ```
 

@@ -114,7 +114,7 @@ def calculate_discriminator_auc(
             # calculate the mean AUC score
             mean_auc_score = np.mean(auc_scores)
 
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             _LOG.warning(f"calculate_mean_auc failed: {e}")
             mean_auc_score = None
 
@@ -152,7 +152,7 @@ def make_contour_and_centroid_traces(
     data += np.random.normal(loc=0, scale=noise, size=data.shape)
     try:
         Z = scipy.stats.gaussian_kde(data)(np.vstack([X.ravel(), Y.ravel()])).reshape(X.shape)
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         _LOG.warning(f"gaussian_kde failed, using ones instead: {e}")
         Z = np.ones_like(X)
 
@@ -162,15 +162,15 @@ def make_contour_and_centroid_traces(
         x=x,
         y=y,
         colorscale=color_scale,
-        line=dict(width=0, color="rgba(0,0,0,0.0)"),
-        contours=dict(
-            coloring="fill",
-            showlabels=False,
-            start=0,
-            end=np.max(Z),
-            size=np.max(Z) / 10,
-            labelfont=dict(size=12, color="white"),
-        ),
+        line={"width": 0, "color": "rgba(0,0,0,0.0)"},
+        contours={
+            "coloring": "fill",
+            "showlabels": False,
+            "start": 0,
+            "end": np.max(Z),
+            "size": np.max(Z) / 10,
+            "labelfont": {"size": 12, "color": "white"},
+        },
         opacity=0.8,
         showscale=False,
         hoverinfo="skip",
@@ -181,7 +181,7 @@ def make_contour_and_centroid_traces(
         x=[centroid[0]],
         y=[centroid[1]],
         mode="markers",
-        marker=dict(size=10, color="black"),
+        marker={"size": 10, "color": "black"},
         name="Centroid",
         hoverinfo="skip",
         opacity=1.0,
@@ -195,7 +195,7 @@ def plot_store_similarity_contours(
     syn_embeds: np.ndarray,
     trn_embeds: np.ndarray,
     hol_embeds: np.ndarray | None = None,
-    workspace: TemporaryWorkspace = None,
+    workspace: TemporaryWorkspace,
 ):
     if trn_embeds.shape[1] < 3:
         return
@@ -228,7 +228,7 @@ def plot_store_similarity_contours(
         plot_bgcolor=CHARTS_COLORS["background"],
         autosize=True,
         height=400 * n_rows,
-        margin=dict(l=10, r=10, b=10, t=50, pad=5),
+        margin={"l": 10, "r": 10, "b": 10, "t": 50, "pad": 5},
         showlegend=False,
         dragmode=False,
     )

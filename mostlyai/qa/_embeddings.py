@@ -94,6 +94,7 @@ def encode_strings(
         # map out of range values to RARE_BIN
         syn_col = syn_col.where(syn_col.isin(uvals), RARE_BIN)
         # embed unique values into high-dimensional space
+        assert embedder is not None
         embeds = embedder.encode(uvals + [RARE_BIN])
         # project embeddings into a low-dimensional space with dim depending on col cardinality
         if len(uvals) <= 20:
@@ -149,7 +150,7 @@ def encode_data(
     # concatenate numeric and string encoded columns
     syn_encoded = pd.concat([syn_num, syn_str], axis=1)
     trn_encoded = pd.concat([trn_num, trn_str], axis=1)
-    hol_encoded = pd.concat([hol_num, hol_str], axis=1) if hol_data is not None else None
+    hol_encoded = pd.concat([hol_num, hol_str], axis=1) if hol_num is not None and hol_str is not None else None
     # normalize embeddings
     syn_encoded = normalize(syn_encoded.values, norm="l2")
     trn_encoded = normalize(trn_encoded.values, norm="l2")

@@ -85,6 +85,8 @@ def report_from_statistics(
         else:
             report_path = Path(report_path)
 
+        if statistics_path is None:
+            raise ValueError("statistics_path must be provided")
         statistics = Statistics(path=statistics_path)
 
         # determine sample size
@@ -134,6 +136,7 @@ def report_from_statistics(
         ori_coh_bins = statistics.load_coherence_bins()
         do_coherence = ori_coh_bins is not None
         if do_coherence:
+            assert tgt_context_key is not None
             _LOG.info("prepare synthetic data for coherence started")
             syn_coh, _ = prepare_data_for_coherence(
                 df_tgt=syn_tgt_data,
@@ -190,7 +193,7 @@ def _report_accuracy_and_correlations_from_statistics(
     syn: pd.DataFrame,
     statistics: Statistics,
     workspace: TemporaryWorkspace,
-) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     _LOG.info("load original bins")
     bins = statistics.load_bins()
     syn = syn[bins.keys()].copy()

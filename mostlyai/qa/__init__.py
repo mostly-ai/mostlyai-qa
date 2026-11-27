@@ -23,7 +23,7 @@ from mostlyai.qa.random_state import set_random_state
 from mostlyai.qa.reporting import report
 from mostlyai.qa.reporting_from_statistics import report_from_statistics
 
-__all__ = ["report", "report_from_statistics", "init_logging", "set_random_state"]
+__all__ = ["init_logging", "report", "report_from_statistics", "set_random_state"]
 __version__ = "1.10.11"
 
 warnings.filterwarnings("ignore", category=FutureWarning, module="phik")

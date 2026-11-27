@@ -211,11 +211,11 @@ class Statistics:
         return df
 
     def store_numeric_uni_kdes(self, trn_kdes: dict[str, pd.Series]) -> None:
-        trn_kdes = pd.DataFrame(
+        df = pd.DataFrame(
             [(column, list(xy.index), list(xy.values)) for column, xy in trn_kdes.items()],
             columns=["column", "x", "y"],
         )
-        self._store_file_per_row(trn_kdes, self.numeric_kdes_uni_dir, ["x", "y"])
+        self._store_file_per_row(df, self.numeric_kdes_uni_dir, ["x", "y"])
 
     def load_numeric_uni_kdes(self) -> dict[str, pd.Series]:
         trn_kdes = self._load_df_from_row_files(self.numeric_kdes_uni_dir, ["column", "x", "y"], "column")
@@ -232,11 +232,11 @@ class Statistics:
         return trn_kdes
 
     def store_categorical_uni_counts(self, trn_cnts_uni: dict[str, pd.Series]) -> None:
-        trn_cnts_uni = pd.DataFrame(
+        df = pd.DataFrame(
             [(column, list(cat_counts.index), list(cat_counts.values)) for column, cat_counts in trn_cnts_uni.items()],
             columns=["column", "cat", "count"],
         )
-        self._store_file_per_row(trn_cnts_uni, self.categorical_counts_uni_dir, ["cat", "count"])
+        self._store_file_per_row(df, self.categorical_counts_uni_dir, ["cat", "count"])
 
     def load_categorical_uni_counts(self) -> dict[str, pd.Series]:
         trn_cnts_uni = self._load_df_from_row_files(
@@ -260,21 +260,21 @@ class Statistics:
         ori_cnts_biv: dict[tuple[str, str], pd.Series],
     ) -> None:
         # store univariate bin counts
-        ori_cnts_uni = pd.DataFrame(
+        df_uni = pd.DataFrame(
             [(column, list(bin_counts.index), list(bin_counts.values)) for column, bin_counts in ori_cnts_uni.items()],
             columns=["column", "bin", "count"],
         )
-        ori_cnts_uni.to_parquet(self.bin_counts_uni_path)
+        df_uni.to_parquet(self.bin_counts_uni_path)
 
         # store bivariate bin counts
-        ori_cnts_biv = pd.DataFrame(
+        df_biv = pd.DataFrame(
             [
                 (column[0], column[1], list(bin_counts.index), list(bin_counts.values))
                 for column, bin_counts in ori_cnts_biv.items()
             ],
             columns=["col1", "col2", "bin", "count"],
         )
-        ori_cnts_biv.to_parquet(self.bin_counts_biv_path)
+        df_biv.to_parquet(self.bin_counts_biv_path)
 
     def load_bin_counts(
         self,
@@ -327,11 +327,11 @@ class Statistics:
         return df.set_index("column")["bins"].to_dict()
 
     def store_distinct_categories_per_sequence_kdes(self, ori_kdes: dict[str, pd.Series]) -> None:
-        ori_kdes = pd.DataFrame(
+        df = pd.DataFrame(
             [(column, list(xy.index), list(xy.values)) for column, xy in ori_kdes.items()],
             columns=["column", "x", "y"],
         )
-        self._store_file_per_row(ori_kdes, self.distinct_categories_per_sequence_kdes_dir, ["x", "y"])
+        self._store_file_per_row(df, self.distinct_categories_per_sequence_kdes_dir, ["x", "y"])
 
     def load_distinct_categories_per_sequence_kdes(self) -> dict[str, pd.Series]:
         kdes = self._load_df_from_row_files(
@@ -356,11 +356,11 @@ class Statistics:
         return df.set_index("column")["bins"].to_dict()
 
     def store_binned_distinct_categories_per_sequence_counts(self, counts: dict[str, pd.Series]) -> None:
-        counts = pd.DataFrame(
+        df = pd.DataFrame(
             [(column, list(counts.index), list(counts.values)) for column, counts in counts.items()],
             columns=["column", "cat", "count"],
         )
-        self._store_file_per_row(counts, self.distinct_categories_per_sequence_counts_dir, ["cat", "count"])
+        self._store_file_per_row(df, self.distinct_categories_per_sequence_counts_dir, ["cat", "count"])
 
     def load_binned_distinct_categories_per_sequence_counts(self) -> dict[str, pd.Series]:
         counts = self._load_df_from_row_files(

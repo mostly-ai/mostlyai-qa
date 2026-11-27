@@ -53,7 +53,7 @@ def calculate_dcrs_nndrs(
 
 def calculate_distances(
     *, syn_embeds: np.ndarray, trn_embeds: np.ndarray, hol_embeds: np.ndarray | None
-) -> dict[str, np.ndarray]:
+) -> dict[str, np.ndarray | None]:
     """
     Calculates distances to the closest records (DCR).
     """
@@ -94,6 +94,8 @@ def calculate_distances(
                 data=trn_embeds[:, columns], query=hol_embeds[:, columns]
             )
             # keep results if DCR share is MAX
+            assert g_dcr_syn_trn is not None and g_dcr_syn_hol is not None
+            assert g_nndr_syn_trn is not None and g_nndr_syn_hol is not None
             g_dcr_share = calculate_dcr_share(g_dcr_syn_trn, g_dcr_syn_hol)
             g_nndr_ratio = calculate_nndr_ratio(g_nndr_syn_trn, g_nndr_syn_hol)
             if len(columns) == ori_embeds.shape[1]:
@@ -226,7 +228,7 @@ def split_columns_into_correlated_groups(X, k):
     )
     try:
         labels = sc.fit_predict(adj_matrix)
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         _LOG.warning(f"Spectral clustering failed: {e}")
         return []
 
@@ -235,13 +237,14 @@ def split_columns_into_correlated_groups(X, k):
     return groups
 
 
-def plot_distances(plot_title: str, distances: dict[str, np.ndarray]) -> go.Figure:
+def plot_distances(plot_title: str, distances: dict[str, np.ndarray | None]) -> go.Figure:
     dcr_syn_trn = distances["dcr_syn_trn"]
     dcr_syn_hol = distances["dcr_syn_hol"]
     dcr_trn_hol = distances["dcr_trn_hol"]
     nndr_syn_trn = distances["nndr_syn_trn"]
     nndr_syn_hol = distances["nndr_syn_hol"]
     nndr_trn_hol = distances["nndr_trn_hol"]
+    assert dcr_syn_trn is not None and nndr_syn_trn is not None
 
     # calculate quantiles for DCR
     y = np.linspace(0, 1, 101)
@@ -284,7 +287,7 @@ def plot_distances(plot_title: str, distances: dict[str, np.ndarray]) -> go.Figu
 
     # prepare layout
     layout = go.Layout(
-        title=dict(text=f"<b>{plot_title}</b>", x=0.5, y=0.98),
+        title={"text": f"<b>{plot_title}</b>", "x": 0.5, "y": 0.98},
         title_font=CHARTS_FONTS["title"],
         font=CHARTS_FONTS["base"],
         hoverlabel=dict(
@@ -294,7 +297,7 @@ def plot_distances(plot_title: str, distances: dict[str, np.ndarray]) -> go.Figu
         plot_bgcolor=CHARTS_COLORS["background"],
         autosize=True,
         height=500,
-        margin=dict(l=20, r=20, b=20, t=60, pad=5),
+        margin={"l": 20, "r": 20, "b": 20, "t": 60, "pad": 5},
         showlegend=True,
     )
 
@@ -339,7 +342,7 @@ def plot_distances(plot_title: str, distances: dict[str, np.ndarray]) -> go.Figu
                 x=x_dcr_trn_hol,
                 y=y,
                 name="Training vs. Holdout Data",
-                line=dict(color="#999999", width=5),
+                line={"color": "#999999", "width": 5},
                 showlegend=True,
             ),
             row=1,
@@ -354,7 +357,7 @@ def plot_distances(plot_title: str, distances: dict[str, np.ndarray]) -> go.Figu
                 x=x_dcr_syn_hol,
                 y=y,
                 name="Synthetic vs. Holdout Data",
-                line=dict(color="#666666", width=5),
+                line={"color": "#666666", "width": 5},
                 showlegend=True,
             ),
             row=1,
@@ -368,7 +371,7 @@ def plot_distances(plot_title: str, distances: dict[str, np.ndarray]) -> go.Figu
             x=x_dcr_syn_trn,
             y=y,
             name="Synthetic vs. Training Data",
-            line=dict(color="#24db96", width=5),
+            line={"color": "#24db96", "width": 5},
             showlegend=True,
         ),
         row=1,
@@ -384,7 +387,7 @@ def plot_distances(plot_title: str, distances: dict[str, np.ndarray]) -> go.Figu
                 x=x_nndr_trn_hol,
                 y=y,
                 name="Training vs. Holdout Data",
-                line=dict(color="#999999", width=5),
+                line={"color": "#999999", "width": 5},
                 showlegend=False,
             ),
             row=1,
@@ -399,7 +402,7 @@ def plot_distances(plot_title: str, distances: dict[str, np.ndarray]) -> go.Figu
                 x=x_nndr_syn_hol,
                 y=y,
                 name="Synthetic vs. Holdout Data",
-                line=dict(color="#666666", width=5),
+                line={"color": "#666666", "width": 5},
                 showlegend=False,
             ),
             row=1,
@@ -413,7 +416,7 @@ def plot_distances(plot_title: str, distances: dict[str, np.ndarray]) -> go.Figu
             x=x_nndr_syn_trn,
             y=y,
             name="Synthetic vs. Training Data",
-            line=dict(color="#24db96", width=5),
+            line={"color": "#24db96", "width": 5},
             showlegend=False,
         ),
         row=1,
@@ -421,22 +424,22 @@ def plot_distances(plot_title: str, distances: dict[str, np.ndarray]) -> go.Figu
     )
 
     fig.update_layout(
-        legend=dict(
-            orientation="h",
-            yanchor="bottom",
-            y=-0.15,
-            xanchor="center",
-            x=0.5,
-            font=dict(size=10),
-            traceorder="reversed",
-        )
+        legend={
+            "orientation": "h",
+            "yanchor": "bottom",
+            "y": -0.15,
+            "xanchor": "center",
+            "x": 0.5,
+            "font": {"size": 10},
+            "traceorder": "reversed",
+        }
     )
 
     return fig
 
 
 def plot_store_distances(
-    distances: dict[str, np.ndarray],
+    distances: dict[str, np.ndarray | None],
     workspace: TemporaryWorkspace,
 ) -> None:
     fig = plot_distances(

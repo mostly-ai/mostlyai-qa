@@ -248,6 +248,7 @@ def report(
         # do coherence analysis only if there are non-fk columns in the target data
         do_coherence = setup == "1:N" and len(trn_tgt_data.columns) > 1
         if do_coherence:
+            assert tgt_context_key is not None
             ori_coh, ori_coh_bins = prepare_data_for_coherence(
                 df_tgt=pd.concat([trn_tgt_data, hol_tgt_data]) if hol_tgt_data is not None else trn_tgt_data,
                 tgt_context_key=tgt_context_key,
@@ -293,6 +294,7 @@ def report(
         progress.update(completed=30, total=100)
 
         if do_coherence:
+            assert tgt_context_key is not None
             _LOG.info("report sequences per distinct category")
             acc_seqs_per_cat = _report_coherence_sequences_per_distinct_category(
                 ori_coh=ori_coh,
@@ -338,6 +340,7 @@ def report(
         ## 4. METRICS & REPORT ##
 
         _LOG.info("calculate metrics")
+        assert distances["dcr_syn_trn"] is not None and distances["nndr_syn_trn"] is not None
         metrics = _calculate_metrics(
             acc_uni=acc_uni,
             acc_biv=acc_biv,
@@ -421,7 +424,7 @@ def _calculate_metrics(
     nndr_syn_trn: np.ndarray,
     nndr_syn_hol: np.ndarray | None,
     nndr_trn_hol: np.ndarray | None,
-    sim_cosine_trn_hol: np.float64,
+    sim_cosine_trn_hol: np.float64 | None,
     sim_cosine_trn_syn: np.float64,
     sim_auc_trn_hol: np.float64 | None,
     sim_auc_trn_syn: np.float64 | None,
@@ -516,7 +519,7 @@ def _report_accuracy_and_correlations(
     syn: pd.DataFrame,
     statistics: Statistics,
     workspace: TemporaryWorkspace,
-) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     # bin data
     ori_bin, syn_bin = binning_data(
         ori=ori,
@@ -741,7 +744,7 @@ def _report_similarity(
     trn_embeds: np.ndarray,
     hol_embeds: np.ndarray | None,
     workspace: TemporaryWorkspace,
-) -> tuple[np.float64 | None, np.float64, np.float64 | None, np.float64]:
+) -> tuple[np.float64 | None, np.float64, np.float64 | None, np.float64 | None]:
     _LOG.info("calculate centroid similarities")
     sim_cosine_trn_hol, sim_cosine_trn_syn = _similarity.calculate_cosine_similarities(
         syn_embeds=syn_embeds, trn_embeds=trn_embeds, hol_embeds=hol_embeds
@@ -771,7 +774,7 @@ def _report_distances(
     trn_embeds: np.ndarray,
     hol_embeds: np.ndarray | None,
     workspace: TemporaryWorkspace,
-) -> dict[str, np.ndarray]:
+) -> dict[str, np.ndarray | None]:
     _LOG.info("calculate distances")
     distances = _distances.calculate_distances(syn_embeds=syn_embeds, trn_embeds=trn_embeds, hol_embeds=hol_embeds)
     _LOG.info("plot and store distances")
