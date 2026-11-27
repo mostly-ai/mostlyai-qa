@@ -24,7 +24,7 @@ from mostlyai.qa.reporting import report
 from mostlyai.qa.reporting_from_statistics import report_from_statistics
 
 __all__ = ["init_logging", "report", "report_from_statistics", "set_random_state"]
-__version__ = "1.10.11"
+__version__ = "1.10.12"
 
 warnings.filterwarnings("ignore", category=FutureWarning, module="phik")
 warnings.filterwarnings("ignore", category=UserWarning, module="huggingface_hub")
