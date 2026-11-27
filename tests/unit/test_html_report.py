@@ -133,7 +133,7 @@ def test_generate_store_report(tmp_path, cols, workspace, monkeypatch, unavailab
 
 
 def test_summarize_accuracies_by_column(tmp_path, cols):
-    trn, hol, syn = cols
+    trn, _hol, syn = cols
     # apply ctx::/tgt:: prefixes and create nxt:: columns
     prefixes = ["ctx::", "_.", "tgt::"]
     columns = [f"{p}{c}" for p, c in zip(prefixes, trn.columns)]

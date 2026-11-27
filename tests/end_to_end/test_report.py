@@ -184,7 +184,11 @@ def test_report_flat_early_exit(tmp_path):
 
 def test_report_sequential_early_exit(tmp_path):
     def make_dfs(
-        ctx_rows: int, tgt_rows: int, ctx_cols: list[str] = None, tgt_cols: list[str] = None, shift: int = 0
+        ctx_rows: int,
+        tgt_rows: int,
+        ctx_cols: list[str] | None = None,
+        tgt_cols: list[str] | None = None,
+        shift: int = 0,
     ) -> tuple[pd.DataFrame, pd.DataFrame]:
         ctx_cols = ctx_cols or []
         tgt_cols = tgt_cols or []

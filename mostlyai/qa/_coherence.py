@@ -109,7 +109,7 @@ def calculate_sequences_per_distinct_category(
     for col in df.columns:
         if col == context_key:
             continue
-        col_top_cats = top_cats.setdefault(col, seqs_per_cat[col].nlargest(n_top_cats).index.tolist())
+        col_top_cats = top_cats.setdefault(col, seqs_per_cat[col].nlargest(n_top_cats).index.tolist())  # ty: ignore[missing-argument]  # pandas stubs
         not_in_top_cats_mask = ~df[col].isin(col_top_cats)
         if not_in_top_cats_mask.any():
             if other_cat not in df[col].cat.categories:
@@ -125,7 +125,7 @@ def calculate_sequences_per_distinct_category(
     # number of sequences
     n_seqs = df[context_key].nunique()
 
-    return seqs_per_cat, binned_seqs_per_cat, top_cats, n_seqs
+    return seqs_per_cat, binned_seqs_per_cat, top_cats, n_seqs  # ty: ignore[invalid-explicit-return]  # pandas stubs
 
 
 def calculate_sequences_per_distinct_category_accuracy(

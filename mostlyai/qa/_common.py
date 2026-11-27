@@ -58,14 +58,14 @@ CHARTS_COLORS = {
 }
 
 CHARTS_FONTS = {
-    "title": dict(size=12, color="black", family="objectivity, verdana"),
-    "base": dict(size=8, color="#a3a3a3", family="objectivity, verdana"),
-    "hover": dict(
-        font_size=12,
-        font_color="black",
-        font_family="objectivity, verdana",
-        bgcolor="white",
-    ),
+    "title": {"size": 12, "color": "black", "family": "objectivity, verdana"},
+    "base": {"size": 8, "color": "#a3a3a3", "family": "objectivity, verdana"},
+    "hover": {
+        "font_size": 12,
+        "font_color": "black",
+        "font_family": "objectivity, verdana",
+        "bgcolor": "white",
+    },
 }
 
 
@@ -113,6 +113,7 @@ def determine_data_size(
 ) -> int:
     if ctx_data is not None and ctx_primary_key is not None:
         # consider number of matching keys for sample size
+        assert tgt_data is not None and tgt_context_key is not None
         ctx_keys = ctx_data[ctx_primary_key].unique()
         tgt_keys = tgt_data[tgt_context_key].unique()
         keys = set(ctx_keys).intersection(set(tgt_keys))
@@ -121,4 +122,5 @@ def determine_data_size(
         tgt_keys = tgt_data[tgt_context_key].unique()
         return len(tgt_keys)
     else:
+        assert tgt_data is not None
         return len(tgt_data)

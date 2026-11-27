@@ -303,7 +303,7 @@ def calculate_numeric_uni_kdes(df: pd.DataFrame, ori_kdes: dict[str, pd.Series] 
                     val_x = pd.Series(np.linspace(val_min, val_max, no_of_bins), dtype="float")
             else:  # ori_kdes is not None
                 # use grid points from training data
-                val_x = ori_kdes[col].index
+                val_x = ori_kdes[col].index  # ty: ignore[invalid-argument-type]  # pandas stubs
 
             # estimate gaussian kernels
             series_vals = series.dropna().to_numpy("float")
@@ -314,19 +314,19 @@ def calculate_numeric_uni_kdes(df: pd.DataFrame, ori_kdes: dict[str, pd.Series] 
                 series_kde = scipy.stats.gaussian_kde(series_vals)
                 val_y = series_kde(val_x.to_numpy("float"))
                 val_y = (val_y / (val_y.sum() + 1e-30)).round(5)
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 _LOG.warning(f"gaussian_kde failed, using ones instead: {e}")
                 val_y = [1] * len(val_x)
             col_kdes[col] = pd.Series(val_y, index=val_x, name=col)
 
     if ori_kdes is not None:
         # ensure the result has the same shape as for Model QA
-        for ori_col, ori_kdes in ori_kdes.items():
+        for ori_col, ori_kde in ori_kdes.items():
             if ori_col not in col_kdes:
-                kdes = pd.Series(0, index=ori_kdes.index, name=ori_col)
+                kdes = pd.Series(0, index=ori_kde.index, name=ori_col)
                 col_kdes[ori_col] = kdes
 
-    return col_kdes
+    return col_kdes  # ty: ignore[invalid-explicit-return]  # pandas stubs
 
 
 def calculate_categorical_uni_counts(
@@ -370,7 +370,7 @@ def calculate_categorical_uni_counts(
                 # are not repeated across columns
                 cnts[col] = cnts[col].mask(
                     cnts["cnt"] <= MAX_ENGINE_RARE_CATEGORY_THRESHOLD,
-                    (cnts[col]).apply(functools.partial(hash_rare, column_name=col)),
+                    (cnts[col]).apply(functools.partial(hash_rare, column_name=col)),  # ty: ignore[invalid-argument-type]  # pandas stubs
                 )
             cnts = cnts.set_index(cnts[col].rename(None))["cnt"].rename(col)
             col_counts[col] = cnts
@@ -380,7 +380,7 @@ def calculate_categorical_uni_counts(
         for ori_col, ori_counts in ori_col_counts.items():
             col_counts[ori_col] = col_counts.get(ori_col, pd.Series(0, index=ori_counts.index, name=ori_col))
 
-    return col_counts
+    return col_counts  # ty: ignore[invalid-explicit-return]  # pandas stubs
 
 
 def bin_count_uni(col: str, values: pd.Series) -> tuple[str, pd.Series]:
@@ -509,32 +509,32 @@ def plot_univariate(
     plot_title = f"<b>{col_name}</b>" + (f" <sup>{accuracy:.1%}</sup>" if accuracy is not None else "")
     # plot layout
     layout = go.Layout(
-        title=dict(text=plot_title, x=0.5, y=0.98),
+        title={"text": plot_title, "x": 0.5, "y": 0.98},
         title_font=CHARTS_FONTS["title"],
         font=CHARTS_FONTS["base"],
         hoverlabel=CHARTS_FONTS["hover"],
         plot_bgcolor=CHARTS_COLORS["background"],
         autosize=True,
         height=220,
-        margin=dict(l=10, r=10, b=10, t=40, pad=5),
+        margin={"l": 10, "r": 10, "b": 10, "t": 40, "pad": 5},
         showlegend=False,
         hovermode="x unified",
-        yaxis=dict(
-            showticklabels=False,
-            zeroline=True,
-            zerolinewidth=1,
-            zerolinecolor="#999999",
-            rangemode="tozero",
-        ),
-        yaxis2=dict(
-            gridwidth=1,
-            gridcolor="#d3d3d3",
-            griddash="dot",
-            zeroline=True,
-            zerolinewidth=1,
-            zerolinecolor="#999999",
-            rangemode="tozero",
-        ),
+        yaxis={
+            "showticklabels": False,
+            "zeroline": True,
+            "zerolinewidth": 1,
+            "zerolinecolor": "#999999",
+            "rangemode": "tozero",
+        },
+        yaxis2={
+            "gridwidth": 1,
+            "gridcolor": "#d3d3d3",
+            "griddash": "dot",
+            "zeroline": True,
+            "zerolinewidth": 1,
+            "zerolinecolor": "#999999",
+            "rangemode": "tozero",
+        },
     )
     fig = go.Figure(layout=layout).set_subplots(
         rows=1,
@@ -544,8 +544,8 @@ def plot_univariate(
     )
     fig.update_annotations(font_size=10)  # set font size of subplot titles
     # plot content
-    is_numeric = ori_num_kde is not None
-    if is_numeric:
+    if ori_num_kde is not None:
+        assert syn_num_kde is not None
         ori_line1, syn_line1 = plot_univariate_distribution_numeric(ori_num_kde, syn_num_kde)
         ori_line2, syn_line2 = plot_univariate_binned(
             ori_bin_col_cnts,
@@ -558,6 +558,7 @@ def plot_univariate(
         fig.layout.xaxis2.update(type="category")
     else:
         fig.layout.yaxis.update(tickformat=".0%")
+        assert ori_cat_col_cnts is not None and syn_cat_col_cnts is not None
         ori_line1, syn_line1 = plot_univariate_distribution_categorical(
             ori_cat_col_cnts, syn_cat_col_cnts, ori_cnt, syn_cnt, max_label_length=max_label_length
         )
@@ -836,20 +837,20 @@ def plot_bivariate(
     plot_title = f"<b>{col1_name} ~ {col2_name}</b>" + (f" <sup>{accuracy:.1%}</sup>" if accuracy is not None else "")
     # plot layout
     layout = go.Layout(
-        title=dict(text=plot_title, x=0.5, y=0.98),
+        title={"text": plot_title, "x": 0.5, "y": 0.98},
         title_font=CHARTS_FONTS["title"],
         font=CHARTS_FONTS["base"],
         hoverlabel=CHARTS_FONTS["hover"],
         plot_bgcolor=CHARTS_COLORS["background"],
         autosize=True,
         height=220,
-        margin=dict(l=10, r=10, b=10, t=40, pad=5),
+        margin={"l": 10, "r": 10, "b": 10, "t": 40, "pad": 5},
         showlegend=False,
         # prevent Plotly from trying to convert strings to dates
-        xaxis=dict(type="category"),
-        xaxis2=dict(type="category"),
-        yaxis=dict(type="category"),
-        yaxis2=dict(type="category"),
+        xaxis={"type": "category"},
+        xaxis2={"type": "category"},
+        yaxis={"type": "category"},
+        yaxis2={"type": "category"},
     )
     fig = go.Figure(layout=layout).set_subplots(
         rows=1,
@@ -921,14 +922,14 @@ def plot_accuracy_matrix(acc_uni: pd.DataFrame, acc_biv: pd.DataFrame) -> go.Fig
     acc_mat = acc_df.pivot(index="col1", columns="col2", values="accuracy")
     # plot layout
     layout = go.Layout(
-        title=dict(text="<b>Accuracy Matrix</b>", x=0.5, y=0.98),
+        title={"text": "<b>Accuracy Matrix</b>", "x": 0.5, "y": 0.98},
         title_font=CHARTS_FONTS["title"],
         font=CHARTS_FONTS["base"],
         hoverlabel=CHARTS_FONTS["hover"],
         plot_bgcolor=CHARTS_COLORS["background"],
         autosize=True,
         height=500,
-        margin=dict(l=10, r=10, b=10, t=30, pad=5),
+        margin={"l": 10, "r": 10, "b": 10, "t": 30, "pad": 5},
         showlegend=False,
     )
     fig = go.Figure(layout=layout).set_subplots(
@@ -972,13 +973,14 @@ def format_display_prefixes(*labels: str) -> list[str]:
             (prefix for prefix in prefix_display_replacements if label.startswith(prefix)),
             None,
         )
-        replacement = prefix_display_replacements.get(prefix)
-        return label.replace(prefix, replacement, 1) if replacement is not None else label
+        if prefix is None:
+            return label
+        return label.replace(prefix, prefix_display_replacements[prefix], 1)
 
     return [_format_for_display(n) for n in labels]
 
 
-def trim_label(label: str, max_length: int = None, reserved_labels: set[str] = None) -> str:
+def trim_label(label: str, max_length: int | None = None, reserved_labels: set[str] | None = None) -> str:
     if reserved_labels is None:
         reserved_labels = set()
 
@@ -1006,7 +1008,7 @@ def trim_label(label: str, max_length: int = None, reserved_labels: set[str] = N
     return label
 
 
-def trim_labels(labels: list[str], max_length: int = None, ensure_unique=True) -> list[str]:
+def trim_labels(labels: list[str], max_length: int | None = None, ensure_unique=True) -> list[str]:
     out = []
     trimmed_labels = set()
     for i, label in enumerate(labels):
@@ -1093,7 +1095,7 @@ def bin_numeric(
         else:
             breaks = search_bin_boundaries(col, bins)
         # ensure that we have unique breaks in increasing order
-        breaks = list(sorted(set(breaks)))
+        breaks = sorted(set(breaks))
         if len(breaks) == 0:
             breaks = [-1e10, 1e10]
 
@@ -1149,7 +1151,7 @@ def bin_datetime(
         else:
             breaks = search_bin_boundaries(col, bins)
         # ensure that we have unique breaks in increasing order
-        breaks = list(sorted(set(breaks)))
+        breaks = sorted(set(breaks))
         if len(breaks) == 0:
             breaks = pd.to_datetime(["1700", "2200"]).to_list()
 
@@ -1195,13 +1197,13 @@ def bin_non_categorical(
     col, breaks = clip_and_breaks(col, bins)
     labels = create_labels(breaks)
 
-    if not len(labels) == len(set(labels)) or len(labels) + 1 != len(breaks):
+    if len(labels) != len(set(labels)) or len(labels) + 1 != len(breaks):
         # keep the invariants that labels need to be unique and there always
         # must be strictly one less labels than breaks before using pd.cut
         # breaks is assumed to be unique by this point
         _LOG.warning(
             "one of labels invariants is broken in binning; "
-            f"not len(labels) == len(set(labels)): {not len(labels) == len(set(labels))}; "
+            f"not len(labels) == len(set(labels)): {len(labels) != len(set(labels))}; "
             f"len(labels) + 1 != len(breaks): {len(labels) + 1 != len(breaks)}; "
             "falling back to sensible default for labels"
         )
@@ -1230,18 +1232,18 @@ def bin_categorical(col: pd.Series, bins: int | list[str]) -> tuple[pd.Categoric
     if isinstance(bins, int):
         cnts = col.value_counts().head(bins)
         cnts = cnts[cnts >= MIN_RARE_CAT_PROTECTION]
-        bins = sorted(list(cnts.index))
+        bins = sorted(cnts.index)
     # shift special categories to last position
     bins = [c for c in bins if c != EMPTY_BIN] + [EMPTY_BIN]
     bins = [c for c in bins if c != OTHER_BIN] + [OTHER_BIN]
     bins = [c for c in bins if c != RARE_BIN] + [RARE_BIN]
     bins = [c for c in bins if c != NA_BIN] + [NA_BIN]
     col = col.where(col.isin(bins), OTHER_BIN)
-    col = pd.Categorical(col, categories=bins, ordered=True)
-    col = col.fillna(OTHER_BIN)
+    cat_col = pd.Categorical(col, categories=bins, ordered=True)
+    cat_col = cat_col.fillna(OTHER_BIN)
     new_cats = dict(zip(bins, trim_labels(bins, max_length=20)))
-    col = col.rename_categories(new_cats)
-    return col, bins
+    cat_col = cat_col.rename_categories(new_cats)
+    return cat_col, bins
 
 
 def search_bin_boundaries(num_col: pd.Series, n: int) -> list:
@@ -1254,7 +1256,7 @@ def search_bin_boundaries(num_col: pd.Series, n: int) -> list:
     search_end = max(n + 1, min(1000, len(values) + 1))
     for i in range(search_start, search_end):
         indices = np.linspace(0, len(values) - 1, i).astype(int)
-        breaks = sorted(list(set(values[indices])))
+        breaks = sorted(set(values[indices]))
         if len(breaks) >= n + 1:
             break
     return breaks
@@ -1301,7 +1303,7 @@ def calculate_correlations(binned: pd.DataFrame, corr_cols: Iterable[str] | None
             corr_link = scipy.cluster.hierarchy.linkage(corr, method="complete", metric="euclidean")
             corr_idx = scipy.cluster.hierarchy.dendrogram(corr_link, no_plot=True)["leaves"]
             corr_cols = corr.columns[corr_idx]
-        except Exception:
+        except Exception:  # noqa: BLE001
             corr_cols = corr.columns
     corr = corr.reindex(corr_cols, axis=0).reindex(corr_cols, axis=1)
     return corr
@@ -1310,14 +1312,14 @@ def calculate_correlations(binned: pd.DataFrame, corr_cols: Iterable[str] | None
 def plot_correlation_matrices(corr_ori: pd.DataFrame, corr_syn: pd.DataFrame) -> go.Figure:
     # plot layout
     layout = go.Layout(
-        title=dict(text="<b>Correlation Matrices</b>", x=0.5, y=0.98),
+        title={"text": "<b>Correlation Matrices</b>", "x": 0.5, "y": 0.98},
         title_font=CHARTS_FONTS["title"],
         font=CHARTS_FONTS["base"],
         hoverlabel=CHARTS_FONTS["hover"],
         plot_bgcolor=CHARTS_COLORS["background"],
         autosize=True,
         height=400,
-        margin=dict(l=10, r=10, b=10, t=50, pad=5),
+        margin={"l": 10, "r": 10, "b": 10, "t": 50, "pad": 5},
         showlegend=False,
     )
     fig = go.Figure(layout=layout).set_subplots(
@@ -1329,7 +1331,7 @@ def plot_correlation_matrices(corr_ori: pd.DataFrame, corr_syn: pd.DataFrame) ->
     )
     fig.update_annotations(font_size=12)  # set font size of subplot titles
     # plot content
-    col_names = trim_labels(corr_ori.columns, max_length=30)
+    col_names = trim_labels(list(corr_ori.columns), max_length=30)
     hovertemplate = "`%{x}` vs. `%{y}`: %{z:.2f}"
     heat1 = go.Heatmap(
         x=col_names,

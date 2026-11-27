@@ -12,14 +12,18 @@ install: # Install dependencies
 
 .PHONY: lint
 lint: ## Run lints
-	uv run --no-sync pre-commit run --all-files
+	uv run --no-sync prek run --all-files
+
+.PHONY: typecheck
+typecheck: ## Run type checks
+	uv run --no-sync ty check
 
 .PHONY: test
 test: ## Run tests
 	uv run --no-sync pytest
 
 .PHONY: all
-all: clean install lint test ## Run the commands: clean install lint test
+all: clean install lint typecheck test ## Run the commands: clean install lint typecheck test
 
 # Default files to update
 PYPROJECT_TOML = pyproject.toml

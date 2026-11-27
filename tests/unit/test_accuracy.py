@@ -52,7 +52,7 @@ from mostlyai.qa._sampling import prepare_data_for_accuracy, sample_two_consecut
 
 
 def test_calculate_univariates(cols):
-    trn, hol, syn = cols
+    trn, _hol, syn = cols
     # prefix some columns with "tgt::"
     columns = [f"tgt::{c}" if idx > 0 else c for idx, c in enumerate(trn.columns)]
     trn.columns, syn.columns = columns, columns
@@ -82,7 +82,7 @@ def test_calculate_bivariates_columns(cols):
 
 
 def test_calculate_bivariates(cols):
-    trn, hol, syn = cols
+    trn, _hol, syn = cols
     # apply ctx::/tgt:: prefixes and create nxt:: columns
     prefixes = ["ctx::", "_.", "tgt::"]
     columns = [f"{p}{c}" for p, c in zip(prefixes, trn.columns)]
@@ -104,7 +104,7 @@ def test_calculate_bivariates(cols):
 
 
 def test_calculate_uni_counts(tmp_path, cols):
-    trn, hol, syn = cols
+    trn, _hol, syn = cols
     # apply ctx::/tgt:: prefixes and create nxt:: columns
     prefixes = ["ctx::", "ctx::", "tgt::"]
     columns = [f"{p}{c}" for p, c in zip(prefixes, trn.columns)]
@@ -137,7 +137,7 @@ def test_calculate_uni_counts(tmp_path, cols):
 
 
 def test_calculate_bin_counts(tmp_path, cols):
-    trn, hol, syn = cols
+    trn, _hol, syn = cols
     # apply ctx::/tgt:: prefixes and create nxt:: columns
     prefixes = ["ctx::", "ctx::", "tgt::"]
     columns = [f"{p}{c}" for p, c in zip(prefixes, trn.columns)]
@@ -212,7 +212,7 @@ def test_calculate_bin_counts(tmp_path, cols):
 
 
 def test_plot_store_univariates(cols, workspace):
-    trn, hol, syn = cols
+    trn, _hol, syn = cols
     trn = trn.rename(columns=lambda c: f"tgt::{c}")
     syn = syn.rename(columns=lambda c: f"tgt::{c}")
     trn_3, bins = bin_data(trn, 3)
@@ -240,7 +240,7 @@ def test_plot_store_univariates(cols, workspace):
 
 
 def test_plot_store_bivariates(cols, workspace):
-    trn, hol, syn = cols
+    trn, _hol, syn = cols
     # apply ctx::/tgt:: prefixes and create nxt:: columns
     prefixes = ["ctx::", "tgt::", "tgt::"]
     columns = [f"{p}{c}" for p, c in zip(prefixes, trn.columns)]
@@ -266,7 +266,7 @@ def test_plot_store_bivariates(cols, workspace):
 
 
 def test_plot_store_accuracy_matrix(cols, workspace):
-    trn, hol, syn = cols
+    trn, _hol, syn = cols
     # apply ctx::/tgt:: prefixes and create nxt:: columns
     prefixes = ["ctx::", "_::", "tgt::"]
     columns = [f"{p}{c}" for p, c in zip(prefixes, trn.columns)]
@@ -643,7 +643,7 @@ def test_calculate_correlations(cols):
 
 
 def test_plot_store_correlation_matrices(cols, workspace):
-    trn, hol, syn = cols
+    trn, _hol, syn = cols
     trn, bins = bin_data(trn, 3)
     syn, _ = bin_data(syn, bins)
     # prefix some columns with "tgt::"

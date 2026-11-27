@@ -35,6 +35,9 @@ jobs:
           uv export --frozen --no-dev --no-default-groups --no-emit-project --no-hashes --no-emit-package torch --output-file /tmp/runtime-constraints.txt
           uv pip install --constraint /tmp/runtime-constraints.txt --index-strategy unsafe-first-match torch==2.14.1+cpu . --extra-index-url https://download.pytorch.org/whl/cpu
 
+      - name: Type check (ty)
+        run: uv run --no-sync ty check
+
       - name: Run tests
         run: uv run --no-sync pytest tests/
 

@@ -27,9 +27,9 @@ Thanks for your interest in contributing to Synthetic Data Quality Assurance! Fo
    source .venv/bin/activate
    ```
 
-4. **Install pre-commit hooks**:
+4. **Install pre-commit hooks** (via [prek](https://github.com/j178/prek), a drop-in replacement for pre-commit):
    ```bash
-   pre-commit install
+   prek install
    ```
 
 ## Development Workflow
@@ -48,10 +48,11 @@ Thanks for your interest in contributing to Synthetic Data Quality Assurance! Fo
 
 3. **Implement your changes.**
 
-4. **Run tests and pre-commit hooks**:
+4. **Run tests, type checks and pre-commit hooks**:
    ```bash
    pytest
-   pre-commit run
+   ty check
+   prek run
    ```
 
 5. **Commit your changes with a descriptive message**:
