@@ -834,11 +834,11 @@ wheels = [
 
 [[package]]
 name = "filelock"
-version = "4.3.1"
+version = "4.3.2"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/e6/86/a5b9ec254b90efb180e390e31a4fa50a93b714d6e4174fa9a4ee25607159/filelock-4.3.1.tar.gz", hash = "sha256:4c5ee627c401f1863ac6a0de9a14a28d3bb5f8c730b45e2fd6e5dbc79cf34b9e", size = 742330, upload-time = "2026-11-23T18:01:13.656Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/b2/de/99f4266dc2b97503fe35af46d4bf54ea4d434bc322992103145c9de7da95/filelock-4.3.2.tar.gz", hash = "sha256:4f0a21c70447782453c06bb20a9863ee385ead1abaef22049af79289496851b3", size = 744182, upload-time = "2026-11-27T22:58:32.45Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/53/7b/678c8fbd372ff96375ac0bbdd20b78f20ef8ba6ca5966c49548fa5886557/filelock-4.3.1-py3-none-any.whl", hash = "sha256:79e43df8e9fe509cd83a3899a7c186c8077cbbe4d200a1ed3705c2f3bb6bc487", size = 244559, upload-time = "2026-11-23T18:01:12.261Z" },
+    { url = "https://files.pythonhosted.org/packages/d7/4f/6429bb372197194e65bb33885cd112c7008c2b9cf7496285874aa274e506/filelock-4.3.2-py3-none-any.whl", hash = "sha256:02a8801bc6b2a80921bf3d7895c63084d53bae2a3c86783adce5ae2b89a1825b", size = 244905, upload-time = "2026-11-27T22:58:31.01Z" },
 ]
 
 [[package]]
@@ -1900,21 +1900,41 @@ wheels = [
 
 [[package]]
 name = "model2vec"
-version = "0.10.0"
+version = "0.11.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "huggingface-hub" },
     { name = "jinja2" },
-    { name = "joblib" },
+    { name = "model2vec-rs" },
     { name = "numpy", version = "2.4.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
     { name = "numpy", version = "2.5.5", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
     { name = "safetensors" },
     { name = "tokenizers" },
     { name = "tqdm" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/04/48/2ceace43798ca7cb8c32c50c7956d7446d7f90a3b3f65b201fb7fd87344c/model2vec-0.10.0.tar.gz", hash = "sha256:47119ef1f917b4da7a0010bf10c587c923639a6af4ea51cb2d424fc329d09d2f", size = 4622501, upload-time = "2026-10-11T10:47:59.266Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/47/96/74334c2560f8861617a6fcf4e1cd921c58714b15ff22dba7c586a374fe8d/model2vec-0.11.0.tar.gz", hash = "sha256:6d432ef78dc5704f3295d1c67af1b752261fc9101aa51ef446f2f1d7ba1e7bdd", size = 4525819, upload-time = "2026-11-27T16:38:55.774Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/84/c5/2b1b5648195bfcada5de6a1164d560c968ded8fc68f2ddd6118b21cb26b7/model2vec-0.10.0-py3-none-any.whl", hash = "sha256:a39c40de4f82c5e0e50c14bbb87a935c1c62094f3f0f0d8fde8e24f4a4f35b16", size = 89504, upload-time = "2026-10-11T10:47:57.679Z" },
+    { url = "https://files.pythonhosted.org/packages/de/a6/e93709a681681ba50aea8f5cd187b690e5191cfbb00bb437665ae0e61ef3/model2vec-0.11.0-py3-none-any.whl", hash = "sha256:71eb656c31c7ca60e59813ab1b81d49e86eafc8b5296a2025ce48ac2384a78cb", size = 89648, upload-time = "2026-11-27T16:38:54.525Z" },
+]
+
+[[package]]
+name = "model2vec-rs"
+version = "0.5.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "numpy", version = "2.4.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
+    { name = "numpy", version = "2.5.5", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/f4/90/a1b1320c93e169f052ff579102915806aa589d75d551add9b80a2d7e7212/model2vec_rs-0.5.1.tar.gz", hash = "sha256:db1ab1a79f06f5e6b0dc024704ab3be656f71bac80a79298ef71458384cd06da", size = 153596, upload-time = "2026-11-24T06:28:09.687Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/43/cf/5eeb55291d1d365419a6ff1f8529be7be9408d690a43f28112de17bc2f86/model2vec_rs-0.5.1-cp310-abi3-macosx_10_12_x86_64.whl", hash = "sha256:19cbb19555229d5232cbd246ae11b7c1941def84048bf3871826db73e71cc8c2", size = 3422771, upload-time = "2026-11-24T06:27:56.665Z" },
+    { url = "https://files.pythonhosted.org/packages/53/0e/7c63cd068a92dbfa7f41930460a8ff7a5f30ffb60d49458c76e3018fa994/model2vec_rs-0.5.1-cp310-abi3-macosx_11_0_arm64.whl", hash = "sha256:aa394460f15edd38cee31951d56bbf1d226ada2dea7baaaed373e3e9eb46c25a", size = 3320494, upload-time = "2026-11-24T06:27:58.298Z" },
+    { url = "https://files.pythonhosted.org/packages/35/ad/a2e1f6576599918f731e93687607d30fe0af89c336d738bc5f090765ffe6/model2vec_rs-0.5.1-cp310-abi3-manylinux_2_28_aarch64.whl", hash = "sha256:8814f1a9aa24d291b07f4a934b0fa57ddf72376552f1db4e7f61a99923de6cdf", size = 3785520, upload-time = "2026-11-24T06:27:59.659Z" },
+    { url = "https://files.pythonhosted.org/packages/0c/77/7634b609591c3f957a09b289acfde2b5f86488d952fc640438dc2db5df0c/model2vec_rs-0.5.1-cp310-abi3-manylinux_2_28_x86_64.whl", hash = "sha256:4e71f701a1d389d5f7e7c021cd940b97bfc466f4bd64d5e0dd76f4ef81e59ab8", size = 3731888, upload-time = "2026-11-24T06:28:01.104Z" },
+    { url = "https://files.pythonhosted.org/packages/53/93/e881640e7e94bda8278f1996ecb7e9755105bc2b34f1477d3b0aa68942d9/model2vec_rs-0.5.1-cp310-abi3-musllinux_1_2_aarch64.whl", hash = "sha256:e8271caa08343948d3d7459e065e1f2d27dfed664063247057c11604b54058f7", size = 10227143, upload-time = "2026-11-24T06:28:02.824Z" },
+    { url = "https://files.pythonhosted.org/packages/81/ae/dc39169e6f3a38aa1063776b3e596e28e3a811c12771e46c37c8b4dc2b86/model2vec_rs-0.5.1-cp310-abi3-musllinux_1_2_x86_64.whl", hash = "sha256:92f0c0ee68920847ca51d4b42bd17d2b2637326fbde22947f9b40f50efef1d17", size = 10553805, upload-time = "2026-11-24T06:28:04.999Z" },
+    { url = "https://files.pythonhosted.org/packages/35/4c/4f75e995ce8f480dd6f3cbbc1103f452700422931b92f6d35382a04d4835/model2vec_rs-0.5.1-cp310-abi3-win_amd64.whl", hash = "sha256:34273ad17774ed90baa16c04313a805de5be08621966b45f0eca2a1df4b5b794", size = 3142384, upload-time = "2026-11-24T06:28:06.764Z" },
+    { url = "https://files.pythonhosted.org/packages/fd/c6/ba5d52cffd746a0ec160f001d0595baecdd7d5a7be9c4862ced809f5d9e8/model2vec_rs-0.5.1-cp310-abi3-win_arm64.whl", hash = "sha256:aa89947cd02ec2f6b0ffe60504b3efd2d77e8e32205ebbae846f5da234c77a09", size = 2992357, upload-time = "2026-11-24T06:28:08.33Z" },
 ]
 
 [[package]]
@@ -1928,7 +1948,7 @@ wheels = [
 
 [[package]]
 name = "mostlyai-qa"
-version = "1.10.11"
+version = "1.10.12"
 source = { editable = "." }
 dependencies = [
     { name = "accelerate" },
@@ -2706,11 +2726,11 @@ wheels = [
 
 [[package]]
 name = "platformdirs"
-version = "4.14.8"
+version = "4.14.9"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/71/18/0b0d99f5bf164f04a7a9534c3dbdbe4d5fd2b382667685ad40c192c4d3d1/platformdirs-4.14.8.tar.gz", hash = "sha256:96893d686e84e9e6f358a9ea41a8de544df66dbf2ba6cda250e7dc73acf85b9b", size = 87203, upload-time = "2026-11-20T08:14:52.63Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/d6/96/549558270586699a271a18b1111482dc3fc39baa0ef61d183e230d2c961d/platformdirs-4.14.9.tar.gz", hash = "sha256:c6b188e03ffd4dfe1bf8c4bcb47cd94711af244a9852dbff60297bd753684d5d", size = 87729, upload-time = "2026-11-27T20:53:44.721Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/5b/be/373cc7341f53bfd3acba3e5db62433fd960a45fcf73ad64a5f4d27e74910/platformdirs-4.14.8-py3-none-any.whl", hash = "sha256:1e34af590de4d978631b751eb2202f2fee4497537a17c1720b12fcf57b331392", size = 94267, upload-time = "2026-11-20T08:14:51.306Z" },
+    { url = "https://files.pythonhosted.org/packages/3b/e7/fc53dfd2f9469cce9be9c58385bdcdb5087e790c135c9dadd4cc8401bb3d/platformdirs-4.14.9-py3-none-any.whl", hash = "sha256:d0d3a23e7ff282cfa94b77f5a22b81030dcb68ba0430f90c74f4bd8d090782ea", size = 94272, upload-time = "2026-11-27T20:53:43.511Z" },
 ]
 
 [[package]]
